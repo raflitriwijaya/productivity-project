@@ -1,0 +1,144 @@
+// server/models/todo.model.js
+import { pool } from '../lib/db.js';
+
+/**
+ * @param {number} userId
+ * @param {{ page?: number, perPage?: number, sort?: string, order?: string, status?: string }} opts
+ * @returns {Promise<{ rows: object[], total: number }>}
+ */
+export async function listTodos(userId, opts = {}) {
+  const {
+    page = 1,
+    perPage = 20,
+    sort = 'created_at',
+    order = 'desc',
+    status,
+  } = opts;
+
+  const ALLOWED_SORT = ['created_at', 'updated_at', 'due_date', 'priority', 'title'];
+  const safeSort = ALLOWED_SORT.includes(sort) ? sort : 'created_at';
+  const safeOrder = order === 'asc' ? 'ASC' : 'DESC';
+
+  const conditions = ['user_id = $1'];
+  const values = [userId];
+
+  if (status) {
+    values.push(status);
+    conditions.push(`status = $${values.length}`);
+  }
+
+  const where = conditions.join(' AND ');
+  const offset = (page - 1) * perPage;
+
+  const countResult = await pool.query(
+    `SELECT COUNT(*) FROM todos WHERE ${where}`,
+    values
+  );
+
+  values.push(perPage, offset);
+  const dataResult = await pool.query(
+    `SELECT * FROM todos WHERE ${where}
+     ORDER BY ${safeSort} ${safeOrder}
+     LIMIT $${values.length - 1} OFFSET $${values.length}`,
+    values
+  );
+
+  return { rows: dataResult.rows, total: parseInt(countResult.rows[0].count, 10) };
+}
+
+/**
+ * @param {number} id
+ * @param {number} userId
+ * @returns {Promise<object|null>}
+ */
+export async function getTodoById(id, userId) {
+  const result = await pool.query(
+    'SELECT * FROM todos WHERE id = $1 AND user_id = $2',
+    [id, userId]
+  );
+  return result.rows[0] ?? null;
+}
+
+/**
+ * @param {number} userId
+ * @param {{ title: string, description?: string, status?: string, priority?: number, due_date?: string }} fields
+ * @returns {Promise<object>}
+ */
+export async function createTodo(userId, fields) {
+  const { title, description = null, status = 'pending', priority = 2, due_date = null } = fields;
+  const result = await pool.query(
+    `INSERT INTO todos (user_id, title, description, status, priority, due_date)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING *`,
+    [userId, title, description, status, priority, due_date]
+  );
+  return result.rows[0];
+}
+
+/**
+ * Partial update — only provided keys are written.
+ * @param {number} id
+ * @param {number} userId
+ * @param {Partial<{ title: string, description: string, status: string, priority: number, due_date: string }>} fields
+ * @returns {Promise<object|null>}
+ */
+export async function patchTodo(id, userId, fields) {
+  const ALLOWED = ['title', 'description', 'status', 'priority', 'due_date'];
+  const keys = Object.keys(fields).filter(k => ALLOWED.includes(k));
+  if (keys.length === 0) return getTodoById(id, userId);
+
+  const setClauses = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
+  const values = keys.map(k => fields[k]);
+  values.push(id, userId);
+
+  const result = await pool.query(
+    `UPDATE todos SET ${setClauses}
+     WHERE id = $${values.length - 1} AND user_id = $${values.length}
+     RETURNING *`,
+    values
+  );
+  return result.rows[0] ?? null;
+}
+
+/**
+ * @param {number} id
+ * @param {number} userId
+ * @returns {Promise<boolean>}
+ */
+export async function deleteTodo(id, userId) {
+  const result = await pool.query(
+    'DELETE FROM todos WHERE id = $1 AND user_id = $2',
+    [id, userId]
+  );
+  return result.rowCount > 0;
+}
+
+/**
+ * Returns counts grouped by status, plus an overdue count.
+ * "overdue" = status != 'done' AND due_date < CURRENT_DATE.
+ *
+ * @param {number} userId
+ * @returns {Promise<{ total: number, pending: number, in_progress: number, done: number, overdue: number }>}
+ */
+export async function getTodoStats(userId) {
+  const result = await pool.query(
+    `SELECT
+       COUNT(*)                                                          AS total,
+       COUNT(*) FILTER (WHERE status = 'pending')                       AS pending,
+       COUNT(*) FILTER (WHERE status = 'in_progress')                   AS in_progress,
+       COUNT(*) FILTER (WHERE status = 'done')                          AS done,
+       COUNT(*) FILTER (WHERE status != 'done' AND due_date < CURRENT_DATE) AS overdue
+     FROM todos
+     WHERE user_id = $1`,
+    [userId]
+  );
+
+  const row = result.rows[0];
+  return {
+    total:       parseInt(row.total,       10),
+    pending:     parseInt(row.pending,     10),
+    in_progress: parseInt(row.in_progress, 10),
+    done:        parseInt(row.done,        10),
+    overdue:     parseInt(row.overdue,     10),
+  };
+}
