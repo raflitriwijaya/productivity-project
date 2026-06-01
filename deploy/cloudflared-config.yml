@@ -1,0 +1,9 @@
+# Ganti <TUNNEL_ID> dengan ID tunnel dari Cloudflare dashboard
+# Ganti <USER> dengan username Linux Anda (cek dengan: whoami)
+tunnel: <TUNNEL_ID>
+credentials-file: /home/<USER>/.cloudflared/<TUNNEL_ID>.json
+
+ingress:
+  - hostname: raflitriwijaya.my.id
+    service: http://localhost:80
+  - service: http_status:404
