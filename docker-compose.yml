@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: productivity
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: productivity_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U productivity -d productivity_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: ./server
+    environment:
+      DATABASE_URL: postgresql://productivity:${DB_PASSWORD}@db:5432/productivity_db
+      CLIENT_ORIGIN: https://raflitriwijaya.my.id
+      SESSION_SECRET: ${SESSION_SECRET}
+      NODE_ENV: production
+      PORT: 3000
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  nginx:
+    build: ./client
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
