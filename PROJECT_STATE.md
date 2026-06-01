@@ -212,9 +212,48 @@ Entry point is fully implemented with:
 
 ---
 
+## Deployment
+
+Repository is live at: https://github.com/raflitriwijaya/productivity-project
+
+Two production deployment options are available:
+
+### Option A — Docker (recommended)
+
+All containers defined in `docker-compose.yml` at project root. Three services:
+- `db` — `postgres:16-alpine`; data persisted in `postgres_data` Docker volume; has healthcheck so `api` waits before starting
+- `api` — built from `server/Dockerfile` (`node:22-alpine`, production deps only via `npm ci --omit=dev`); env vars injected at runtime from `.env`
+- `nginx` — built from `client/Dockerfile` (multi-stage: `node:22-alpine` builds React, `nginx:alpine` serves static + proxies `/api` and `/health` to `api:3000`); exposes port `80`
+
+Nginx config for Docker lives at `client/nginx.docker.conf` (separate from the manual-deploy config).
+
+`.env.docker.example` at root — only two vars needed: `DB_PASSWORD` and `SESSION_SECRET`. `DATABASE_URL` and other vars are constructed inline in `docker-compose.yml`.
+
+```bash
+cp .env.docker.example .env   # fill DB_PASSWORD and SESSION_SECRET
+docker compose up --build -d
+docker compose exec api npm run migrate   # first time only
+```
+
+### Option B — Manual (Nginx + PM2)
+
+For deployments without Docker. Configs live in `deploy/`:
+- `deploy/nginx.conf` — Nginx server block; serves `client/dist` as root, proxies `/api` and `/health` to `localhost:3000`, sets `X-Forwarded-Proto: https` for Express trust-proxy
+- `ecosystem.config.cjs` at root — PM2 app config; `name: productivity-api`, `script: ./server/index.js`, `env_production: { NODE_ENV: production }`
+
+### Cloudflare Tunnel
+
+`deploy/cloudflared-config.yml` — template config pointing `raflitriwijaya.my.id` → `http://localhost:80`. Works with both deployment options above since both expose port 80.
+
+---
+
 ## Audit Outcome (2026-05-31)
 
 A full audit/hardening pass created the entire missing foundation (all `components/ui/*`, `useApi`/`useTheme`/`useToast`, `server/lib/*`, `errorHandler`/`validate`), fixed broken config (`index.css` had no Tailwind directives; `index.html` lacked the Inter font; missing `postcss.config.js`, Vite port/proxy; absent client/server deps; `server` was `type:commonjs` despite ESM code), and corrected bugs (router named-export mismatch in `index.js`; Dashboard stat-key mismatches `net`→`net_balance`, `spent_hours`→`total_spent_hours`, `citations`/`notes`→`citation`/`note`; removed a stray duplicate `client/AppLayout.jsx`). Hardening: `express.json({ limit:'1mb' })`, session `sameSite:'lax'`, pool sizing.
+
+## Deployment Setup (2026-06-01)
+
+Project pushed to GitHub. Added full production deployment setup: Docker + Docker Compose (3-container stack), manual Nginx + PM2 configs, and Cloudflare Tunnel config for exposing the local server to the internet without opening router ports. README rewritten in English covering both deployment options.
 
 ## Pending / Known Issues
 
