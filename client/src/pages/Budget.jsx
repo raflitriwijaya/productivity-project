@@ -127,7 +127,7 @@ export default function Budget() {
         <Card>
           <CardBody>
             <p className="text-xs font-medium text-stone-500 dark:text-gray-400 tracking-wide uppercase mb-3">Remaining</p>
-            <p className={`text-2xl font-bold tracking-[-0.02em] ${totals.remaining < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+            <p className={`text-2xl font-bold tracking-[-0.02em] ${totals.remaining < 0 ? 'text-red-600 dark:text-red-400' : 'text-moss-600 dark:text-moss-400'}`}>
               {formatIdr(totals.remaining)}
             </p>
           </CardBody>

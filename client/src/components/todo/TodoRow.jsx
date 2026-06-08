@@ -7,12 +7,12 @@ import { Pencil, Trash2 } from 'lucide-react';
 import { Badge }  from '../ui/Badge';
 import { Button } from '../ui/Button';
 
-/** @type {Record<string, 'emerald'|'blue'|'gray'|'red'|'amber'>} */
+/** @type {Record<string, 'moss'|'blue'|'gray'|'red'|'amber'>} */
 const STATUS_VARIANT = {
-  done:        'emerald',
-  completed:   'emerald',
-  active:      'emerald',
-  paid:        'emerald',
+  done:        'moss',
+  completed:   'moss',
+  active:      'moss',
+  paid:        'moss',
   in_progress: 'blue',
   scheduled:   'blue',
   pending:     'gray',
@@ -36,7 +36,7 @@ const PRIORITY_LABEL   = { 1: 'High', 2: 'Medium', 3: 'Low' };
  */
 export function TodoRow({ todo, onEdit, onDelete }) {
   return (
-    <div className="flex items-center gap-4 px-6 py-4 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors duration-100">
+    <div className="flex items-center gap-4 px-6 py-4 hover:bg-moss-50/30 dark:hover:bg-moss-950/20 transition-colors duration-100">
       {/* Main content */}
       <div className="flex-1 min-w-0">
         <p className="text-sm text-stone-900 dark:text-gray-50 truncate font-medium">

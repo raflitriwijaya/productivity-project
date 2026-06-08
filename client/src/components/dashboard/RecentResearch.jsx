@@ -13,7 +13,7 @@ import { EmptyState } from '../ui/EmptyState';
 // to avoid pulling in DataTable render-helper dependencies into a lightweight widget.
 const TYPE_VARIANT = {
   journal: 'blue',
-  citation: 'emerald',
+  citation: 'moss',
   note: 'amber',
 };
 const TYPE_LABEL = {
@@ -23,7 +23,7 @@ const TYPE_LABEL = {
 };
 const STATUS_VARIANT = {
   draft: 'gray',
-  active: 'emerald',
+  active: 'moss',
   archived: 'red',
 };
 const STATUS_LABEL = {
@@ -84,7 +84,7 @@ export function RecentResearch() {
             {entries.map((entry) => (
               <li
                 key={entry.id}
-                className="flex items-center gap-3 px-6 py-3 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors duration-100"
+                className="flex items-center gap-3 px-6 py-3 hover:bg-moss-50/30 dark:hover:bg-moss-950/20 transition-colors duration-100"
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-stone-900 dark:text-gray-50 truncate">

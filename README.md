@@ -1,6 +1,6 @@
 # Productivity Project
 
-A personal web-based productivity suite that combines task management, finance tracking, research logging, and learning notes in a single platform.
+A personal web-based productivity suite that combines task management, finance tracking, research logging, learning notes, and an engineering toolkit in a single platform.
 
 ## Features
 
@@ -9,6 +9,7 @@ A personal web-based productivity suite that combines task management, finance t
 - **Finance** — transaction recording, ledger reports, budgeting, portfolio, receivables, and payables
 - **Research** — research entry logging and tracking
 - **Learning** — learning notes and progress tracking
+- **Engineering** — IoT/embedded/robotics project tracker with scaffolding templates, a syntax-highlighted code snippet library, per-project Markdown docs, weekly check-ins, an issue tracker, and a 12-month skills roadmap
 
 ## Tech Stack
 
@@ -18,6 +19,8 @@ A personal web-based productivity suite that combines task management, finance t
 - React Router DOM
 - Axios
 - Lucide React
+- prism-react-renderer (code snippet highlighting)
+- @uiw/react-md-editor (Markdown docs editor)
 
 **Backend**
 - Node.js + Express 5

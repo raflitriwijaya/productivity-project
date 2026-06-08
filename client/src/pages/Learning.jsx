@@ -248,10 +248,10 @@ export default function Learning() {
               onClick={() => setActiveFilter(f.key)}
               className={`
                 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-150
-                focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400
+                focus:outline-none focus:ring-2 focus:ring-moss-500 dark:focus:ring-moss-400
                 focus:ring-offset-2 ring-offset-white dark:ring-offset-gray-900
                 ${isActive
-                  ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                  ? 'bg-moss-50 dark:bg-moss-950/50 text-moss-700 dark:text-moss-400 border border-moss-200 dark:border-moss-800'
                   : 'bg-white dark:bg-gray-800 text-stone-600 dark:text-gray-400 border border-stone-200 dark:border-gray-700 hover:bg-stone-50 dark:hover:bg-gray-700 hover:text-stone-900 dark:hover:text-gray-100'
                 }
               `}

@@ -5,6 +5,7 @@ import {
   Menu, Sun, Moon, LogOut,
   LayoutDashboard, CheckSquare, BookOpen, GraduationCap,
   LineChart, Receipt, Wallet, ArrowDownLeft, ArrowUpRight, PieChart, Target,
+  Wrench, Code, FileText, ClipboardCheck, Bug, Map,
 } from 'lucide-react';
 import api from '../../lib/api';
 import { useTheme } from '../../hooks/useTheme';
@@ -39,12 +40,23 @@ const NAV_SECTIONS = [
       { to: '/learning', label: 'Learning', icon: GraduationCap },
     ],
   },
+  {
+    label: 'Engineering',
+    items: [
+      { to: '/engineer',          label: 'Projects',  icon: Wrench, end: true },
+      { to: '/engineer/snippets', label: 'Snippets',  icon: Code },
+      { to: '/engineer/docs',     label: 'Docs',      icon: FileText },
+      { to: '/engineer/checkins', label: 'Check-ins', icon: ClipboardCheck },
+      { to: '/engineer/issues',   label: 'Issues',    icon: Bug },
+      { to: '/engineer/roadmap',  label: 'Roadmap',   icon: Map },
+    ],
+  },
 ];
 
 const navLinkClass = ({ isActive }) =>
   `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-150 ${
     isActive
-      ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400'
+      ? 'bg-moss-50 dark:bg-moss-950/50 text-moss-700 dark:text-moss-400'
       : 'text-stone-600 dark:text-gray-400 hover:bg-stone-100 dark:hover:bg-gray-700 hover:text-stone-900 dark:hover:text-gray-100'
   }`;
 
@@ -77,11 +89,12 @@ function SidebarContent({ onNavigate }) {
 
   return (
     <>
-      {/* Logo */}
+      {/* Logo — "Stoic Garden": moss wordmark with an ember innovation dot */}
       <div className="h-16 flex items-center px-6 border-b border-stone-200 dark:border-gray-700">
         <div>
-          <p className="text-sm font-bold text-stone-900 dark:text-gray-50 tracking-tight">
+          <p className="text-sm font-bold text-moss-700 dark:text-moss-400 tracking-tight">
             Rafli's Suite
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-ember-500 ml-1 align-middle" />
           </p>
           <p className="text-[10px] text-stone-400 dark:text-gray-500 tracking-widest uppercase">
             Laboratory
@@ -94,7 +107,7 @@ function SidebarContent({ onNavigate }) {
         {NAV_SECTIONS.map((section, i) => (
           <div key={section.label ?? `section-${i}`} className="space-y-1">
             {section.label && (
-              <p className="px-3 mb-1 text-[10px] font-semibold text-stone-400 dark:text-gray-500 tracking-widest uppercase">
+              <p className="px-3 mb-1 text-[10px] font-semibold text-terracotta-400 dark:text-terracotta-400 tracking-widest uppercase">
                 {section.label}
               </p>
             )}

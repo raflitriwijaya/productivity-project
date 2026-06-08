@@ -1,21 +1,21 @@
 // client/src/components/finance/charts/DonutChart.jsx
 // Donut chart + legend, built from raw SVG (§1 Independence). The slice palette is
-// drawn only from the defined palette (§2): emerald, blue, amber, red, gray — no
-// new hues. Slice geometry is computed into the path `d` attribute; colours are
-// Tailwind fill-* classes.
+// drawn only from the "Stoic Garden" palette: moss, blue, amber, red, gray,
+// terracotta, ember — no ad-hoc hues. Slice geometry is computed into the path `d`
+// attribute; colours are Tailwind fill-* classes.
 
 import { formatIdr } from '../../../lib/formatIdr';
 
 // Fill + matching legend-dot bg, paired so the legend always matches the slice.
 const PALETTE = [
-  { fill: 'fill-emerald-500 dark:fill-emerald-400', dot: 'bg-emerald-500 dark:bg-emerald-400' },
-  { fill: 'fill-blue-500 dark:fill-blue-400',       dot: 'bg-blue-500 dark:bg-blue-400' },
-  { fill: 'fill-amber-500 dark:fill-amber-400',     dot: 'bg-amber-500 dark:bg-amber-400' },
-  { fill: 'fill-red-500 dark:fill-red-400',         dot: 'bg-red-500 dark:bg-red-400' },
-  { fill: 'fill-stone-400 dark:fill-gray-500',      dot: 'bg-stone-400 dark:bg-gray-500' },
-  { fill: 'fill-emerald-700 dark:fill-emerald-600', dot: 'bg-emerald-700 dark:bg-emerald-600' },
-  { fill: 'fill-blue-700 dark:fill-blue-600',       dot: 'bg-blue-700 dark:bg-blue-600' },
-  { fill: 'fill-amber-700 dark:fill-amber-600',     dot: 'bg-amber-700 dark:bg-amber-600' },
+  { fill: 'fill-moss-500 dark:fill-moss-400',             dot: 'bg-moss-500 dark:bg-moss-400' },
+  { fill: 'fill-blue-500 dark:fill-blue-400',             dot: 'bg-blue-500 dark:bg-blue-400' },
+  { fill: 'fill-terracotta-500 dark:fill-terracotta-400', dot: 'bg-terracotta-500 dark:bg-terracotta-400' },
+  { fill: 'fill-red-500 dark:fill-red-400',               dot: 'bg-red-500 dark:bg-red-400' },
+  { fill: 'fill-stone-400 dark:fill-gray-500',            dot: 'bg-stone-400 dark:bg-gray-500' },
+  { fill: 'fill-moss-700 dark:fill-moss-600',             dot: 'bg-moss-700 dark:bg-moss-600' },
+  { fill: 'fill-blue-700 dark:fill-blue-600',             dot: 'bg-blue-700 dark:bg-blue-600' },
+  { fill: 'fill-ember-500 dark:fill-ember-400',           dot: 'bg-ember-500 dark:bg-ember-400' },
 ];
 
 const SIZE = 160;

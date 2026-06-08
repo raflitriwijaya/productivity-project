@@ -2,11 +2,12 @@
 // Canonical button (§5.1). Use this for ALL clickable actions — never a raw
 // <button> in page/feature components (§10 ALWAYS #12).
 
+// "Stoic Garden": primary = ember (innovation fire / CTA); all focus rings = moss.
 const variants = {
-  primary:   'bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500 dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:focus:ring-emerald-400',
-  secondary: 'bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 hover:border-stone-300 focus:ring-emerald-500 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700 dark:focus:ring-emerald-400',
+  primary:   'bg-ember-500 text-white hover:bg-ember-600 focus:ring-moss-500 dark:bg-ember-500 dark:hover:bg-ember-600 dark:focus:ring-moss-400',
+  secondary: 'bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 hover:border-stone-300 focus:ring-moss-500 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700 dark:focus:ring-moss-400',
   danger:    'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-400',
-  ghost:     'bg-transparent text-stone-600 hover:bg-stone-100 hover:text-stone-900 focus:ring-emerald-500 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100 dark:focus:ring-emerald-400',
+  ghost:     'bg-transparent text-stone-600 hover:bg-stone-100 hover:text-stone-900 focus:ring-moss-500 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100 dark:focus:ring-moss-400',
 };
 
 const sizes = {

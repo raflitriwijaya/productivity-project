@@ -24,10 +24,12 @@
 ## 1. Brand Identity & Philosophy
 
 ### Core Philosophy
-**"The Researcher's Laboratory"** — Every screen is a workbench. Clean, purposeful, and free of distraction. The interface exists to serve thinking, not to impress.
+**"The Stoic Garden"** — a modern laboratory in a garden. Every screen is a workbench that stays calm, professional, and grounded, with deliberate moments of warm energy. The interface still exists to serve thinking, not to impress, but it now carries a point of view drawn from four sources: **nature/agritech** (growth, patience, sustainability), **engineering** (precision, structure, logic), **entrepreneurship** (fire, energy, innovation), and **philosophy** (depth, contemplation, meaning).
+
+> **Lineage note.** This supersedes the original "Researcher's Laboratory" identity, whose single Emerald accent and strict no-accent/no-gradient stance were intentionally retired in the 2026-06-02 re-theme (see PROJECT_STATE.md). The three-color palette in §2 and the few sanctioned accents (StatCard gradient underline, logo dot) are now canonical — they are *purposeful*, not decorative noise.
 
 ### Persona
-Rafli is an engineer, agritech founder, and future Nobel researcher. The UI must feel like the desk of a serious, disciplined person: organized, warm (not cold), and deeply functional. No decorative noise. No playful gradients. Precision over flair.
+Rafli is an engineer, agritech founder, and future Nobel researcher. The UI must feel like the desk of a serious, disciplined person: organized, warm (not cold), and deeply functional. Restraint over flair — accents earn their place by signalling meaning (success, a primary action, a category), never as ornament.
 
 ### Design Principles (in priority order)
 
@@ -71,26 +73,76 @@ Every color role below has four values: the semantic name, the hex code, its Tai
 |------|-----------|----------------|----------|---------------|
 | Default Border | `#E7E5E4` | `border-stone-200` | `#374151` | `dark:border-gray-700` |
 | Subtle Divider | `#F5F5F4` | `divide-stone-100` | `#1F2937` | `dark:divide-gray-800` |
-| Focus Ring (all interactive elements) | `#10B981` | `ring-emerald-500` | `#34D399` | `dark:ring-emerald-400` |
+| Focus Ring (all interactive elements) | `#4A7C59` | `ring-moss-500` | `#6BA37A` | `dark:ring-moss-400` |
 | Ring Offset (gap behind focus ring) | `#FFFFFF` | `ring-offset-white` | `#111827` | `dark:ring-offset-gray-900` |
 
-#### Accent (Brand — Emerald)
+#### Accent (Brand — "Stoic Garden": moss / terracotta / ember)
 
-There are two distinct accent uses. **Solid fill** = white text sits on the accent (buttons, active pills) → use a darker emerald in dark mode so white stays legible. **On-surface** = accent text/border/icon sits on a neutral surface → use a lighter emerald in dark mode for contrast. Do not mix them.
+The system has **three** custom accent families (defined under `theme.extend.colors` in `tailwind.config.js`, base shade `-500`). Each has a distinct job — do not use them interchangeably:
+
+| Family | Base | Meaning | Where it goes |
+|--------|------|---------|---------------|
+| **moss** | `#4A7C59` | nature / agritech / persistence; the success hue | **All former emerald roles** — success states, active sidebar/tab/pill, focus rings, sorted table header, row hover, money-positive, links, progress fills |
+| **terracotta** | `#C67A4B` | earth / craft / hardware engineering | Secondary highlights — sidebar group labels, hardware/embedded category badges, snippet-category badges, the ProgressBar warning band |
+| **ember** | `#E8A838` | fire of innovation / call-to-action | Primary `Button` fill, active key highlights, toast `info`, the logo dot, the warm end of the StatCard gradient underline |
+
+As before, there are two distinct accent *uses*. **Solid fill** = white text sits on the accent (primary buttons) → keep the same `-500` shade in dark mode (the moss/terracotta/ember `-500` values stay legible under white in both themes). **On-surface** = accent text/border/icon on a neutral surface → use the lighter `-400` shade in dark mode for contrast. Do not mix them.
+
+**moss** (replaces the old Emerald accent rows):
 
 | Role | Light Hex | Light Tailwind | Dark Hex | Dark Tailwind |
 |------|-----------|----------------|----------|---------------|
-| Accent — Solid Fill (white text on it) | `#059669` | `bg-emerald-600` | `#10B981` | `dark:bg-emerald-500` |
-| Accent — Solid Fill Hover | `#047857` | `hover:bg-emerald-700` | `#059669` | `dark:hover:bg-emerald-600` |
-| Accent — Text / Icon (on a surface) | `#059669` | `text-emerald-600` | `#34D399` | `dark:text-emerald-400` |
-| Accent — Border (on a surface) | `#6EE7B7` | `border-emerald-300` | `#065F46` | `dark:border-emerald-800` |
-| Accent — Subtle BG | `#ECFDF5` | `bg-emerald-50` | `#064E3B` | `dark:bg-emerald-950` |
+| Moss — Solid Fill (white text on it) | `#4A7C59` | `bg-moss-500` | `#4A7C59` | `dark:bg-moss-500` |
+| Moss — Solid Fill Hover | `#3D6548` | `hover:bg-moss-600` | `#3D6548` | `dark:hover:bg-moss-600` |
+| Moss — Text / Icon (on a surface) | `#3D6548` | `text-moss-600` | `#6BA37A` | `dark:text-moss-400` |
+| Moss — Border (on a surface) | `#8FB996` | `border-moss-300` | `#233A2A` | `dark:border-moss-800` |
+| Moss — Subtle BG | `#EDF2EE` | `bg-moss-50` | `#0E1912` | `dark:bg-moss-950` |
+| Moss — Active Pill (sidebar/tab) | `#EDF2EE` | `bg-moss-50 text-moss-700` | `#0E1912` (50% a) | `dark:bg-moss-950/50 dark:text-moss-400` |
+
+**ember** (primary CTA):
+
+| Role | Light Hex | Light Tailwind | Dark Hex | Dark Tailwind |
+|------|-----------|----------------|----------|---------------|
+| Ember — Solid Fill (white text on it) | `#E8A838` | `bg-ember-500` | `#E8A838` | `dark:bg-ember-500` |
+| Ember — Solid Fill Hover | `#D4942E` | `hover:bg-ember-600` | `#D4942E` | `dark:hover:bg-ember-600` |
+| Ember — Text / Icon (on a surface) | `#B07A25` | `text-ember-700` | `#F5CE7A` | `dark:text-ember-300` |
+| Ember — Subtle BG | `#FEF7EB` | `bg-ember-50` | `#2E1F0A` | `dark:bg-ember-950` |
+
+**terracotta** (hardware/craft secondary):
+
+| Role | Light Hex | Light Tailwind | Dark Hex | Dark Tailwind |
+|------|-----------|----------------|----------|---------------|
+| Terracotta — Solid Fill (white text on it) | `#C67A4B` | `bg-terracotta-500` | `#C67A4B` | `dark:bg-terracotta-500` |
+| Terracotta — Text / Icon (on a surface) | `#B36640` | `text-terracotta-600` | `#CD8E5B` | `dark:text-terracotta-400` |
+| Terracotta — Subtle BG | `#F9F2EC` | `bg-terracotta-50` | `#2E1810` | `dark:bg-terracotta-950` |
+
+##### Full custom palette (single source of truth — mirrors `tailwind.config.js`)
+
+These three scales are the **only** non-default colors in the project. Every shade `50–950`:
+
+```js
+// theme.extend.colors
+moss: {
+  50:'#EDF2EE',100:'#D4E3D7',200:'#B5CFBB',300:'#8FB996',400:'#6BA37A',
+  500:'#4A7C59',600:'#3D6548',700:'#304F39',800:'#233A2A',900:'#17271C',950:'#0E1912',
+},
+terracotta: {
+  50:'#F9F2EC',100:'#F2E3D6',200:'#E6C7AD',300:'#D9AA84',400:'#CD8E5B',
+  500:'#C67A4B',600:'#B36640',700:'#8F4E32',800:'#6B3A25',900:'#472618',950:'#2E1810',
+},
+ember: {
+  50:'#FEF7EB',100:'#FCEDC6',200:'#F9DFA0',300:'#F5CE7A',400:'#F0BB54',
+  500:'#E8A838',600:'#D4942E',700:'#B07A25',800:'#8C601D',900:'#684715',950:'#2E1F0A',
+},
+```
 
 #### Semantic Status Colors
 
+`Success` now uses **moss** (instead of emerald). Warning/Error/Info/Neutral are unchanged.
+
 | Status | Light Tailwind (bg / text / border) | Dark Tailwind (bg / text / border) |
 |--------|-------------------------------------|-------------------------------------|
-| Success | `bg-emerald-50 text-emerald-700 border-emerald-200` | `dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800` |
+| Success | `bg-moss-50 text-moss-700 border-moss-200` | `dark:bg-moss-950 dark:text-moss-400 dark:border-moss-800` |
 | Warning | `bg-amber-50 text-amber-700 border-amber-200` | `dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800` |
 | Error / Danger | `bg-red-50 text-red-700 border-red-200` | `dark:bg-red-950 dark:text-red-400 dark:border-red-800` |
 | Info | `bg-blue-50 text-blue-700 border-blue-200` | `dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800` |
@@ -120,6 +172,21 @@ export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
+      // "Stoic Garden" accents (§2.1) — the only non-default colors in the project.
+      colors: {
+        moss: {
+          50:'#EDF2EE',100:'#D4E3D7',200:'#B5CFBB',300:'#8FB996',400:'#6BA37A',
+          500:'#4A7C59',600:'#3D6548',700:'#304F39',800:'#233A2A',900:'#17271C',950:'#0E1912',
+        },
+        terracotta: {
+          50:'#F9F2EC',100:'#F2E3D6',200:'#E6C7AD',300:'#D9AA84',400:'#CD8E5B',
+          500:'#C67A4B',600:'#B36640',700:'#8F4E32',800:'#6B3A25',900:'#472618',950:'#2E1810',
+        },
+        ember: {
+          50:'#FEF7EB',100:'#FCEDC6',200:'#F9DFA0',300:'#F5CE7A',400:'#F0BB54',
+          500:'#E8A838',600:'#D4942E',700:'#B07A25',800:'#8C601D',900:'#684715',950:'#2E1F0A',
+        },
+      },
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
@@ -208,7 +275,7 @@ Section gap:             space-y-6
 |------|-------|----------|
 | Input, Button | 8px | `rounded-lg` |
 | Card | 12px | `rounded-xl` |
-| Modal panel | 12px | `rounded-xl` |
+| Modal panel | 16px | `rounded-2xl` |
 | Badge, Tag | 6px | `rounded-md` |
 | Tooltip | 6px | `rounded-md` |
 | Avatar (circle) | 50% | `rounded-full` |
@@ -247,7 +314,7 @@ Each component section defines: all variants, all sizes, exact Tailwind class st
 ### 5.1 Button
 
 #### Behavior Rules
-- **Primary**: The single most important action on a page or modal. Always Emerald bg. One per view where possible.
+- **Primary**: The single most important action on a page or modal. Always **ember** bg (the CTA hue). One per view where possible.
 - **Secondary**: Supporting actions (Cancel, Back, Export). White bg with border.
 - **Danger**: Destructive actions (Delete, Archive). Red bg. Always preceded by a confirmation step.
 - **Ghost**: Tertiary / inline actions (Edit, View). No bg, no border until hover.
@@ -269,18 +336,18 @@ Each component section defines: all variants, all sizes, exact Tailwind class st
 ```
 PRIMARY (md):
   "inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
-   bg-emerald-600 text-white
-   hover:bg-emerald-700
-   focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400
+   bg-ember-500 text-white
+   hover:bg-ember-600
+   focus:outline-none focus:ring-2 focus:ring-moss-500 dark:focus:ring-moss-400
    focus:ring-offset-2 ring-offset-white dark:ring-offset-gray-900
-   dark:bg-emerald-500 dark:hover:bg-emerald-600
+   dark:bg-ember-500 dark:hover:bg-ember-600
    transition-colors duration-150"
 
 SECONDARY (md):
   "inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
    bg-white text-stone-700 border border-stone-200
    hover:bg-stone-50 hover:border-stone-300
-   focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400
+   focus:outline-none focus:ring-2 focus:ring-moss-500 dark:focus:ring-moss-400
    focus:ring-offset-2 ring-offset-white dark:ring-offset-gray-900
    dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600
    dark:hover:bg-gray-700
@@ -299,7 +366,7 @@ GHOST (md):
   "inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
    bg-transparent text-stone-600
    hover:bg-stone-100 hover:text-stone-900
-   focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400
+   focus:outline-none focus:ring-2 focus:ring-moss-500 dark:focus:ring-moss-400
    focus:ring-offset-2 ring-offset-white dark:ring-offset-gray-900
    dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100
    transition-colors duration-150"
@@ -312,11 +379,12 @@ DISABLED (any variant — add to the variant's base):
 
 ```jsx
 // components/ui/Button.jsx
+// "Stoic Garden": primary = ember (CTA); all focus rings = moss.
 const variants = {
-  primary: 'bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500 dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:focus:ring-emerald-400',
-  secondary: 'bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 hover:border-stone-300 focus:ring-emerald-500 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700 dark:focus:ring-emerald-400',
+  primary: 'bg-ember-500 text-white hover:bg-ember-600 focus:ring-moss-500 dark:bg-ember-500 dark:hover:bg-ember-600 dark:focus:ring-moss-400',
+  secondary: 'bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 hover:border-stone-300 focus:ring-moss-500 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700 dark:focus:ring-moss-400',
   danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-400',
-  ghost: 'bg-transparent text-stone-600 hover:bg-stone-100 hover:text-stone-900 focus:ring-emerald-500 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100 dark:focus:ring-emerald-400',
+  ghost: 'bg-transparent text-stone-600 hover:bg-stone-100 hover:text-stone-900 focus:ring-moss-500 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100 dark:focus:ring-moss-400',
 };
 
 const sizes = {
@@ -371,7 +439,7 @@ FLAT (no shadow — for use inside another card/section):
 
 HIGHLIGHT (accent border — for featured/important cards):
   "bg-white dark:bg-gray-800
-   rounded-xl border-2 border-emerald-500 dark:border-emerald-400
+   rounded-xl border-2 border-moss-500 dark:border-moss-400
    shadow-sm p-6"
 ```
 
@@ -383,7 +451,7 @@ export function Card({ variant = 'default', className = '', children }) {
   const variants = {
     default: 'bg-white dark:bg-gray-800 rounded-xl border border-stone-200 dark:border-gray-700 shadow-sm',
     flat: 'bg-stone-50 dark:bg-gray-700 rounded-xl border border-stone-200 dark:border-gray-600',
-    highlight: 'bg-white dark:bg-gray-800 rounded-xl border-2 border-emerald-500 dark:border-emerald-400 shadow-sm',
+    highlight: 'bg-white dark:bg-gray-800 rounded-xl border-2 border-moss-500 dark:border-moss-400 shadow-sm',
   };
   return (
     <div className={`${variants[variant]} ${className}`}>
@@ -433,7 +501,7 @@ DEFAULT:
    border border-stone-200 dark:border-gray-600
    text-stone-900 dark:text-gray-50
    placeholder-stone-400 dark:placeholder-gray-500
-   focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400
+   focus:outline-none focus:ring-2 focus:ring-moss-500 dark:focus:ring-moss-400
    focus:border-transparent
    transition-colors duration-150"
 
@@ -468,7 +536,7 @@ export function Input({ label, id, error, helperText, disabled = false, classNam
   `;
   const stateClasses = error
     ? 'border border-red-300 dark:border-red-600 focus:ring-red-500 dark:focus:ring-red-400'
-    : 'border border-stone-200 dark:border-gray-600 focus:ring-emerald-500 dark:focus:ring-emerald-400';
+    : 'border border-stone-200 dark:border-gray-600 focus:ring-moss-500 dark:focus:ring-moss-400';
 
   return (
     <div className="w-full">
@@ -501,7 +569,7 @@ export function Textarea({ label, id, error, helperText, disabled = false, rows 
   `;
   const stateClasses = error
     ? 'border border-red-300 dark:border-red-600 focus:ring-red-500 dark:focus:ring-red-400'
-    : 'border border-stone-200 dark:border-gray-600 focus:ring-emerald-500 dark:focus:ring-emerald-400';
+    : 'border border-stone-200 dark:border-gray-600 focus:ring-moss-500 dark:focus:ring-moss-400';
 
   return (
     <div className="w-full">
@@ -526,7 +594,7 @@ export function Textarea({ label, id, error, helperText, disabled = false, rows 
 export function Select({ label, id, error, helperText, disabled = false, children, className = '', ...props }) {
   const stateClasses = error
     ? 'border border-red-300 dark:border-red-600 focus:ring-red-500 dark:focus:ring-red-400'
-    : 'border border-stone-200 dark:border-gray-600 focus:ring-emerald-500 dark:focus:ring-emerald-400';
+    : 'border border-stone-200 dark:border-gray-600 focus:ring-moss-500 dark:focus:ring-moss-400';
   return (
     <div className="w-full">
       {label && (
@@ -566,7 +634,7 @@ export function Select({ label, id, error, helperText, disabled = false, childre
 - Rows use zebra striping: odd rows white, even rows `bg-stone-50 dark:bg-gray-700/50`.
 - The last column is always "Actions" for row-level operations (Edit, Delete).
 - Tables are wrapped in a `Card` component with `overflow-x-auto` for responsiveness.
-- Clicking a sortable column header adds an arrow indicator and re-sorts. Sorted column header gets `text-emerald-600 dark:text-emerald-400`.
+- Clicking a sortable column header adds an arrow indicator and re-sorts. Sorted column header gets `text-moss-600 dark:text-moss-400`.
 - Empty state renders inside the table body (see §7).
 
 #### Tailwind Classes
@@ -578,10 +646,10 @@ THEAD ROW:        "border-b border-stone-200 dark:border-gray-700"
 TH:               "px-6 py-3 text-left text-xs font-medium text-stone-500 dark:text-gray-400
                    tracking-wide uppercase whitespace-nowrap"
 TH SORTABLE:      add "cursor-pointer hover:text-stone-700 dark:hover:text-gray-200 select-none"
-TH SORTED:        add "text-emerald-600 dark:text-emerald-400"
+TH SORTED:        add "text-moss-600 dark:text-moss-400"
 TBODY ROW (odd):  "bg-white dark:bg-gray-800"
 TBODY ROW (even): "bg-stone-50 dark:bg-gray-700/50"
-TBODY ROW HOVER:  add "hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors duration-100"
+TBODY ROW HOVER:  add "hover:bg-moss-50/30 dark:hover:bg-moss-950/20 transition-colors duration-100"
 TD:               "px-6 py-4 whitespace-nowrap text-sm text-stone-900 dark:text-gray-50"
 TD SECONDARY:     "px-6 py-4 whitespace-nowrap text-sm text-stone-500 dark:text-gray-400"
 TD ACTIONS:       "px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2"
@@ -638,7 +706,7 @@ export function DataTable({ columns, items, initialSortKey = null }) {
                   className={`px-6 py-3 text-xs font-medium tracking-wide uppercase whitespace-nowrap
                     ${col.align === 'right' ? 'text-right' : 'text-left'}
                     ${col.sortable ? 'cursor-pointer select-none hover:text-stone-700 dark:hover:text-gray-200' : ''}
-                    ${isSorted ? 'text-emerald-600 dark:text-emerald-400' : 'text-stone-500 dark:text-gray-400'}`}
+                    ${isSorted ? 'text-moss-600 dark:text-moss-400' : 'text-stone-500 dark:text-gray-400'}`}
                 >
                   <span className="inline-flex items-center gap-1">
                     {col.header}
@@ -656,7 +724,7 @@ export function DataTable({ columns, items, initialSortKey = null }) {
             <tr
               key={row.id}
               className={`${i % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-stone-50 dark:bg-gray-700/50'}
-                hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors duration-100`}
+                hover:bg-moss-50/30 dark:hover:bg-moss-950/20 transition-colors duration-100`}
             >
               {columns.map(col => (
                 <td
@@ -686,7 +754,7 @@ export function DataTable({ columns, items, initialSortKey = null }) {
 - The sidebar is fixed to the left and visible only at the `lg:` breakpoint and above (`hidden lg:flex`).
 - Below `lg`, the sidebar is **not** rendered in place. The same inner content is rendered as an off-canvas drawer toggled by a hamburger button in the `TopBar`. The drawer + its backdrop are owned by `AppLayout` (§9.3), not by the `Sidebar` component itself.
 - Navigation links use React Router's `NavLink`; active state is derived from `isActive`, never from manual `useLocation` comparisons.
-- The active route link uses a **subtle emerald tint pill** (`bg-emerald-50 dark:bg-emerald-950/50`, emerald text) — not a solid fill. Inactive links are ghost with hover.
+- The active route link uses a **subtle moss tint pill** (`bg-moss-50 dark:bg-moss-950/50`, moss text) — not a solid fill. Inactive links are ghost with hover.
 - The theme toggle (Light/Dark) lives at the bottom of the sidebar, above user info.
 - Dark mode state is persisted to `localStorage` with key `"theme"` (see `useTheme`, §5.5 Dark Mode Logic).
 - Logo/branding is at the top. Module navigation links are in the middle. Settings/Profile at the bottom.
@@ -725,8 +793,8 @@ NAV LINK (inactive):
 
 NAV LINK (active):
   "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
-   bg-emerald-50 dark:bg-emerald-950/50
-   text-emerald-700 dark:text-emerald-400"
+   bg-moss-50 dark:bg-moss-950/50
+   text-moss-700 dark:text-moss-400"
 
 SIDEBAR FOOTER:
   "p-4 border-t border-stone-200 dark:border-gray-700 space-y-2"
@@ -788,7 +856,7 @@ BACKDROP:
 PANEL (md = 560px):
   "relative w-full max-w-[560px] max-h-[90vh]
    bg-white dark:bg-gray-800
-   rounded-xl shadow-xl
+   rounded-2xl shadow-xl
    flex flex-col overflow-hidden"
 
 PANEL HEADER:
@@ -840,7 +908,7 @@ export function Modal({ isOpen, onClose, title, size = 'md', children, footer })
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className={`relative w-full ${sizeMap[size]} max-h-[90vh] bg-white dark:bg-gray-800 rounded-xl shadow-xl flex flex-col overflow-hidden`}
+        className={`relative w-full ${sizeMap[size]} max-h-[90vh] bg-white dark:bg-gray-800 rounded-2xl shadow-xl flex flex-col overflow-hidden`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200 dark:border-gray-700 flex-shrink-0">
@@ -875,7 +943,7 @@ export function Modal({ isOpen, onClose, title, size = 'md', children, footer })
 - Toasts appear in the **bottom-right** corner of the viewport.
 - Auto-dismiss after **4000ms**. Users can manually dismiss with an × button.
 - Max **3 toasts** visible at once. Older ones push up as new ones appear.
-- Four types: `success` (emerald), `error` (red), `warning` (amber), `info` (blue).
+- Four types: `success` (moss), `error` (red), `warning` (amber), `info` (ember).
 - Animate in with a slide-up + fade-in. Animate out with fade-out.
 
 #### Classes
@@ -888,15 +956,15 @@ TOAST BASE:
   "flex items-start gap-3 p-4 rounded-xl shadow-lg border
    animate-slide-up"
 
-TOAST success:  "bg-white dark:bg-gray-800 border-emerald-200 dark:border-emerald-800"
+TOAST success:  "bg-white dark:bg-gray-800 border-moss-200 dark:border-moss-800"
 TOAST error:    "bg-white dark:bg-gray-800 border-red-200 dark:border-red-800"
 TOAST warning:  "bg-white dark:bg-gray-800 border-amber-200 dark:border-amber-800"
-TOAST info:     "bg-white dark:bg-gray-800 border-blue-200 dark:border-blue-800"
+TOAST info:     "bg-white dark:bg-gray-800 border-ember-200 dark:border-ember-800"
 
-ICON DOT success: "w-2 h-2 rounded-full bg-emerald-500 mt-1 flex-shrink-0"
+ICON DOT success: "w-2 h-2 rounded-full bg-moss-500 mt-1 flex-shrink-0"
 ICON DOT error:   "w-2 h-2 rounded-full bg-red-500 mt-1 flex-shrink-0"
 ICON DOT warning: "w-2 h-2 rounded-full bg-amber-500 mt-1 flex-shrink-0"
-ICON DOT info:    "w-2 h-2 rounded-full bg-blue-500 mt-1 flex-shrink-0"
+ICON DOT info:    "w-2 h-2 rounded-full bg-ember-500 mt-1 flex-shrink-0"
 
 TOAST TITLE:   "text-sm font-semibold text-stone-900 dark:text-gray-50"
 TOAST MESSAGE: "text-xs text-stone-500 dark:text-gray-400 mt-0.5"
@@ -915,17 +983,19 @@ import { X } from 'lucide-react';
 const ToastContext = createContext(null);
 let toastIdCounter = 0;
 
+// "Stoic Garden": success → moss (growth), info → ember (innovation);
+// error/warning keep red/amber.
 const TYPE_DOT = {
-  success: 'bg-emerald-500',
+  success: 'bg-moss-500',
   error: 'bg-red-500',
   warning: 'bg-amber-500',
-  info: 'bg-blue-500',
+  info: 'bg-ember-500',
 };
 const TYPE_BORDER = {
-  success: 'border-emerald-200 dark:border-emerald-800',
+  success: 'border-moss-200 dark:border-moss-800',
   error: 'border-red-200 dark:border-red-800',
   warning: 'border-amber-200 dark:border-amber-800',
-  info: 'border-blue-200 dark:border-blue-800',
+  info: 'border-ember-200 dark:border-ember-800',
 };
 
 export function ToastProvider({ children }) {
@@ -993,25 +1063,31 @@ function ToastContainer({ toasts, onDismiss }) {
 ### 5.8 Badge / Tag
 
 ```
-BASE:             "inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium"
+BASE:                 "inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium"
 
-emerald (success):"bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
-red (danger):     "bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-400"
-amber (warning):  "bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400"
-blue (info):      "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400"
-gray (neutral):   "bg-stone-100 text-stone-700 dark:bg-gray-700 dark:text-gray-300"
+moss (success/nature):"bg-moss-50 text-moss-700 dark:bg-moss-950/50 dark:text-moss-400"
+terracotta (hardware):"bg-terracotta-50 text-terracotta-700 dark:bg-terracotta-950/50 dark:text-terracotta-400"
+ember (innovation):   "bg-ember-50 text-ember-700 dark:bg-ember-950/50 dark:text-ember-400"
+red (danger):         "bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-400"
+amber (warning):      "bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400"
+blue (info):          "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400"
+gray (neutral):       "bg-stone-100 text-stone-700 dark:bg-gray-700 dark:text-gray-300"
 ```
 
 #### React Component
 
 ```jsx
 // components/ui/Badge.jsx
+// "Stoic Garden" category accents: moss (agritech/nature/success), terracotta
+// (hardware/embedded), ember (startup/innovation), plus status red/amber/blue/gray.
 const variants = {
-  emerald: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400',
-  red:     'bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-400',
-  amber:   'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400',
-  blue:    'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400',
-  gray:    'bg-stone-100 text-stone-700 dark:bg-gray-700 dark:text-gray-300',
+  moss:       'bg-moss-50 text-moss-700 dark:bg-moss-950/50 dark:text-moss-400',
+  terracotta: 'bg-terracotta-50 text-terracotta-700 dark:bg-terracotta-950/50 dark:text-terracotta-400',
+  ember:      'bg-ember-50 text-ember-700 dark:bg-ember-950/50 dark:text-ember-400',
+  red:        'bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-400',
+  amber:      'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400',
+  blue:       'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400',
+  gray:       'bg-stone-100 text-stone-700 dark:bg-gray-700 dark:text-gray-300',
 };
 
 export function Badge({ variant = 'gray', children, className = '' }) {
@@ -1029,7 +1105,7 @@ Use these exact mappings so status/priority badges are identical across modules:
 
 | Semantic value | Badge variant |
 |----------------|---------------|
-| status `done` / `completed` / `active` / `paid` | `emerald` |
+| status `done` / `completed` / `active` / `paid` / `deployed` / `resolved` / `settled` | `moss` |
 | status `pending` / `draft` | `gray` |
 | status `in_progress` / `scheduled` | `blue` |
 | status `overdue` / `failed` / `cancelled` | `red` |
@@ -1037,6 +1113,9 @@ Use these exact mappings so status/priority badges are identical across modules:
 | priority `1` (high) | `red` |
 | priority `2` (medium) | `amber` |
 | priority `3` (low) | `gray` |
+| category — hardware/embedded project type, snippet category | `terracotta` |
+
+> The `success` semantic moved from emerald to **moss**. `terracotta` is reserved for *category* badges in the engineering domain (hardware/embedded project type, snippet category); it is not a status. `ember` is for primary-action emphasis (buttons, toast `info`), not badges, by default.
 
 ### 5.9 Empty State
 
@@ -1048,8 +1127,8 @@ export function EmptyState({ icon: Icon, title, message, action }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center px-6">
       {Icon && (
-        <div className="w-12 h-12 rounded-xl bg-stone-100 dark:bg-gray-700 flex items-center justify-center mb-4">
-          <Icon className="w-6 h-6 text-stone-400 dark:text-gray-500" />
+        <div className="w-12 h-12 rounded-xl bg-moss-50 dark:bg-moss-950/40 flex items-center justify-center mb-4">
+          <Icon className="w-6 h-6 text-moss-500 dark:text-moss-400" />
         </div>
       )}
       <h3 className="text-sm font-semibold text-stone-700 dark:text-gray-300 mb-1">{title}</h3>
@@ -1084,12 +1163,13 @@ export function ErrorState({ message, onRetry }) {
 ### 5.11 Loading Skeleton
 
 - Use skeleton placeholders that match the shape of the content they replace. Never a centered spinner (see §10, NEVER #14).
-- All skeleton blocks use the base: `bg-stone-200 dark:bg-gray-700 rounded animate-pulse`. A fainter tone (`bg-stone-100 dark:bg-gray-700/50`) is used for secondary lines.
+- "Stoic Garden" tints the pulse with **moss** so loading states feel alive. All skeleton blocks use the base: `bg-moss-100 dark:bg-moss-950/40 rounded animate-pulse`. A fainter tone (`bg-moss-50 dark:bg-moss-950/20`) is used for secondary lines.
 
 ```jsx
 // components/ui/Skeleton.jsx
 export function Skeleton({ className = '' }) {
-  return <div className={`bg-stone-200 dark:bg-gray-700 rounded animate-pulse ${className}`} />;
+  // "Stoic Garden" — a moss tint on the pulse so loading states feel alive.
+  return <div className={`bg-moss-100 dark:bg-moss-950/40 rounded animate-pulse ${className}`} />;
 }
 
 // Row-shaped skeleton for list/table loading states
@@ -1101,7 +1181,7 @@ export function ListSkeleton({ rows = 5 }) {
           <Skeleton className="w-4 h-4 flex-shrink-0" />
           <div className="flex-1 space-y-2">
             <Skeleton className={i % 2 === 0 ? 'h-4 w-3/4' : 'h-4 w-full'} />
-            <div className="h-3 rounded bg-stone-100 dark:bg-gray-700/50 animate-pulse w-1/3" />
+            <div className="h-3 rounded bg-moss-50 dark:bg-moss-950/20 animate-pulse w-1/3" />
           </div>
           <Skeleton className="w-16 h-6 rounded-md" />
         </div>
@@ -1113,7 +1193,7 @@ export function ListSkeleton({ rows = 5 }) {
 
 ### 5.12 StatCard
 
-Metric card used on dashboards and summary rows (referenced in §8). `delta` is optional; positive → emerald, negative → red.
+Metric card used on dashboards and summary rows (referenced in §8). `delta` is optional; positive → moss, negative → red. "Stoic Garden" adds a `from-moss-500 to-ember-500` gradient underline along the bottom edge (the one sanctioned decorative accent — it reads nature→innovation).
 
 ```jsx
 // components/ui/StatCard.jsx
@@ -1123,10 +1203,10 @@ export function StatCard({ label, value, delta, icon: Icon }) {
   const deltaColor = delta == null
     ? ''
     : delta >= 0
-      ? 'text-emerald-600 dark:text-emerald-400'
+      ? 'text-moss-600 dark:text-moss-400'
       : 'text-red-600 dark:text-red-400';
   return (
-    <Card>
+    <Card className="relative overflow-hidden">
       <CardBody>
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs font-medium text-stone-500 dark:text-gray-400 tracking-wide uppercase">{label}</p>
@@ -1137,6 +1217,8 @@ export function StatCard({ label, value, delta, icon: Icon }) {
           <p className={`text-xs mt-1 ${deltaColor}`}>{delta >= 0 ? '+' : ''}{delta}%</p>
         )}
       </CardBody>
+      {/* Gradient underline accent — moss (nature) → ember (innovation) */}
+      <span className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-moss-500 to-ember-500" />
     </Card>
   );
 }
@@ -1492,11 +1574,11 @@ export default function Todo() {
 
 // --- Module-specific row (lives in components/todo/TodoRow.jsx) ---
 // Demonstrates the Badge status mapping from §5.8.
-const STATUS_VARIANT = { done: 'emerald', pending: 'gray', in_progress: 'blue', overdue: 'red' };
+const STATUS_VARIANT = { done: 'moss', pending: 'gray', in_progress: 'blue', overdue: 'red' };
 
 function TodoRow({ todo }) {
   return (
-    <div className="flex items-center gap-4 px-6 py-4 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors duration-100">
+    <div className="flex items-center gap-4 px-6 py-4 hover:bg-moss-50/30 dark:hover:bg-moss-950/20 transition-colors duration-100">
       <div className="flex-1 min-w-0">
         <p className="text-sm text-stone-900 dark:text-gray-50 truncate">{todo.title}</p>
         {todo.due_date && (
@@ -1735,7 +1817,7 @@ const NAV_ITEMS = [
 const navLinkClass = ({ isActive }) =>
   `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-150 ${
     isActive
-      ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400'
+      ? 'bg-moss-50 dark:bg-moss-950/50 text-moss-700 dark:text-moss-400'
       : 'text-stone-600 dark:text-gray-400 hover:bg-stone-100 dark:hover:bg-gray-700 hover:text-stone-900 dark:hover:text-gray-100'
   }`;
 
@@ -1877,7 +1959,7 @@ This section is directed at any AI generating code for this project.
 
 3. **ALWAYS handle all four data states**: Loading (skeleton), Error (with retry), Empty (with CTA), and Data. A component that only renders the happy path is incomplete.
 
-4. **ALWAYS use the exact color tokens defined in §2.** Emerald for accent, Stone for neutrals in light mode, Gray for neutrals in dark mode. Do not use Slate, Zinc, or any other neutral scale.
+4. **ALWAYS use the exact color tokens defined in §2.** The three "Stoic Garden" accents — **moss** (success/nature + all former emerald roles), **terracotta** (hardware/craft secondary), **ember** (primary CTA) — plus Stone for neutrals in light mode and Gray for neutrals in dark mode. Do not use Slate, Zinc, or any other neutral scale, and do not reintroduce Emerald.
 
 5. **ALWAYS use `Inter` for UI text.** The only exception is the Monospace role (§3.1) — `font-mono` for code, IDs, and technical strings. No other font families.
 
@@ -1913,7 +1995,7 @@ This section is directed at any AI generating code for this project.
 
 4. **NEVER skip the `dark:` variant** on any color-bearing class. Incomplete dark mode is a broken component.
 
-5. **NEVER use colors outside the defined palette.** Do not introduce Indigo, Purple, Teal, Cyan, or any color not defined in §2. The only accent color in this system is Emerald.
+5. **NEVER use colors outside the defined palette.** Do not introduce Indigo, Purple, Teal, Cyan, Emerald, or any color not defined in §2. The accent colors in this system are exactly **moss**, **terracotta**, and **ember** (plus the semantic red/amber/blue) — nothing else.
 
 6. **NEVER use `Stone` for dark mode neutral classes.** In dark mode, use the `Gray` scale (`gray-700`, `gray-800`, `gray-900`).
 
@@ -1925,7 +2007,7 @@ This section is directed at any AI generating code for this project.
 
 10. **NEVER use `Array.index` as a `key` prop.** Always use a stable entity ID.
 
-11. **NEVER add decorative UI elements** (gradients, illustrations, background patterns, hero images) to functional pages. This is a productivity tool, not a marketing site.
+11. **NEVER add decorative UI elements** (illustrations, background patterns, hero images, large gradient fills) to functional pages. This is a productivity tool, not a marketing site. **The only sanctioned accents** under the "Stoic Garden" identity are the two defined in §2/§5: the `from-moss-500 to-ember-500` **StatCard gradient underline** (a 2px edge, not a fill) and the **ember logo dot**. Do not introduce any other gradient or ornament; if a new one seems warranted, it must be added to the spec first.
 
 12. **NEVER create new font sizes outside the type scale defined in §3.** If a size is needed, use the nearest defined token. Avoid arbitrary `text-[15px]` unless it is explicitly listed in the scale.
 
@@ -1937,4 +2019,4 @@ This section is directed at any AI generating code for this project.
 
 ---
 
-*End of SKILL.MD v2.1 (hardened) — Rafli's Productivity Suite*
+*End of SKILL.MD v3.0 ("Stoic Garden" re-theme) — Rafli's Productivity Suite*

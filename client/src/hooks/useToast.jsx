@@ -10,17 +10,19 @@ import { X } from 'lucide-react';
 const ToastContext = createContext(null);
 let toastIdCounter = 0;
 
+// "Stoic Garden": success → moss (growth), info → ember (innovation);
+// error/warning keep red/amber.
 const TYPE_DOT = {
-  success: 'bg-emerald-500',
+  success: 'bg-moss-500',
   error: 'bg-red-500',
   warning: 'bg-amber-500',
-  info: 'bg-blue-500',
+  info: 'bg-ember-500',
 };
 const TYPE_BORDER = {
-  success: 'border-emerald-200 dark:border-emerald-800',
+  success: 'border-moss-200 dark:border-moss-800',
   error: 'border-red-200 dark:border-red-800',
   warning: 'border-amber-200 dark:border-amber-800',
-  info: 'border-blue-200 dark:border-blue-800',
+  info: 'border-ember-200 dark:border-ember-800',
 };
 
 /**

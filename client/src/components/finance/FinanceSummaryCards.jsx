@@ -1,7 +1,7 @@
 // client/src/components/finance/FinanceSummaryCards.jsx
 // Four stat cards for the Finance page: Income, Expense and Net for the selected
 // month, plus all-time Net Worth. Income/Expense reuse StatCard; Net and Net Worth
-// are inline so their value colour can flip emerald/red on sign. All money is IDR.
+// are inline so their value colour can flip moss/red on sign. All money is IDR.
 
 import { TrendingUp, TrendingDown, Scale, Landmark } from 'lucide-react';
 import { StatCard } from '../ui/StatCard';
@@ -11,7 +11,7 @@ import { formatIdr } from '../../lib/formatIdr';
 
 function SignedValueCard({ label, value, icon: Icon }) {
   const n = parseFloat(value ?? 0);
-  const color = n >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400';
+  const color = n >= 0 ? 'text-moss-600 dark:text-moss-400' : 'text-red-600 dark:text-red-400';
   return (
     <Card>
       <CardBody>

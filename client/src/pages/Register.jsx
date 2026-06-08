@@ -153,7 +153,7 @@ export default function Register() {
           Already have an account?{' '}
           <Link
             to="/login"
-            className="text-emerald-600 dark:text-emerald-400 font-medium hover:underline"
+            className="text-moss-600 dark:text-moss-400 font-medium hover:underline"
           >
             Sign in
           </Link>

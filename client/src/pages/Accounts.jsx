@@ -122,8 +122,8 @@ export default function Accounts() {
               <Card key={acc.id}>
                 <CardBody>
                   <div className="flex items-start justify-between mb-4">
-                    <div className="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center">
-                      <Icon className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                    <div className="w-9 h-9 rounded-lg bg-moss-50 dark:bg-moss-950/50 flex items-center justify-center">
+                      <Icon className="w-5 h-5 text-moss-600 dark:text-moss-400" />
                     </div>
                     <Button variant="ghost" size="sm" onClick={() => setEditing(acc)} aria-label="Edit account">
                       <Pencil size={14} />

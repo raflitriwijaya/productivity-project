@@ -9,7 +9,7 @@ import { Button } from '../ui/Button';
 // ─── Badge mapping (§5.8 canonical) ─────────────────────────────────────────
 
 const STATUS_VARIANT = {
-  completed:   'emerald',
+  completed:   'moss',
   in_progress: 'blue',
   not_started: 'gray',
   on_hold:     'amber',
@@ -24,7 +24,7 @@ const STATUS_LABEL = {
 
 const TYPE_VARIANT = {
   course:  'blue',
-  book:    'emerald',
+  book:    'moss',
   video:   'amber',
   article: 'gray',
   other:   'gray',
@@ -50,7 +50,7 @@ export function TitleCell({ item }) {
             href={item.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-stone-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors duration-150 flex-shrink-0"
+            className="text-stone-400 dark:text-gray-500 hover:text-moss-600 dark:hover:text-moss-400 transition-colors duration-150 flex-shrink-0"
             aria-label="Open resource"
           >
             <ExternalLink size={13} />
@@ -75,7 +75,7 @@ export function ProgressCell({ item }) {
     <div className="flex items-center gap-2 min-w-[100px]">
       <div className="flex-1 bg-stone-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
         <div
-          className="bg-emerald-500 dark:bg-emerald-400 rounded-full h-1.5 transition-all duration-300"
+          className="bg-moss-500 dark:bg-moss-400 rounded-full h-1.5 transition-all duration-300"
           style={{ width: `${pct}%` }}
         />
       </div>

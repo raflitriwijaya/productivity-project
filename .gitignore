@@ -12,6 +12,9 @@ server/.env
 dist/
 build/
 
+# Uploaded research attachments (user files — not source)
+server/uploads/
+
 # Logs
 *.log
 npm-debug.log*

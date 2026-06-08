@@ -20,7 +20,7 @@ function presentation(tx) {
   const amt = parseFloat(tx.amount) || 0;
   switch (tx.type) {
     case 'Income':
-      return { Icon: ArrowDownLeft, tint: 'bg-emerald-50 dark:bg-emerald-950/50', color: 'text-emerald-600 dark:text-emerald-400', sign: '+', value: amt };
+      return { Icon: ArrowDownLeft, tint: 'bg-moss-50 dark:bg-moss-950/50', color: 'text-moss-600 dark:text-moss-400', sign: '+', value: amt };
     case 'Expense':
       return { Icon: ArrowUpRight, tint: 'bg-red-50 dark:bg-red-950/50', color: 'text-red-600 dark:text-red-400', sign: '-', value: amt };
     case 'Transfer':
@@ -28,7 +28,7 @@ function presentation(tx) {
     default: // adjustments — sign follows the stored amount
       return amt < 0
         ? { Icon: ArrowUpRight, tint: 'bg-red-50 dark:bg-red-950/50', color: 'text-red-600 dark:text-red-400', sign: '-', value: Math.abs(amt) }
-        : { Icon: ArrowDownLeft, tint: 'bg-emerald-50 dark:bg-emerald-950/50', color: 'text-emerald-600 dark:text-emerald-400', sign: '+', value: amt };
+        : { Icon: ArrowDownLeft, tint: 'bg-moss-50 dark:bg-moss-950/50', color: 'text-moss-600 dark:text-moss-400', sign: '+', value: amt };
   }
 }
 
@@ -84,7 +84,7 @@ export function RecentTransactions() {
               return (
                 <li
                   key={tx.id}
-                  className="flex items-center gap-3 px-6 py-3 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors duration-100"
+                  className="flex items-center gap-3 px-6 py-3 hover:bg-moss-50/30 dark:hover:bg-moss-950/20 transition-colors duration-100"
                 >
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${tint}`}>
                     <Icon size={14} className={color} />

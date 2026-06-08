@@ -36,7 +36,7 @@ export function Modal({ isOpen, onClose, title, size = 'md', children, footer })
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className={`relative w-full ${sizeMap[size]} max-h-[90vh] bg-white dark:bg-gray-800 rounded-xl shadow-xl flex flex-col overflow-hidden`}
+        className={`relative w-full ${sizeMap[size]} max-h-[90vh] bg-white dark:bg-gray-800 rounded-2xl shadow-xl flex flex-col overflow-hidden`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200 dark:border-gray-700 flex-shrink-0">

@@ -1,5 +1,5 @@
 // client/src/components/finance/charts/TrendChart.jsx
-// Grouped bar chart: income (emerald) vs expense (red) over up to 12 months.
+// Grouped bar chart: income (moss) vs expense (red) over up to 12 months.
 // Built from raw SVG — no chart library (§1 Independence). Colours use Tailwind
 // fill-* classes; only geometry (x/y/width/height) is computed into attributes.
 
@@ -47,7 +47,7 @@ export function TrendChart({ data = [] }) {
             <g key={d.ym}>
               <rect
                 x={cx - barW - 1} y={baseY - incH} width={barW} height={incH} rx="2"
-                className="fill-emerald-500 dark:fill-emerald-400"
+                className="fill-moss-500 dark:fill-moss-400"
               >
                 <title>{`${d.label}: +${formatIdr(income)}`}</title>
               </rect>
@@ -68,7 +68,7 @@ export function TrendChart({ data = [] }) {
       {/* Legend */}
       <div className="flex items-center justify-center gap-6 mt-2">
         <span className="inline-flex items-center gap-1.5 text-xs text-stone-500 dark:text-gray-400">
-          <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 dark:bg-emerald-400" /> Income
+          <span className="w-2.5 h-2.5 rounded-sm bg-moss-500 dark:bg-moss-400" /> Income
         </span>
         <span className="inline-flex items-center gap-1.5 text-xs text-stone-500 dark:text-gray-400">
           <span className="w-2.5 h-2.5 rounded-sm bg-red-500 dark:bg-red-400" /> Expense

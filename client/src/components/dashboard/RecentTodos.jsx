@@ -11,8 +11,8 @@ import { EmptyState } from '../ui/EmptyState';
 
 /** @param {{ status: string }} props */
 const STATUS_VARIANT = {
-  done: 'emerald',
-  completed: 'emerald',
+  done: 'moss',
+  completed: 'moss',
   pending: 'gray',
   in_progress: 'blue',
   overdue: 'red',
@@ -74,7 +74,7 @@ export function RecentTodos() {
             {todos.map((todo) => (
               <li
                 key={todo.id}
-                className="flex items-center gap-3 px-6 py-3 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors duration-100"
+                className="flex items-center gap-3 px-6 py-3 hover:bg-moss-50/30 dark:hover:bg-moss-950/20 transition-colors duration-100"
               >
                 {/* Priority dot */}
                 <span

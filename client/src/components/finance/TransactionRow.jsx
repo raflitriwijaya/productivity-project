@@ -9,7 +9,7 @@ import { formatIdr } from '../../lib/formatIdr';
 
 // ─── Type → badge variant & short label (§5.8 canonical variants) ───────────────
 export const TYPE_VARIANT = {
-  'Income':             'emerald',
+  'Income':             'moss',
   'Expense':            'red',
   'Transfer':           'blue',
   'Balance Adjustment': 'gray',
@@ -28,13 +28,13 @@ export const TYPE_LABEL = {
 function amountTone(row) {
   const amt = parseFloat(row.amount) || 0;
   switch (row.type) {
-    case 'Income':   return { sign: '+', color: 'text-emerald-600 dark:text-emerald-400', value: amt };
+    case 'Income':   return { sign: '+', color: 'text-moss-600 dark:text-moss-400', value: amt };
     case 'Expense':  return { sign: '-', color: 'text-red-600 dark:text-red-400', value: amt };
     case 'Transfer': return { sign: '',  color: 'text-stone-600 dark:text-gray-300', value: amt };
     default: // Balance / Market Adjustment — sign follows the stored amount
       return amt < 0
         ? { sign: '-', color: 'text-red-600 dark:text-red-400', value: Math.abs(amt) }
-        : { sign: '+', color: 'text-emerald-600 dark:text-emerald-400', value: amt };
+        : { sign: '+', color: 'text-moss-600 dark:text-moss-400', value: amt };
   }
 }
 
@@ -73,7 +73,7 @@ export function AccountFlowCell({ row }) {
 /** @param {{ row: object }} props */
 export function ReconciledCell({ row }) {
   return row.reconciled
-    ? <CheckCircle2 size={16} className="text-emerald-500 dark:text-emerald-400" aria-label="Reconciled" />
+    ? <CheckCircle2 size={16} className="text-moss-500 dark:text-moss-400" aria-label="Reconciled" />
     : <span className="text-stone-300 dark:text-gray-600" aria-label="Not reconciled">—</span>;
 }
 

@@ -129,7 +129,7 @@ export default function Portfolio() {
     ) },
     { key: 'gain', header: 'Gain/Loss', align: 'right', sortable: true, render: (row) => {
       const g = parseFloat(row.gain) || 0;
-      const color = g >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400';
+      const color = g >= 0 ? 'text-moss-600 dark:text-moss-400' : 'text-red-600 dark:text-red-400';
       return <span className={`text-sm font-medium tabular-nums ${color}`}>{g >= 0 ? '+' : '-'}{formatIdr(Math.abs(g))}</span>;
     } },
     { key: 'actions', header: '', align: 'right', render: (row) => (
@@ -162,7 +162,7 @@ export default function Portfolio() {
         <Card>
           <CardBody>
             <p className="text-xs font-medium text-stone-500 dark:text-gray-400 tracking-wide uppercase mb-3">Unrealized Gain</p>
-            <p className={`text-2xl font-bold tracking-[-0.02em] ${totals.gain >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+            <p className={`text-2xl font-bold tracking-[-0.02em] ${totals.gain >= 0 ? 'text-moss-600 dark:text-moss-400' : 'text-red-600 dark:text-red-400'}`}>
               {totals.gain >= 0 ? '+' : '-'}{formatIdr(Math.abs(totals.gain))}
             </p>
           </CardBody>

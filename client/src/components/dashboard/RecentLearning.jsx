@@ -14,7 +14,7 @@ import { EmptyState } from '../ui/EmptyState';
 const STATUS_VARIANT = {
   not_started: 'gray',
   in_progress: 'blue',
-  completed: 'emerald',
+  completed: 'moss',
   on_hold: 'amber',
 };
 const STATUS_LABEL = {
@@ -25,7 +25,7 @@ const STATUS_LABEL = {
 };
 const TYPE_VARIANT = {
   course: 'blue',
-  book: 'emerald',
+  book: 'moss',
   tutorial: 'amber',
   other: 'gray',
 };
@@ -41,7 +41,7 @@ function MiniProgress({ value }) {
     <div className="flex items-center gap-2">
       <div className="w-16 h-1.5 rounded-full bg-stone-200 dark:bg-gray-700 overflow-hidden">
         <div
-          className="h-full rounded-full bg-emerald-500 dark:bg-emerald-400 transition-all duration-300"
+          className="h-full rounded-full bg-moss-500 dark:bg-moss-400 transition-all duration-300"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -104,7 +104,7 @@ export function RecentLearning() {
             {items.map((item) => (
               <li
                 key={item.id}
-                className="flex items-center gap-3 px-6 py-3 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors duration-100"
+                className="flex items-center gap-3 px-6 py-3 hover:bg-moss-50/30 dark:hover:bg-moss-950/20 transition-colors duration-100"
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-stone-900 dark:text-gray-50 truncate">

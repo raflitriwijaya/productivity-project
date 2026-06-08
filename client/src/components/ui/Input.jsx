@@ -24,7 +24,7 @@ export function Input({ label, id, error, helperText, disabled = false, classNam
   `;
   const stateClasses = error
     ? 'border border-red-300 dark:border-red-600 focus:ring-red-500 dark:focus:ring-red-400'
-    : 'border border-stone-200 dark:border-gray-600 focus:ring-emerald-500 dark:focus:ring-emerald-400';
+    : 'border border-stone-200 dark:border-gray-600 focus:ring-moss-500 dark:focus:ring-moss-400';
 
   return (
     <div className="w-full">
@@ -68,7 +68,7 @@ export function Textarea({ label, id, error, helperText, disabled = false, rows 
   `;
   const stateClasses = error
     ? 'border border-red-300 dark:border-red-600 focus:ring-red-500 dark:focus:ring-red-400'
-    : 'border border-stone-200 dark:border-gray-600 focus:ring-emerald-500 dark:focus:ring-emerald-400';
+    : 'border border-stone-200 dark:border-gray-600 focus:ring-moss-500 dark:focus:ring-moss-400';
 
   return (
     <div className="w-full">
@@ -104,7 +104,7 @@ export function Textarea({ label, id, error, helperText, disabled = false, rows 
 export function Select({ label, id, error, helperText, disabled = false, children, className = '', ...props }) {
   const stateClasses = error
     ? 'border border-red-300 dark:border-red-600 focus:ring-red-500 dark:focus:ring-red-400'
-    : 'border border-stone-200 dark:border-gray-600 focus:ring-emerald-500 dark:focus:ring-emerald-400';
+    : 'border border-stone-200 dark:border-gray-600 focus:ring-moss-500 dark:focus:ring-moss-400';
   return (
     <div className="w-full">
       {label && (

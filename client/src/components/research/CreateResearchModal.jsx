@@ -6,7 +6,10 @@
 import { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { Input, Textarea, Select } from '../ui/Input';
+import { Input, Select } from '../ui/Input';
+import { TopicSelector } from './TopicSelector';
+import { TagInput } from './TagInput';
+import { MarkdownEditor } from '../engineer/MarkdownEditor';
 
 const EMPTY_FORM = {
   title:   '',
@@ -15,6 +18,7 @@ const EMPTY_FORM = {
   content: '',
   source:  '',
   tags:    '',
+  topic_ids: [],
 };
 
 /**
@@ -44,6 +48,8 @@ export function CreateResearchModal({ isOpen, onClose, onSubmit, entry = null })
           content: entry.content ?? '',
           source:  entry.source  ?? '',
           tags:    entry.tags    ?? '',
+          // entry.topics is `[{ id, name, color }]` from the list/get endpoints.
+          topic_ids: Array.isArray(entry.topics) ? entry.topics.map(t => t.id) : [],
         });
       } else {
         setForm(EMPTY_FORM);
@@ -76,6 +82,7 @@ export function CreateResearchModal({ isOpen, onClose, onSubmit, entry = null })
         content: form.content.trim() || undefined,
         source:  form.source.trim()  || undefined,
         tags:    form.tags.trim()    || undefined,
+        topic_ids: form.topic_ids,
       };
       await onSubmit(payload);
       onClose();
@@ -154,23 +161,26 @@ export function CreateResearchModal({ isOpen, onClose, onSubmit, entry = null })
         helperText="Paste a DOI/URL or write a citation string."
       />
 
-      <Input
-        id="research-tags"
-        label="Tags"
-        placeholder="e.g. agritech, sensors, IoT"
+      <TagInput
         value={form.tags}
-        onChange={set('tags')}
-        helperText="Comma-separated tags for filtering."
+        onChange={(tags) => setForm(f => ({ ...f, tags }))}
       />
 
-      <Textarea
-        id="research-content"
-        label="Content / Notes"
-        placeholder="Write your notes, abstract, or key findings here…"
-        value={form.content}
-        onChange={set('content')}
-        rows={5}
+      <TopicSelector
+        selectedIds={form.topic_ids}
+        onChange={(ids) => setForm(f => ({ ...f, topic_ids: ids }))}
       />
+
+      <div>
+        <label className="block text-xs font-medium text-stone-700 dark:text-gray-300 tracking-wide uppercase mb-1.5">
+          Content / Notes
+        </label>
+        <MarkdownEditor
+          value={form.content}
+          onChange={(md) => setForm(f => ({ ...f, content: md }))}
+          height={300}
+        />
+      </div>
     </Modal>
   );
 }

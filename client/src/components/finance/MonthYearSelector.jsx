@@ -14,13 +14,13 @@ const selectClass = `
   bg-white dark:bg-gray-700
   text-stone-900 dark:text-gray-50
   border border-stone-200 dark:border-gray-600
-  focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-transparent
+  focus:outline-none focus:ring-2 focus:ring-moss-500 dark:focus:ring-moss-400 focus:border-transparent
   transition-colors duration-150`;
 
 const arrowClass = `
   p-1.5 rounded-lg text-stone-500 dark:text-gray-400
   hover:bg-stone-100 dark:hover:bg-gray-700 hover:text-stone-700 dark:hover:text-gray-200
-  focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400
+  focus:outline-none focus:ring-2 focus:ring-moss-500 dark:focus:ring-moss-400
   transition-colors duration-150`;
 
 /**

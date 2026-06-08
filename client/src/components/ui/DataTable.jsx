@@ -54,7 +54,7 @@ export function DataTable({ columns, items, initialSortKey = null }) {
                   className={`px-6 py-3 text-xs font-medium tracking-wide uppercase whitespace-nowrap
                     ${col.align === 'right' ? 'text-right' : 'text-left'}
                     ${col.sortable ? 'cursor-pointer select-none hover:text-stone-700 dark:hover:text-gray-200' : ''}
-                    ${isSorted ? 'text-emerald-600 dark:text-emerald-400' : 'text-stone-500 dark:text-gray-400'}`}
+                    ${isSorted ? 'text-moss-600 dark:text-moss-400' : 'text-stone-500 dark:text-gray-400'}`}
                 >
                   <span className="inline-flex items-center gap-1">
                     {col.header}
@@ -72,7 +72,7 @@ export function DataTable({ columns, items, initialSortKey = null }) {
             <tr
               key={row.id}
               className={`${i % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-stone-50 dark:bg-gray-700/50'}
-                hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors duration-100`}
+                hover:bg-moss-50/30 dark:hover:bg-moss-950/20 transition-colors duration-100`}
             >
               {columns.map(col => (
                 <td

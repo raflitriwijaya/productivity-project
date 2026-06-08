@@ -92,7 +92,7 @@ export default function FinanceDashboard() {
                         <span className="text-sm text-stone-700 dark:text-gray-200">{acc.name}</span>
                         <span className={`text-sm font-medium tabular-nums ${color}`}>{formatIdr(bal)}</span>
                       </div>
-                      <ProgressBar value={Math.max(0, bal)} max={maxBalance} tone="bg-emerald-500 dark:bg-emerald-400" />
+                      <ProgressBar value={Math.max(0, bal)} max={maxBalance} tone="bg-moss-500 dark:bg-moss-400" />
                     </div>
                   );
                 })}

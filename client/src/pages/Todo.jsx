@@ -161,7 +161,7 @@ export default function Todo() {
                     className={`
                       px-2.5 py-1 rounded-md text-xs font-medium transition-colors duration-150
                       ${statusFilter === f.value
-                        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400'
+                        ? 'bg-moss-50 text-moss-700 dark:bg-moss-950/50 dark:text-moss-400'
                         : 'text-stone-500 dark:text-gray-400 hover:bg-stone-100 dark:hover:bg-gray-700 hover:text-stone-900 dark:hover:text-gray-100'
                       }
                     `}

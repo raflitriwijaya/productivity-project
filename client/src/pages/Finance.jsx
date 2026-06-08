@@ -147,7 +147,7 @@ export default function Finance() {
                   onClick={() => setTypeFilter(opt.value)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-150 ${
                     typeFilter === opt.value
-                      ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400'
+                      ? 'bg-moss-50 dark:bg-moss-950/50 text-moss-700 dark:text-moss-400'
                       : 'text-stone-500 dark:text-gray-400 hover:bg-stone-100 dark:hover:bg-gray-700 hover:text-stone-700 dark:hover:text-gray-200'
                   }`}
                 >

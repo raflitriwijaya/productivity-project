@@ -1,6 +1,6 @@
 // client/src/components/finance/LedgerPage.jsx
 // Shared page body for Receivables and Payables — identical CRUD + settle flow,
-// parameterized by `kind`. Money colour leans emerald for receivables (incoming)
+// parameterized by `kind`. Money colour leans moss for receivables (incoming)
 // and red for payables (outgoing).
 
 import { useState, useMemo } from 'react';
@@ -41,7 +41,7 @@ const isOverdue = (row) => row.status === 'outstanding' && row.due_date && new D
  */
 export function LedgerPage({ kind, endpoint, title, description }) {
   const isReceivable = kind === 'receivable';
-  const moneyColor = isReceivable ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400';
+  const moneyColor = isReceivable ? 'text-moss-600 dark:text-moss-400' : 'text-red-600 dark:text-red-400';
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -115,7 +115,7 @@ export function LedgerPage({ kind, endpoint, title, description }) {
       </span>
     ) },
     { key: 'status', header: 'Status', render: (row) => (
-      <Badge variant={row.status === 'settled' ? 'emerald' : 'amber'}>{row.status}</Badge>
+      <Badge variant={row.status === 'settled' ? 'moss' : 'amber'}>{row.status}</Badge>
     ) },
     { key: 'account_name', header: 'Account', render: (row) => (
       <span className="text-sm text-stone-500 dark:text-gray-400">{row.account_name || '—'}</span>

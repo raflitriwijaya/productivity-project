@@ -9,6 +9,7 @@
 //   NODE_ENV       — 'development' | 'production'
 
 import 'dotenv/config';
+import fs from 'node:fs';
 import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
@@ -24,7 +25,8 @@ import { authRouter }     from './routes/auth.js';
 import { todosRouter }    from './routes/todos.js';
 import { financesRouter } from './routes/finances.js';
 import { learningRouter } from './routes/learning.js';
-import { researchRouter } from './routes/research.js';
+import { researchRouter, uploadsDir } from './routes/research.js';
+import { engineerRouter } from './routes/engineer.js';
 
 // ─── Env validation ───────────────────────────────────────────────────────────
 const {
@@ -89,6 +91,15 @@ if (isProd) {
   app.set('trust proxy', 1);
 }
 
+// ─── Uploads ──────────────────────────────────────────────────────────────────
+// Research attachments are written to server/uploads/ by multer (configured in
+// routes/research.js, which exports the resolved `uploadsDir`). Ensure the
+// directory exists at startup, then serve it statically. Files are served by
+// their random (obscure) filenames, so this is left public for simple <img>/
+// <a href> access; no auth gate is applied here.
+fs.mkdirSync(uploadsDir, { recursive: true });
+app.use('/uploads', express.static(uploadsDir));
+
 // ─── Health check (no auth) ───────────────────────────────────────────────────
 app.get('/health', (_req, res) => res.json({ status: 'ok', ts: new Date().toISOString() }));
 
@@ -102,6 +113,7 @@ app.use('/api/todos',    requireAuth, todosRouter);
 app.use('/api/finances', requireAuth, financesRouter);
 app.use('/api/learning', requireAuth, learningRouter);
 app.use('/api/research', requireAuth, researchRouter);
+app.use('/api/engineer', requireAuth, engineerRouter);
 
 // ─── 404 for unmatched API routes ────────────────────────────────────────────
 app.use('/api', (_req, res) => {
