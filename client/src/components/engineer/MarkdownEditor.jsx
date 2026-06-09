@@ -10,6 +10,7 @@
 
 import MDEditor from '@uiw/react-md-editor';
 import '@uiw/react-md-editor/markdown-editor.css';
+import rehypeSanitize from 'rehype-sanitize'; // Phase 1: strip unsafe HTML/JS from rendered markdown
 import { useTheme } from '../../hooks/useTheme';
 
 /**
@@ -26,6 +27,7 @@ export function MarkdownEditor({ value, onChange, height = 420 }) {
         height={height}
         preview="live"
         visibleDragbar={false}
+        previewOptions={{ rehypePlugins: [[rehypeSanitize]] }}
       />
     </div>
   );
@@ -39,7 +41,11 @@ export function MarkdownPreview({ source }) {
   const { isDark } = useTheme();
   return (
     <div data-color-mode={isDark ? 'dark' : 'light'}>
-      <MDEditor.Markdown source={source || '_No content yet._'} className="bg-transparent" />
+      <MDEditor.Markdown
+        source={source || '_No content yet._'}
+        className="bg-transparent"
+        rehypePlugins={[[rehypeSanitize]]}
+      />
     </div>
   );
 }

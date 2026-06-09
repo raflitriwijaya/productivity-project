@@ -1,7 +1,7 @@
 // client/src/components/research/AttachmentList.jsx
-// Lists an entry's attachments with a download link + delete action.
-// Files are served statically by the API at /uploads/<filename> (the random
-// stored name, not original_name). Four-state (loading/error/empty/data).
+// Lists an entry's attachments with a download action + delete action.
+// Phase 1: downloads go through the authenticated API route instead of a public
+// static URL, so ownership is enforced server-side.
 
 import { Download, Trash2, Paperclip } from 'lucide-react';
 
@@ -10,9 +10,6 @@ import { useApi } from '../../hooks/useApi';
 import { Button } from '../ui/Button';
 import { ListSkeleton } from '../ui/Skeleton';
 import { useToast } from '../../hooks/useToast';
-
-// Base URL for static file links — mirrors lib/api.js's baseURL resolution.
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 /** Human-readable byte size. */
 function formatSize(bytes) {
@@ -44,6 +41,22 @@ export function AttachmentList({ entryId, refreshKey = 0, onChanged }) {
     }
   };
 
+  // Phase 1: downloads go through the authenticated API route (session cookie sent
+  // by axios), then streamed into a temporary object URL for the browser to save.
+  const handleDownload = async (att) => {
+    try {
+      const res = await api.get(`/api/research/attachments/${att.id}/download`, { responseType: 'blob' });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = att.original_name;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      addToast({ type: 'error', title: 'Download failed', message: err.message });
+    }
+  };
+
   if (loading) return <ListSkeleton rows={2} />;
 
   if (error) {
@@ -70,16 +83,14 @@ export function AttachmentList({ entryId, refreshKey = 0, onChanged }) {
             <p className="text-sm text-stone-900 dark:text-gray-50 truncate">{att.original_name}</p>
             <p className="text-[11px] text-stone-400 dark:text-gray-500">{formatSize(att.size)}</p>
           </div>
-          <a
-            href={`${API_BASE}/uploads/${att.filename}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            download={att.original_name}
+          <button
+            type="button"
+            onClick={() => handleDownload(att)}
             className="p-1.5 rounded-md text-stone-400 hover:text-moss-600 dark:text-gray-500 dark:hover:text-moss-400 hover:bg-stone-200/60 dark:hover:bg-gray-600"
             aria-label={`Download ${att.original_name}`}
           >
             <Download size={15} />
-          </a>
+          </button>
           <button
             type="button"
             onClick={() => handleDelete(att)}
