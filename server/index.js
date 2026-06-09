@@ -9,6 +9,7 @@
 //   NODE_ENV       — 'development' | 'production'
 
 import 'dotenv/config';
+import * as Sentry from '@sentry/node'; // Phase 5: error reporting — no-op when SENTRY_DSN is unset
 import fs from 'node:fs';
 import express from 'express';
 import cors from 'cors';
@@ -44,6 +45,12 @@ const {
 if (!DATABASE_URL)   throw new Error('Missing env var: DATABASE_URL');
 if (!CLIENT_ORIGIN)  throw new Error('Missing env var: CLIENT_ORIGIN');
 if (!SESSION_SECRET) throw new Error('Missing env var: SESSION_SECRET');
+
+// ─── Sentry init (Phase 5) ────────────────────────────────────────────────────
+// Phase 5: report to Sentry only when DSN configured; dev/CI run unaffected
+if (process.env.SENTRY_DSN) {
+  Sentry.init({ dsn: process.env.SENTRY_DSN, environment: NODE_ENV });
+}
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 const app = express();

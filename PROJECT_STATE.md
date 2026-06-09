@@ -1,5 +1,7 @@
 # Project State
 
+> **Living status doc.** Durable architecture — routes, DB schema, data flow, design decisions — lives in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Operational procedures (backup, restore, secret rotation, migrations) live in [docs/RUNBOOK.md](docs/RUNBOOK.md).
+
 ## Stack
 - Frontend: React + Vite (port 5173)
 - Backend: Node.js + Express (port 3000)

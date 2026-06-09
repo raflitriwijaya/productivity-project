@@ -22,6 +22,7 @@ A personal web-based productivity suite that combines task management, finance t
 - prism-react-renderer (code snippet highlighting)
 - @uiw/react-md-editor (Markdown docs editor)
 - rehype-sanitize (markdown XSS sanitization)
+- @sentry/react (error reporting — optional, gated on `VITE_SENTRY_DSN`)
 
 **Backend**
 - Node.js + Express 5
@@ -30,6 +31,7 @@ A personal web-based productivity suite that combines task management, finance t
 - Zod (input validation)
 - Helmet (security headers) + express-rate-limit (brute-force protection)
 - Pino (structured logging)
+- @sentry/node (error reporting — optional, gated on `SENTRY_DSN`)
 
 ## Project Structure
 
@@ -48,9 +50,17 @@ productivity-project/
 │   ├── middleware/         # Auth, validation, error handler
 │   ├── models/             # Database queries
 │   ├── routes/             # API routes
+│   ├── scripts/            # Developer scripts (OpenAPI generation)
 │   ├── Dockerfile
 │   └── package.json
+├── docs/                   # Project documentation
+│   ├── openapi.json        # Generated OpenAPI 3.1 spec (npm run openapi)
+│   ├── ARCHITECTURE.md     # Routes, DB schema, data flow, design decisions
+│   └── RUNBOOK.md          # Backup/restore, secret rotation, incident runbooks
 ├── deploy/                 # Deployment configs (Nginx, Cloudflare Tunnel)
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+├── SECURITY.md
 ├── docker-compose.yml
 └── ecosystem.config.cjs    # PM2 config
 ```
@@ -81,12 +91,13 @@ cp .env.example .env
 
 Edit `.env` and fill in the values:
 
-| Variable | Description |
-|---|---|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `SESSION_SECRET` | Random string, minimum 32 characters |
-| `CLIENT_ORIGIN` | Frontend URL (default: `http://localhost:5173`) |
-| `PORT` | Server port (default: `3000`) |
+| Variable | Required | Description |
+|---|---|---|
+| `DATABASE_URL` | yes | PostgreSQL connection string |
+| `SESSION_SECRET` | yes | Random string, minimum 32 characters |
+| `CLIENT_ORIGIN` | yes | Frontend URL (default: `http://localhost:5173`) |
+| `PORT` | no | Server port (default: `3000`) |
+| `SENTRY_DSN` | no | Sentry DSN for server-side error reporting — omit to disable |
 
 Run database migrations:
 
@@ -102,9 +113,10 @@ npm install
 cp .env.example .env
 ```
 
-| Variable | Description |
-|---|---|
-| `VITE_API_URL` | Backend URL (default: `http://localhost:3000`) |
+| Variable | Required | Description |
+|---|---|---|
+| `VITE_API_URL` | no | Backend URL (default: `http://localhost:3000`) |
+| `VITE_SENTRY_DSN` | no | Sentry DSN for client-side error reporting — omit to disable |
 
 ### 4. Run the app
 
@@ -151,10 +163,12 @@ nano .env
 
 Fill in `.env`:
 
-| Variable | Description |
-|---|---|
-| `DB_PASSWORD` | PostgreSQL password |
-| `SESSION_SECRET` | Random string, minimum 32 characters |
+| Variable | Required | Description |
+|---|---|---|
+| `DB_PASSWORD` | yes | PostgreSQL password |
+| `SESSION_SECRET` | yes | Random string, minimum 32 characters |
+| `SENTRY_DSN` | no | Server-side Sentry DSN — omit to disable |
+| `VITE_SENTRY_DSN` | no | Client-side Sentry DSN — omit to disable |
 
 **3. Build and start all containers**
 
@@ -284,6 +298,19 @@ A GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push and pu
 | **Client** | `npm ci` → security audit → lint → `npm run build` → tests (if wired) |
 
 Any high-severity npm advisory or build failure blocks the run. To enforce it as a merge gate: **Settings → Branches → Branch protection rules → Require status checks → select "Server" and "Client"**.
+
+---
+
+## Documentation
+
+| File | Contents |
+|------|----------|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Stack, data flow, route map, full DB schema, middleware order, design decisions, `user_settings` plan |
+| [docs/RUNBOOK.md](docs/RUNBOOK.md) | DB backup/restore, migration rollback, secret rotation, object storage migration plan, incident runbooks |
+| [docs/openapi.json](docs/openapi.json) | OpenAPI 3.1 spec — regenerate with `cd server && npm run openapi` |
+| [CHANGELOG.md](CHANGELOG.md) | Version history (Keep a Changelog format) |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Setup, lint/test commands, branch/PR conventions |
+| [SECURITY.md](SECURITY.md) | Vulnerability reporting, supported versions, hardening inventory |
 
 ---
 

@@ -2,6 +2,7 @@
 // Global error handler — MUST be the LAST middleware registered (§6.6).
 // Converts any error (AppError or otherwise) into the standard error envelope
 // from §6.4. 500-level details are never leaked to the client.
+import * as Sentry from '@sentry/node'; // Phase 5: capture unhandled errors
 import { logger } from '../lib/logger.js'; // Phase 3: use pino instead of console.error
 
 // eslint-disable-next-line no-unused-vars
@@ -11,6 +12,14 @@ export function errorHandler(err, req, res, next) {
     return res.status(409).json({
       success: false,
       error: { code: 'CONFLICT', message: 'A record with this value already exists.' },
+    });
+  }
+
+  // Phase 5: report to Sentry (no-op when DSN not set); attach request ID as context
+  if (process.env.SENTRY_DSN) {
+    Sentry.withScope((scope) => {
+      scope.setTag('reqId', req.id);
+      Sentry.captureException(err);
     });
   }
 

@@ -3,10 +3,19 @@
 // useToast() without re-mounting the toast container on navigation. §9.4
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import * as Sentry from '@sentry/react'; // Phase 5: report render errors to Sentry
 import App from './App';
 import { ToastProvider } from './hooks/useToast';
 import { ErrorBoundary } from './components/ErrorBoundary'; // Phase 2: catch render errors
 import './index.css'; // Tailwind directives
+
+// Phase 5: initialize Sentry only when DSN is provided; no-op in dev without it
+if (import.meta.env.VITE_SENTRY_DSN) {
+  Sentry.init({
+    dsn: import.meta.env.VITE_SENTRY_DSN,
+    environment: import.meta.env.MODE,
+  });
+}
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
