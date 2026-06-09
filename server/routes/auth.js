@@ -4,7 +4,7 @@
 // Session is set/destroyed here; requireAuth (§6.6a) reads req.session.userId downstream.
 
 import { Router } from 'express';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs'; // Phase 3: switched from bcrypt to drop tar/node-pre-gyp high-severity vulns
 import { z } from 'zod';
 import { findByEmail, createUser, findById } from '../models/user.model.js';
 import { AppError } from '../lib/AppError.js';

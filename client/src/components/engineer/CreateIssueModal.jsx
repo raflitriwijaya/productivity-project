@@ -56,6 +56,8 @@ export function CreateIssueModal({ isOpen, onClose, onSubmit, issue = null, pref
 
   useEffect(() => {
     if (!isOpen) return;
+    /* Phase 4: setState calls here are intentional modal-open resets, not loops */
+    /* eslint-disable react-hooks/set-state-in-effect */
     setErrors({});
     if (isEdit) {
       setForm({
@@ -69,6 +71,7 @@ export function CreateIssueModal({ isOpen, onClose, onSubmit, issue = null, pref
     } else {
       setForm({ ...baseForm(), title: prefill?.title ?? '', description: prefill?.description ?? '' });
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [isOpen, issue, isEdit, prefill]);
 
   const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }));

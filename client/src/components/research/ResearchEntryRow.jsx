@@ -1,6 +1,7 @@
 // client/src/components/research/ResearchEntryRow.jsx
 // Exports DataTable render-helper functions and badge variant maps.
 // Follows the same pattern as LearningRow.jsx (see PROJECT_STATE.md).
+/* eslint-disable react-refresh/only-export-components */
 
 import { useState, useRef, useEffect } from 'react';
 import { Badge } from '../ui/Badge';

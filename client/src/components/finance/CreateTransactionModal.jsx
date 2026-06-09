@@ -61,6 +61,8 @@ export function CreateTransactionModal({ isOpen, onClose, onSubmit, transaction,
 
   useEffect(() => {
     if (!isOpen) return;
+    /* Phase 4: setState here is intentional modal-open sync — not a cascading loop */
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (isEditing) {
       setForm({
         type:              transaction.type,
@@ -77,6 +79,7 @@ export function CreateTransactionModal({ isOpen, onClose, onSubmit, transaction,
     }
     setErrors({});
     setSubmitError('');
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [isOpen, transaction, isEditing]);
 
   const { showSource, showDest, showCategory, categoryKind, allowNegative } = fieldsForType(form.type);

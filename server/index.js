@@ -16,6 +16,8 @@ import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
 import helmet from 'helmet'; // Phase 1: security headers
 import rateLimit from 'express-rate-limit'; // Phase 1: brute-force / abuse protection
+import pinoHttp from 'pino-http'; // Phase 3: per-request logging + auto request IDs
+import { logger } from './lib/logger.js'; // Phase 3: shared pino instance
 
 // ── Internal modules ──────────────────────────────────────────────────────────
 import { pool } from './lib/db.js';
@@ -46,6 +48,10 @@ if (!SESSION_SECRET) throw new Error('Missing env var: SESSION_SECRET');
 // ─── App ──────────────────────────────────────────────────────────────────────
 const app = express();
 const isProd = NODE_ENV === 'production';
+
+// ─── Structured request logging ──────────────────────────────────────────────
+// Phase 3: assigns a unique reqId to every request; echoed in error responses
+app.use(pinoHttp({ logger }));
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 // credentials: true is required so the browser sends the session cookie.
@@ -170,23 +176,22 @@ app.use(errorHandler);
 // ─── Start ────────────────────────────────────────────────────────────────────
 // Phase 2: capture server handle for graceful shutdown
 const server = app.listen(parseInt(PORT, 10), () => {
-  console.log(`[server] Running on port ${PORT} (${NODE_ENV})`);
+  logger.info({ port: PORT, env: NODE_ENV }, 'Server started'); // Phase 3: structured startup log
 });
 
 // Phase 2: drain in-flight requests then close the pg pool on SIGTERM/SIGINT
 function shutdown(signal) {
-  console.log(`[server] ${signal} received — shutting down gracefully`);
-  // Force-exit after 10 s if connections don't drain
+  logger.info({ signal }, 'Graceful shutdown initiated'); // Phase 3: structured shutdown log
   const forceExit = setTimeout(() => {
-    console.error('[server] Graceful shutdown timed out — forcing exit');
+    logger.error('Graceful shutdown timed out — forcing exit');
     process.exit(1);
   }, 10_000);
   forceExit.unref(); // don't keep the event loop alive just for the timer
 
   server.close(() => {
-    console.log('[server] HTTP server closed');
+    logger.info('HTTP server closed');
     pool.end(() => {
-      console.log('[server] pg pool drained — bye');
+      logger.info('pg pool drained — bye');
       process.exit(0);
     });
   });

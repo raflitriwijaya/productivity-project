@@ -68,9 +68,12 @@ export default function EngineerIssues() {
   // ── Open the create modal pre-filled when arriving from a check-in ───────────
   useEffect(() => {
     if (location.state?.prefill && projectId) {
+      /* Phase 4: setState here is intentional navigation-state-driven modal trigger */
+      /* eslint-disable react-hooks/set-state-in-effect */
       setPrefill(location.state.prefill);
       setEditingIssue(null);
       setIsCreateOpen(true);
+      /* eslint-enable react-hooks/set-state-in-effect */
       // Clear the navigation state so a refresh/back doesn't reopen the modal.
       navigate(location.pathname + location.search, { replace: true, state: {} });
     }

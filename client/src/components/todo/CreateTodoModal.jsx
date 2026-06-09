@@ -33,6 +33,8 @@ export function CreateTodoModal({ isOpen, onClose, onSubmit, todo = null }) {
   // Populate form when editing or reset when opening for create
   useEffect(() => {
     if (isOpen) {
+      /* Phase 4: setState here is intentional modal-open sync */
+      /* eslint-disable react-hooks/set-state-in-effect */
       if (isEdit) {
         setForm({
           title:       todo.title       ?? '',
@@ -45,6 +47,7 @@ export function CreateTodoModal({ isOpen, onClose, onSubmit, todo = null }) {
         setForm(emptyForm);
       }
       setErrors({});
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);

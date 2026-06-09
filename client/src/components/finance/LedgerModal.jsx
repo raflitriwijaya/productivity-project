@@ -32,6 +32,8 @@ export function LedgerModal({ isOpen, onClose, onSubmit, record, accounts = [], 
 
   useEffect(() => {
     if (!isOpen) return;
+    /* Phase 4: setState here is intentional modal-open sync */
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (isEditing) {
       setForm({
         person:      record.person ?? '',
@@ -45,6 +47,7 @@ export function LedgerModal({ isOpen, onClose, onSubmit, record, accounts = [], 
     }
     setErrors({});
     setSubmitError('');
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [isOpen, record, isEditing]);
 
   function set(field) {

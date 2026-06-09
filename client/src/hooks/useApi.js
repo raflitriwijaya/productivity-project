@@ -24,6 +24,9 @@ export function useApi(fetchFn, deps = []) {
     return () => { isMounted.current = false; };
   }, []);
 
+  // Phase 4: callers pass a literal array at the call site; spreading here is intentional.
+  // Suppress: use-memo (non-literal deps array) and exhaustive-deps (fetchFn intentionally excluded).
+  /* eslint-disable react-hooks/use-memo, react-hooks/exhaustive-deps */
   const execute = useCallback(async () => {
     setState(s => ({ ...s, loading: true, error: null }));
     try {
@@ -32,8 +35,8 @@ export function useApi(fetchFn, deps = []) {
     } catch (err) {
       if (isMounted.current) setState({ data: null, loading: false, error: err.message });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
+  /* eslint-enable react-hooks/use-memo, react-hooks/exhaustive-deps */
 
   useEffect(() => { execute(); }, [execute]);
 

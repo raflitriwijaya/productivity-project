@@ -39,6 +39,8 @@ export function CreateSnippetModal({ isOpen, onClose, onSubmit, snippet = null }
 
   useEffect(() => {
     if (!isOpen) return;
+    /* Phase 4: setState calls here are intentional modal-open resets, not loops */
+    /* eslint-disable react-hooks/set-state-in-effect */
     setErrors({});
     if (isEdit) {
       setForm({
@@ -51,6 +53,7 @@ export function CreateSnippetModal({ isOpen, onClose, onSubmit, snippet = null }
     } else {
       setForm(EMPTY_FORM);
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [isOpen, snippet, isEdit]);
 
   const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }));

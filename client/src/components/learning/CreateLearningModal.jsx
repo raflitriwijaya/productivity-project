@@ -40,6 +40,8 @@ export function CreateLearningModal({ isOpen, onClose, onSubmit, item = null }) 
   // Populate form when editing
   useEffect(() => {
     if (isOpen) {
+      /* Phase 4: setState here is intentional modal-open sync */
+      /* eslint-disable react-hooks/set-state-in-effect */
       if (isEdit && item) {
         setForm({
           title:        item.title        ?? '',
@@ -59,6 +61,7 @@ export function CreateLearningModal({ isOpen, onClose, onSubmit, item = null }) 
         setForm(EMPTY_FORM);
       }
       setErrors({});
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [isOpen, item, isEdit]);
 

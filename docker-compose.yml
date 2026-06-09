@@ -29,15 +29,52 @@ services:
       db:
         condition: service_healthy
     restart: unless-stopped
+    # Phase 3: healthcheck so a hung-but-alive API is detected and restarted
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   nginx:
     build: ./client
     ports:
       - "80:80"
+    # Phase 3: wait for api to pass healthcheck before nginx starts serving
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     restart: unless-stopped
+    # Phase 3: healthcheck on nginx to detect crashed worker processes
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:80/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  # Phase 3: pg_dump sidecar — dumps DB on a cron schedule to a dedicated backup volume
+  # Restore: docker run --rm -v postgres_backups:/backups -e PGPASSWORD=<DB_PASSWORD> postgres:16-alpine \
+  #   sh -c "gunzip -c /backups/<file>.sql.gz | psql postgresql://productivity:<DB_PASSWORD>@db:5432/productivity_db"
+  db_backup:
+    image: postgres:16-alpine
+    environment:
+      PGPASSWORD: ${DB_PASSWORD}
+      BACKUP_SCHEDULE: ${BACKUP_SCHEDULE:-0 2 * * *}
+    volumes:
+      - postgres_backups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    entrypoint: >
+      sh -c "
+        echo \"$$BACKUP_SCHEDULE cd /backups && pg_dump postgresql://productivity:$$PGPASSWORD@db:5432/productivity_db | gzip > /backups/backup_\$$(date +\\%Y\\%m\\%d_\\%H\\%M\\%S).sql.gz\" | crontab - &&
+        crond -f -l 8
+      "
 
 volumes:
   postgres_data:
-  uploads_data: # Phase 2: named volume so attachments survive rebuilds
+  uploads_data:      # Phase 2: named volume so attachments survive rebuilds
+  postgres_backups:  # Phase 3: dedicated backup volume — mount externally for off-host copies

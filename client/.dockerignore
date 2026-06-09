@@ -1,4 +1,18 @@
+# Phase 4: exclude build-irrelevant and secret-containing files from Docker build context
 node_modules
-.env
 dist
+.env*
 *.log
+# Test and coverage artifacts (not needed in the final image)
+coverage
+.nyc_output
+src/test
+vitest.config.js
+# Version control
+.git
+.gitignore
+# OS cruft
+.DS_Store
+Thumbs.db
+# Local overrides
+*.local

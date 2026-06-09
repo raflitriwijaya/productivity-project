@@ -29,9 +29,12 @@ export function SettleModal({ isOpen, onClose, onSettle, record, accounts = [], 
 
   useEffect(() => {
     if (!isOpen) return;
+    /* Phase 4: setState here is intentional modal-open reset */
+    /* eslint-disable react-hooks/set-state-in-effect */
     setAccountId(record?.account_id != null ? String(record.account_id) : '');
     setDate(todayIso());
     setError('');
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [isOpen, record]);
 
   async function handleSettle() {

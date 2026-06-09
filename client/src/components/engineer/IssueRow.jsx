@@ -1,6 +1,7 @@
 // client/src/components/engineer/IssueRow.jsx
 // DataTable render-helper functions and badge variant maps for engineer issues.
 // Follows the research/learning row helper pattern.
+/* eslint-disable react-refresh/only-export-components */
 
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';

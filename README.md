@@ -21,12 +21,15 @@ A personal web-based productivity suite that combines task management, finance t
 - Lucide React
 - prism-react-renderer (code snippet highlighting)
 - @uiw/react-md-editor (Markdown docs editor)
+- rehype-sanitize (markdown XSS sanitization)
 
 **Backend**
 - Node.js + Express 5
 - PostgreSQL
-- Express Session + bcrypt (authentication)
+- Express Session + bcryptjs (authentication)
 - Zod (input validation)
+- Helmet (security headers) + express-rate-limit (brute-force protection)
+- Pino (structured logging)
 
 ## Project Structure
 
@@ -159,26 +162,36 @@ Fill in `.env`:
 docker compose up --build -d
 ```
 
-This starts three containers: `db` (PostgreSQL), `api` (Express), and `nginx` (React + reverse proxy).
+This starts four containers: `db` (PostgreSQL), `api` (Express), `nginx` (React + reverse proxy), and `db_backup` (scheduled `pg_dump` sidecar). **Migrations run automatically** on every `api` startup — no manual step required.
 
-**4. Run migrations (first time only)**
-
-```bash
-docker compose exec api npm run migrate
-```
-
-**5. Verify**
+**4. Verify**
 
 ```bash
-docker compose ps
+docker compose ps          # all four services should show "(healthy)"
 curl http://localhost/health
 ```
+
+> **Security headers** — the nginx container emits `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, and a strict CSP on every response. Hashed JS/CSS/font assets are served with `Cache-Control: public, immutable` and a 1-year expiry so browsers cache them aggressively.
 
 **Updating after code changes:**
 
 ```bash
 git pull
 docker compose up --build -d
+```
+
+**Restoring a backup:**
+
+```bash
+# List available backups
+docker run --rm -v productivity_postgres_backups:/backups alpine ls /backups
+
+# Restore a specific dump
+docker run --rm \
+  -v productivity_postgres_backups:/backups \
+  -e PGPASSWORD=<DB_PASSWORD> \
+  postgres:16-alpine \
+  sh -c "gunzip -c /backups/<filename>.sql.gz | psql postgresql://productivity:<DB_PASSWORD>@db:5432/productivity_db"
 ```
 
 ---
@@ -258,6 +271,19 @@ sudo cloudflared service install <YOUR_TUNNEL_TOKEN>
 - **Service:** `http://localhost:80`
 
 Cloudflare handles SSL automatically — no certificate setup required.
+
+---
+
+## CI/CD
+
+A GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push and pull request to `main`:
+
+| Job | Steps |
+|---|---|
+| **Server** | `npm ci` → security audit (`--audit-level=high`) → lint → tests (if wired) |
+| **Client** | `npm ci` → security audit → lint → `npm run build` → tests (if wired) |
+
+Any high-severity npm advisory or build failure blocks the run. To enforce it as a merge gate: **Settings → Branches → Branch protection rules → Require status checks → select "Server" and "Client"**.
 
 ---
 

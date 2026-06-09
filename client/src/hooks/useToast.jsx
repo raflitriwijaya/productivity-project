@@ -2,6 +2,7 @@
 // Global toast provider + hook (§5.7). <ToastProvider> wraps the app once in
 // main.jsx (outside the router) and renders a single portal-based container.
 // Call useToast() anywhere to get the shared addToast/removeToast.
+/* eslint-disable react-refresh/only-export-components */
 
 import { createContext, useContext, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';

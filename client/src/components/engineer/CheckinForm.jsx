@@ -7,7 +7,7 @@
 // the parent (e.g. a Modal footer) drives submission via the returned handler —
 // here we keep it simple and always render an inline submit row.
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '../ui/Button';
 import { Input, Textarea } from '../ui/Input';
 import { useToast } from '../../hooks/useToast';
@@ -41,9 +41,6 @@ export function CheckinForm({ onSubmit, onCancel }) {
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
-
-  // Reset to a fresh week whenever the form is re-mounted by the parent (key).
-  useEffect(() => { setForm(emptyForm()); setErrors({}); }, []);
 
   const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }));
 

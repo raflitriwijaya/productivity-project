@@ -4,7 +4,7 @@
 // column is a markdown editor (@uiw/react-md-editor) for the selected/new doc,
 // with title + doc_type fields, save (POST/PATCH), delete, and a preview toggle.
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Plus, FileText, Trash2, Eye, Pencil } from 'lucide-react';
 
@@ -58,12 +58,8 @@ export default function EngineerDocs() {
     [projectId]
   );
 
-  const activeProject = useMemo(
-    () => projects?.find(p => String(p.id) === String(projectId)) ?? null,
-    [projects, projectId]
-  );
-
   // Close the editor when switching projects.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setDraft(null); }, [projectId]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────

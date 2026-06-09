@@ -21,7 +21,6 @@ import { Modal } from '../components/ui/Modal';
 import { CreateProjectModal } from '../components/engineer/CreateProjectModal';
 import {
   TitleCell, TypeCell, PlatformsCell, StatusCell, UpdatedCell, ActionsCell,
-  TYPE_LABEL, STATUS_LABEL,
 } from '../components/engineer/ProjectRow';
 
 // ─── Filter options ───────────────────────────────────────────────────────────

@@ -7,7 +7,6 @@ import { Download, Trash2, Paperclip } from 'lucide-react';
 
 import api from '../../lib/api';
 import { useApi } from '../../hooks/useApi';
-import { Button } from '../ui/Button';
 import { ListSkeleton } from '../ui/Skeleton';
 import { useToast } from '../../hooks/useToast';
 

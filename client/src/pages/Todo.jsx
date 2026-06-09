@@ -54,7 +54,8 @@ export default function Todo() {
   const { addToast } = useToast();
 
   // ── Derived ───────────────────────────────────────────────────────────────
-  const allTodos = /** @type {Todo[]} */ (todos ?? []);
+  // Phase 4: stable memoized array so downstream useMemos have a stable dep reference
+  const allTodos = useMemo(() => /** @type {Todo[]} */ (todos ?? []), [todos]);
 
   const filtered = useMemo(() => {
     if (!statusFilter) return allTodos;

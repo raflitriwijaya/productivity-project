@@ -28,6 +28,8 @@ export function PortfolioModal({ isOpen, onClose, onSubmit, holding }) {
 
   useEffect(() => {
     if (!isOpen) return;
+    /* Phase 4: setState here is intentional modal-open sync */
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (isEditing) {
       setForm({
         name:          holding.name ?? '',
@@ -41,6 +43,7 @@ export function PortfolioModal({ isOpen, onClose, onSubmit, holding }) {
     }
     setErrors({});
     setSubmitError('');
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [isOpen, holding, isEditing]);
 
   function set(field) {

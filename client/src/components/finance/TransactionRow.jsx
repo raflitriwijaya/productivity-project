@@ -1,6 +1,7 @@
 // client/src/components/finance/TransactionRow.jsx
 // Named render helpers consumed by the DataTable column definitions in Finance.jsx.
 // Not a standalone row component — keeps the columns array declarative.
+/* eslint-disable react-refresh/only-export-components */
 
 import { ArrowRight, Pencil, Trash2, CheckCircle2 } from 'lucide-react';
 import { Badge } from '../ui/Badge';

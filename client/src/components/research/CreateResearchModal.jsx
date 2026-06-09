@@ -39,6 +39,8 @@ export function CreateResearchModal({ isOpen, onClose, onSubmit, entry = null })
   // Sync form state when entry changes (edit mode) or modal opens fresh (create mode)
   useEffect(() => {
     if (isOpen) {
+      /* Phase 4: setState here is intentional modal-open sync */
+      /* eslint-disable react-hooks/set-state-in-effect */
       setErrors({});
       if (isEdit) {
         setForm({
@@ -54,6 +56,7 @@ export function CreateResearchModal({ isOpen, onClose, onSubmit, entry = null })
       } else {
         setForm(EMPTY_FORM);
       }
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [isOpen, entry, isEdit]);
 

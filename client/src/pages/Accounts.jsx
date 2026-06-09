@@ -29,9 +29,12 @@ function AccountEditModal({ isOpen, onClose, onSubmit, account }) {
 
   useEffect(() => {
     if (!isOpen || !account) return;
+    /* Phase 4: setState here is intentional modal-open sync */
+    /* eslint-disable react-hooks/set-state-in-effect */
     setName(account.name ?? '');
     setInitial(formatIdrInput(String(account.initial_balance ?? '')));
     setError('');
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [isOpen, account]);
 
   async function handleSave() {

@@ -1,6 +1,7 @@
 // client/src/components/engineer/ProjectRow.jsx
 // DataTable render-helper functions and badge variant maps for engineer projects.
 // Follows the same pattern as research/ResearchEntryRow.jsx and learning/LearningRow.jsx.
+/* eslint-disable react-refresh/only-export-components */
 
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';

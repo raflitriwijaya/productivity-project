@@ -11,13 +11,13 @@
     "dev": "node --watch index.js",
     "start": "node index.js",
     "migrate": "node db/migrate.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "bcrypt": "^5.1.1",
+    "bcryptjs": "^3.0.3",
     "connect-pg-simple": "^9.0.1",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
@@ -27,6 +27,12 @@
     "helmet": "^8.2.0",
     "multer": "^2.1.1",
     "pg": "^8.21.0",
+    "pino": "^10.3.1",
+    "pino-http": "^11.0.0",
     "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "supertest": "^7.2.2",
+    "vitest": "^4.1.8"
   }
 }

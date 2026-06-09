@@ -37,6 +37,8 @@ export function CreateTopicModal({ isOpen, onClose, onSaved, topic = null }) {
   // Sync form when the modal opens (fresh in create mode, pre-filled in edit mode).
   useEffect(() => {
     if (isOpen) {
+      /* Phase 4: setState here is intentional modal-open sync */
+      /* eslint-disable react-hooks/set-state-in-effect */
       setErrors({});
       if (isEdit) {
         setForm({
@@ -47,6 +49,7 @@ export function CreateTopicModal({ isOpen, onClose, onSaved, topic = null }) {
       } else {
         setForm(EMPTY_FORM);
       }
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [isOpen, topic, isEdit]);
 

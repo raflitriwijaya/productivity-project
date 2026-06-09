@@ -3,7 +3,6 @@
 // Exported as named render helpers consumed by the columns array in Learning.jsx.
 
 import { ExternalLink, Pencil, Trash2 } from 'lucide-react';
-import { Badge }  from '../ui/Badge';
 import { Button } from '../ui/Button';
 
 // ─── Badge mapping (§5.8 canonical) ─────────────────────────────────────────

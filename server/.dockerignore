@@ -1,3 +1,19 @@
+# Phase 4: exclude build-irrelevant and secret-containing files from Docker build context
 node_modules
-.env
+.env*
 *.log
+# Test and coverage artifacts (not needed in the runtime image)
+test
+coverage
+.nyc_output
+vitest.config.js
+# Version control
+.git
+.gitignore
+# Upload dir is created at runtime (mounted volume or auto-created)
+uploads
+# OS cruft
+.DS_Store
+Thumbs.db
+# Local overrides
+*.local

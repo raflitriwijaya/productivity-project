@@ -11,6 +11,11 @@ import axios from 'axios';
  * withCredentials: true is required so the httpOnly session cookie (named "sid") is
  * sent cross-origin during development (client :5173 → server :3000).
  */
+// Phase 4: fail fast in production builds if the API URL env var is missing
+if (import.meta.env.PROD && !import.meta.env.VITE_API_URL) {
+  throw new Error('VITE_API_URL is required in production. Set it in your deployment environment.');
+}
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
   headers: { 'Content-Type': 'application/json' },

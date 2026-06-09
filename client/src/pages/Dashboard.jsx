@@ -1,12 +1,11 @@
 // client/src/pages/Dashboard.jsx
-import { LayoutDashboard, CheckSquare, TrendingUp, BookOpen, GraduationCap } from 'lucide-react';
+import { CheckSquare, TrendingUp, BookOpen, GraduationCap } from 'lucide-react';
 import api from '../lib/api';
 import { useApi } from '../hooks/useApi';
 import { formatIdr } from '../lib/formatIdr';
-import { Card, CardHeader, CardBody } from '../components/ui/Card';
+import { Card, CardBody } from '../components/ui/Card';
 import { StatCard } from '../components/ui/StatCard';
 import { ErrorState } from '../components/ui/ErrorState';
-import { Skeleton } from '../components/ui/Skeleton';
 import { RecentTodos } from '../components/dashboard/RecentTodos';
 import { RecentTransactions } from '../components/dashboard/RecentTransactions';
 import { RecentResearch } from '../components/dashboard/RecentResearch';

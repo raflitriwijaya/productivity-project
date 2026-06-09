@@ -70,6 +70,8 @@ export function CreateProjectModal({ isOpen, onClose, onSubmit, project = null, 
   // Sync form state when the modal opens (fresh create or editing a project).
   useEffect(() => {
     if (!isOpen) return;
+    /* Phase 4: setState calls here are intentional modal-open resets, not loops */
+    /* eslint-disable react-hooks/set-state-in-effect */
     setErrors({});
     setTemplateId('');
     if (isEdit) {
@@ -85,6 +87,7 @@ export function CreateProjectModal({ isOpen, onClose, onSubmit, project = null, 
     } else {
       setForm(EMPTY_FORM);
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [isOpen, project, isEdit]);
 
   const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }));
