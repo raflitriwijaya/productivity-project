@@ -11,6 +11,7 @@ import { z } from 'zod';
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { randomUUID } from 'node:crypto'; // Phase 1: UUID filenames prevent enumeration
 import multer from 'multer';
 
 import { validate } from '../middleware/validate.js';
@@ -70,10 +71,9 @@ const storage = multer.diskStorage({
     cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
-    // Random, collision-resistant name; keep the original extension.
+    // Phase 1: crypto UUID eliminates timing/enumeration attacks on filenames.
     const ext = path.extname(file.originalname).toLowerCase();
-    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-    cb(null, unique);
+    cb(null, `${randomUUID()}${ext}`);
   },
 });
 
@@ -333,6 +333,37 @@ router.delete('/topics/:id', async (req, res, next) => {
     const deleted = await deleteTopic(topicId, req.user.id);
     if (!deleted) return next(new AppError('Topic not found.', 404, 'NOT_FOUND'));
     res.json({ success: true, data: { id: topicId } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── GET /api/research/attachments/:id/download ──────────────────────────────
+// Phase 1: replaces the public /uploads static mount. Requires session auth
+// (via requireAuth applied at the router level in index.js) and verifies that
+// the attachment's parent research entry belongs to req.user before streaming.
+// Returns 404 for both missing and non-owned attachments to avoid existence
+// disclosure. Sets Content-Disposition: attachment so files are never rendered.
+
+router.get('/attachments/:id/download', async (req, res, next) => {
+  try {
+    const attId = parseInt(req.params.id, 10);
+    const attachment = await getAttachmentById(attId);
+    if (!attachment) return next(new AppError('Not found.', 404, 'NOT_FOUND'));
+
+    // Ownership check: the parent entry must belong to the requesting user.
+    const entry = await getResearchEntryById(attachment.entry_id, req.user.id);
+    if (!entry) return next(new AppError('Not found.', 404, 'NOT_FOUND'));
+
+    // Reconstruct path from filename only — never trust a stored absolute path.
+    const filePath = path.join(uploadsDir, attachment.filename);
+    if (!fs.existsSync(filePath)) return next(new AppError('Not found.', 404, 'NOT_FOUND'));
+
+    res.setHeader('Content-Disposition',
+      `attachment; filename*=UTF-8''${encodeURIComponent(attachment.original_name)}`);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Type', attachment.mime_type || 'application/octet-stream');
+    res.sendFile(filePath);
   } catch (err) {
     next(err);
   }

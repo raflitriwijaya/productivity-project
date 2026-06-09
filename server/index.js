@@ -14,6 +14,8 @@ import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
+import helmet from 'helmet'; // Phase 1: security headers
+import rateLimit from 'express-rate-limit'; // Phase 1: brute-force / abuse protection
 
 // ── Internal modules ──────────────────────────────────────────────────────────
 import { pool } from './lib/db.js';
@@ -91,29 +93,68 @@ if (isProd) {
   app.set('trust proxy', 1);
 }
 
-// ─── Uploads ──────────────────────────────────────────────────────────────────
-// Research attachments are written to server/uploads/ by multer (configured in
-// routes/research.js, which exports the resolved `uploadsDir`). Ensure the
-// directory exists at startup, then serve it statically. Files are served by
-// their random (obscure) filenames, so this is left public for simple <img>/
-// <a href> access; no auth gate is applied here.
+// ─── Security headers (Helmet) ────────────────────────────────────────────────
+// Phase 1: emit X-Content-Type-Options, X-Frame-Options, Referrer-Policy, etc.
+// CSP is strict (API-only; SPA lives on a separate nginx origin).
+// HSTS is enabled in production only.
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+    },
+  },
+  hsts: isProd
+    ? { maxAge: 31536000, includeSubDomains: true, preload: true }
+    : false,
+}));
+
+// ─── Rate limiters ────────────────────────────────────────────────────────────
+// Phase 1: stop credential-stuffing on auth endpoints and cap general API abuse.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (_req, res) => res.status(429).json({
+    success: false,
+    error: { code: 'RATE_LIMITED', message: 'Too many attempts. Please try again in 15 minutes.' },
+  }),
+});
+
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (_req, res) => res.status(429).json({
+    success: false,
+    error: { code: 'RATE_LIMITED', message: 'Too many requests. Please slow down.' },
+  }),
+});
+
+// ─── Uploads dir ──────────────────────────────────────────────────────────────
+// Ensure the uploads directory exists; no longer served statically — all
+// attachment downloads now go through the authenticated route in research.js.
+// Phase 1: public static mount removed to gate downloads behind auth + ownership.
 fs.mkdirSync(uploadsDir, { recursive: true });
-app.use('/uploads', express.static(uploadsDir));
 
 // ─── Health check (no auth) ───────────────────────────────────────────────────
 app.get('/health', (_req, res) => res.json({ status: 'ok', ts: new Date().toISOString() }));
 
-// ─── Auth routes (public — no requireAuth) ────────────────────────────────────
-app.use('/api/auth', authRouter);
+// ─── Auth routes — strict rate-limited (public, no requireAuth) ──────────────
+// Phase 1: authLimiter caps login + register at 5 attempts / 15 min / IP.
+app.use('/api/auth', authLimiter, authRouter);
 
 // ─── Protected resource routes ────────────────────────────────────────────────
 // requireAuth middleware (§6.6a) attaches req.user = { id } and returns 401
 // for any request with no valid session cookie.
-app.use('/api/todos',    requireAuth, todosRouter);
-app.use('/api/finances', requireAuth, financesRouter);
-app.use('/api/learning', requireAuth, learningRouter);
-app.use('/api/research', requireAuth, researchRouter);
-app.use('/api/engineer', requireAuth, engineerRouter);
+// Phase 1: generalLimiter caps all protected API calls at 100 req / min / IP.
+app.use('/api/todos',    generalLimiter, requireAuth, todosRouter);
+app.use('/api/finances', generalLimiter, requireAuth, financesRouter);
+app.use('/api/learning', generalLimiter, requireAuth, learningRouter);
+app.use('/api/research', generalLimiter, requireAuth, researchRouter);
+app.use('/api/engineer', generalLimiter, requireAuth, engineerRouter);
 
 // ─── 404 for unmatched API routes ────────────────────────────────────────────
 app.use('/api', (_req, res) => {
