@@ -22,6 +22,9 @@ services:
       SESSION_SECRET: ${SESSION_SECRET}
       NODE_ENV: production
       PORT: 3000
+    volumes:
+      # Phase 2: persist attachments across docker compose up --build
+      - uploads_data:/app/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -37,3 +40,4 @@ services:
 
 volumes:
   postgres_data:
+  uploads_data: # Phase 2: named volume so attachments survive rebuilds

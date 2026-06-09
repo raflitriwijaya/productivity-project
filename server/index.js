@@ -168,8 +168,31 @@ app.use('/api', (_req, res) => {
 app.use(errorHandler);
 
 // ─── Start ────────────────────────────────────────────────────────────────────
-app.listen(parseInt(PORT, 10), () => {
+// Phase 2: capture server handle for graceful shutdown
+const server = app.listen(parseInt(PORT, 10), () => {
   console.log(`[server] Running on port ${PORT} (${NODE_ENV})`);
 });
+
+// Phase 2: drain in-flight requests then close the pg pool on SIGTERM/SIGINT
+function shutdown(signal) {
+  console.log(`[server] ${signal} received — shutting down gracefully`);
+  // Force-exit after 10 s if connections don't drain
+  const forceExit = setTimeout(() => {
+    console.error('[server] Graceful shutdown timed out — forcing exit');
+    process.exit(1);
+  }, 10_000);
+  forceExit.unref(); // don't keep the event loop alive just for the timer
+
+  server.close(() => {
+    console.log('[server] HTTP server closed');
+    pool.end(() => {
+      console.log('[server] pg pool drained — bye');
+      process.exit(0);
+    });
+  });
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT',  () => shutdown('SIGINT'));
 
 export default app;

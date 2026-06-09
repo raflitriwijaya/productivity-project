@@ -31,7 +31,9 @@ const loginSchema = z.object({
 
 authRouter.post('/register', validate(registerSchema), async (req, res, next) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, password } = req.body;
+    // Phase 2: normalize before the duplicate check (mirrors login path)
+    const email = req.body.email.toLowerCase().trim();
 
     const existing = await findByEmail(email);
     if (existing) {
@@ -39,7 +41,7 @@ authRouter.post('/register', validate(registerSchema), async (req, res, next) =>
     }
 
     const password_hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-    const user = await createUser({ email: email.toLowerCase().trim(), password_hash, name: name.trim() });
+    const user = await createUser({ email, password_hash, name: name.trim() });
 
     // Establish session immediately after registration (auto-login).
     req.session.userId = user.id;

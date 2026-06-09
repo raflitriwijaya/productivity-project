@@ -12,6 +12,14 @@
  */
 // eslint-disable-next-line no-unused-vars
 export function errorHandler(err, req, res, next) {
+  // Phase 2: map pg unique-violation (23505) to a clean 409 for any unique constraint
+  if (err.code === '23505') {
+    return res.status(409).json({
+      success: false,
+      error: { code: 'CONFLICT', message: 'A record with this value already exists.' },
+    });
+  }
+
   console.error(`[${new Date().toISOString()}] ${err.stack || err}`);
 
   const statusCode = err.statusCode || 500;

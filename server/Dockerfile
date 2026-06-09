@@ -4,4 +4,5 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 COPY . .
 EXPOSE 3000
-CMD ["node", "index.js"]
+# Phase 2: run migrations automatically on every deploy before the server starts
+CMD ["sh", "-c", "node db/migrate.js && node index.js"]

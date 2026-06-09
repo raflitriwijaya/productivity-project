@@ -89,50 +89,66 @@ async function applyOne(filename) {
   }
 }
 
+// Phase 2: advisory lock key — arbitrary stable int, unique to this app
+const ADVISORY_LOCK_KEY = 7_391_842;
+
 async function run() {
-  await ensureMigrationsTable();
+  // Phase 2: hold a Postgres advisory lock for the lifetime of the migration run
+  // so concurrent replicas (e.g. rolling deploy) don't apply the same file twice.
+  const lockClient = await pool.connect();
+  try {
+    await lockClient.query('SELECT pg_advisory_lock($1)', [ADVISORY_LOCK_KEY]);
+    console.log('[migrate] Advisory lock acquired');
 
-  const { rows } = await pool.query('SELECT filename FROM schema_migrations');
-  const applied = new Set(rows.map(r => r.filename));
+    await ensureMigrationsTable();
 
-  const all = (await readdir(MIGRATIONS_DIR)).filter(f => f.endsWith('.sql')).sort(compareMigrations);
-  let pending = all.filter(f => !applied.has(f));
+    const { rows } = await pool.query('SELECT filename FROM schema_migrations');
+    const applied = new Set(rows.map(r => r.filename));
 
-  if (pending.length === 0) {
-    console.log('[migrate] Nothing to apply — database is up to date.');
-    return;
-  }
+    const all = (await readdir(MIGRATIONS_DIR)).filter(f => f.endsWith('.sql')).sort(compareMigrations);
+    let pending = all.filter(f => !applied.has(f));
 
-  // Multi-pass: a pass that makes no progress on the remaining files means their
-  // dependencies can never be met, so we surface the blocking error.
-  while (pending.length > 0) {
-    const deferred = [];
-    let progressed = false;
+    if (pending.length === 0) {
+      console.log('[migrate] Nothing to apply — database is up to date.');
+      return;
+    }
 
-    for (const file of pending) {
-      const result = await applyOne(file);
-      if (result === 'applied') {
-        progressed = true;
-        console.log(`[migrate] ✓ applied ${file}`);
-      } else if (result === 'exists') {
-        progressed = true;
-        console.log(`[migrate] • ${file} already present — recorded as applied`);
-      } else {
-        deferred.push(file);
+    // Multi-pass: a pass that makes no progress on the remaining files means their
+    // dependencies can never be met, so we surface the blocking error.
+    while (pending.length > 0) {
+      const deferred = [];
+      let progressed = false;
+
+      for (const file of pending) {
+        const result = await applyOne(file);
+        if (result === 'applied') {
+          progressed = true;
+          console.log(`[migrate] ✓ applied ${file}`);
+        } else if (result === 'exists') {
+          progressed = true;
+          console.log(`[migrate] • ${file} already present — recorded as applied`);
+        } else {
+          deferred.push(file);
+        }
       }
+
+      if (!progressed) {
+        // Re-run the first blocked file without catching, to throw its real error.
+        const sql = await readFile(join(MIGRATIONS_DIR, deferred[0]), 'utf8');
+        await pool.query(sql); // throws the underlying 42P01 with context
+        throw new Error(`[migrate] Stuck: cannot resolve dependencies for ${deferred.join(', ')}`);
+      }
+
+      pending = deferred;
     }
 
-    if (!progressed) {
-      // Re-run the first blocked file without catching, to throw its real error.
-      const sql = await readFile(join(MIGRATIONS_DIR, deferred[0]), 'utf8');
-      await pool.query(sql); // throws the underlying 42P01 with context
-      throw new Error(`[migrate] Stuck: cannot resolve dependencies for ${deferred.join(', ')}`);
-    }
-
-    pending = deferred;
+    console.log('[migrate] Done.');
+  } finally {
+    // Phase 2: always release the advisory lock, even on error
+    await lockClient.query('SELECT pg_advisory_unlock($1)', [ADVISORY_LOCK_KEY]).catch(() => {});
+    lockClient.release();
+    console.log('[migrate] Advisory lock released');
   }
-
-  console.log('[migrate] Done.');
 }
 
 run()
