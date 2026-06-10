@@ -9,6 +9,7 @@
 
 import { Router } from 'express';
 import { z } from 'zod';
+import { TX_TYPES, LEDGER_STATUSES } from '../lib/enums.js';
 import { validate } from '../middleware/validate.js';
 import { AppError } from '../lib/AppError.js';
 import { logger } from '../lib/logger.js';
@@ -26,7 +27,6 @@ const router = Router();
 
 // ─── Shared constants & helpers ────────────────────────────────────────────────
 
-const TX_TYPES   = ['Income', 'Expense', 'Transfer', 'Balance Adjustment', 'Market Adjustment'];
 const ADJUSTMENTS = ['Balance Adjustment', 'Market Adjustment'];
 const DATE_RE    = /^\d{4}-\d{2}-\d{2}$/;
 const nonEmpty   = (d) => Object.keys(d).length > 0;
@@ -110,7 +110,7 @@ const ledgerPatchSchema = z.object({
   amount:      z.number().positive().optional(),
   due_date:    z.string().regex(DATE_RE).nullable().optional(),
   account_id:  nullableId,
-  status:      z.enum(['outstanding', 'settled']).optional(),
+  status:      z.enum(LEDGER_STATUSES).optional(),
 }).refine(nonEmpty, { message: 'At least one field must be provided.' });
 
 const settleSchema = z.object({

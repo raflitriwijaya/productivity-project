@@ -17,6 +17,7 @@ import multer from 'multer';
 import { validate } from '../middleware/validate.js';
 import { AppError } from '../lib/AppError.js';
 import { logger } from '../lib/logger.js';
+import { ENTRY_TYPES, ENTRY_STATUSES, TOPIC_STATUSES, ALLOWED_EXT, ALLOWED_MIME } from '../lib/enums.js';
 import {
   listResearchEntries,
   getResearchEntryById,
@@ -56,14 +57,6 @@ export const uploadsDir = path.join(
   'uploads'
 );
 
-// Allowed upload types (extension → mime is also checked). Per the spec:
-// jpg, png, pdf, txt, md, cpp, py, zip.
-const ALLOWED_EXT = new Set(['.jpg', '.jpeg', '.png', '.pdf', '.txt', '.md', '.cpp', '.py', '.zip']);
-const ALLOWED_MIME = new Set([
-  'image/jpeg', 'image/png', 'application/pdf', 'text/plain', 'text/markdown',
-  'text/x-c++src', 'text/x-python', 'application/zip', 'application/x-zip-compressed',
-  'application/octet-stream', // some browsers send this for .cpp/.py/.md
-]);
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
 const storage = multer.diskStorage({
@@ -87,7 +80,7 @@ export function researchFileFilter(req, file, cb) {
   cb(null, true);
 }
 
-export { ALLOWED_EXT, ALLOWED_MIME };
+export { ALLOWED_EXT, ALLOWED_MIME } from '../lib/enums.js';
 
 const upload = multer({
   storage,
@@ -97,15 +90,12 @@ const upload = multer({
 
 // ─── Zod schemas ────────────────────────────────────────────────────────────
 
-const TYPES    = ['journal', 'citation', 'note'];
-const STATUSES = ['draft', 'active', 'archived'];
-
 const topicIdsSchema = z.array(z.number().int().positive()).optional();
 
 const createSchema = z.object({
   title:   z.string().min(1, 'Title is required.').max(255),
-  type:    z.enum(TYPES,    { errorMap: () => ({ message: 'Type must be journal, citation, or note.' }) }),
-  status:  z.enum(STATUSES, { errorMap: () => ({ message: 'Status must be draft, active, or archived.' }) }).default('draft'),
+  type:    z.enum(ENTRY_TYPES,    { errorMap: () => ({ message: 'Type must be journal, citation, or note.' }) }),
+  status:  z.enum(ENTRY_STATUSES, { errorMap: () => ({ message: 'Status must be draft, active, or archived.' }) }).default('draft'),
   content: z.string().max(10000).optional(),
   source:  z.string().max(500).optional(),
   tags:    z.string().max(500).optional(),
@@ -115,8 +105,8 @@ const createSchema = z.object({
 
 const patchSchema = z.object({
   title:   z.string().min(1).max(255).optional(),
-  type:    z.enum(TYPES).optional(),
-  status:  z.enum(STATUSES).optional(),
+  type:    z.enum(ENTRY_TYPES).optional(),
+  status:  z.enum(ENTRY_STATUSES).optional(),
   content: z.string().max(10000).optional(),
   source:  z.string().max(500).optional(),
   tags:    z.string().max(500).optional(),
@@ -134,7 +124,7 @@ const topicPatchSchema = z.object({
   name:        z.string().min(1).max(255).optional(),
   description: z.string().max(10000).optional(),
   color:       z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Color must be a hex string like #10b981.').optional(),
-  status:      z.enum(['active', 'archived']).optional(),
+  status:      z.enum(TOPIC_STATUSES).optional(),
 }).refine(data => Object.keys(data).length > 0, { message: 'At least one field is required.' });
 
 const entryTopicsSchema = z.object({
@@ -143,8 +133,8 @@ const entryTopicsSchema = z.object({
 
 const bulkPatchSchema = z.object({
   ids:       z.array(z.number().int().positive()).min(1, 'At least one id is required.'),
-  status:    z.enum(STATUSES).optional(),
-  type:      z.enum(TYPES).optional(),
+  status:    z.enum(ENTRY_STATUSES).optional(),
+  type:      z.enum(ENTRY_TYPES).optional(),
   is_pinned: z.boolean().optional(),
 }).refine(
   data => data.status !== undefined || data.type !== undefined || data.is_pinned !== undefined,
@@ -576,7 +566,7 @@ router.post('/:id/attachments', requireOwnedEntry, (req, res, next) => {
     const attachment = await createAttachment(req.ownedEntry.id, {
       filename:      req.file.filename,
       original_name: req.file.originalname,
-      file_path:     req.file.path,
+      file_path:     req.file.filename,
       mime_type:     req.file.mimetype,
       size:          req.file.size,
     });

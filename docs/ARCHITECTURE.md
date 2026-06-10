@@ -1,6 +1,6 @@
 # Architecture — Rafli's Productivity Suite
 
-Living architecture reference. For operational procedures see [docs/RUNBOOK.md](RUNBOOK.md). For current sprint status and completed phases see [PROJECT_STATE.md](../PROJECT_STATE.md).
+> **Canonical reference.** This file is the single source of truth for routes, DB schema, data flow, and design decisions. For operational procedures see [RUNBOOK.md](RUNBOOK.md). For the phase log and sprint status see [../PROJECT_STATE.md](../PROJECT_STATE.md).
 
 ---
 

@@ -52,6 +52,20 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # Phase 13: generate spec and gate on completeness (≥75 addPath calls required).
+      - name: Generate OpenAPI spec
+        run: npm run openapi
+
+      - name: Verify OpenAPI completeness
+        run: |
+          ROUTE_COUNT=$(grep -c "addPath(" scripts/generate-openapi.js || echo "0")
+          echo "OpenAPI addPath calls: $ROUTE_COUNT"
+          if [ "$ROUTE_COUNT" -lt 75 ]; then
+            echo "ERROR: OpenAPI spec has fewer than 75 paths documented."
+            exit 1
+          fi
+          echo "OpenAPI spec is complete."
+
       # Phase 9: run migrations against the CI Postgres before the test suite.
       - name: Migrate test DB
         run: npm run migrate

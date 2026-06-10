@@ -316,7 +316,7 @@ Any high-severity npm advisory or build failure blocks the run. To enforce it as
 
 | File | Contents |
 |------|----------|
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Stack, data flow, route map, full DB schema, middleware order, design decisions, `user_settings` plan |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | **Canonical** — Stack, data flow, route map, full DB schema, middleware order, design decisions |
 | [docs/RUNBOOK.md](docs/RUNBOOK.md) | DB backup/restore, migration rollback, secret rotation, object storage migration plan, incident runbooks |
 | [docs/openapi.json](docs/openapi.json) | OpenAPI 3.1 spec — regenerate with `cd server && npm run openapi` |
 | [CHANGELOG.md](CHANGELOG.md) | Version history (Keep a Changelog format) |

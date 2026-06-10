@@ -1,6 +1,7 @@
 // server/routes/todos.js
 import { Router } from 'express';
 import { z } from 'zod';
+import { TODO_STATUSES } from '../lib/enums.js';
 import { validate } from '../middleware/validate.js';
 import { AppError } from '../lib/AppError.js';
 import { logger } from '../lib/logger.js';
@@ -20,7 +21,7 @@ const router = Router();
 const createTodoSchema = z.object({
   title:       z.string().min(1, 'Title is required.').max(255),
   description: z.string().max(2000).optional().nullable(),
-  status:      z.enum(['pending', 'in_progress', 'done', 'overdue']).default('pending'),
+  status:      z.enum(TODO_STATUSES).default('pending'),
   priority:    z.number().int().min(1).max(3).default(2),
   due_date:    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'due_date must be YYYY-MM-DD.').optional().nullable(),
 });

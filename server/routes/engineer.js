@@ -8,6 +8,7 @@
 
 import { Router } from 'express';
 import { z } from 'zod';
+import { PROJECT_TYPES, PROJECT_STATUSES, ISSUE_SEVERITIES, ISSUE_STATUSES } from '../lib/enums.js';
 import { validate } from '../middleware/validate.js';
 import { AppError } from '../lib/AppError.js';
 import { logger } from '../lib/logger.js';
@@ -30,12 +31,6 @@ import {
 
 const router = Router();
 
-// ─── Shared enums ─────────────────────────────────────────────────────────────
-const PROJECT_TYPES   = ['iot', 'embedded', 'robotics', 'other'];
-const PROJECT_STATUS  = ['idea', 'planning', 'development', 'testing', 'deployed', 'archived'];
-const ISSUE_SEVERITY  = ['P0-Critical', 'P1-High', 'P2-Medium', 'P3-Low'];
-const ISSUE_STATUS    = ['open', 'in_progress', 'resolved'];
-
 // ─── Zod schemas ──────────────────────────────────────────────────────────────
 
 const createProjectSchema = z.object({
@@ -44,7 +39,7 @@ const createProjectSchema = z.object({
   project_type: z.enum(PROJECT_TYPES, { errorMap: () => ({ message: 'Invalid project type.' }) }).default('other'),
   platforms:    z.string().max(500).optional(),
   stack:        z.string().max(500).optional(),
-  status:       z.enum(PROJECT_STATUS, { errorMap: () => ({ message: 'Invalid status.' }) }).default('idea'),
+  status:       z.enum(PROJECT_STATUSES, { errorMap: () => ({ message: 'Invalid status.' }) }).default('idea'),
   repo_url:     z.string().max(500).optional(),
 });
 
@@ -54,7 +49,7 @@ const patchProjectSchema = z.object({
   project_type: z.enum(PROJECT_TYPES).optional(),
   platforms:    z.string().max(500).optional(),
   stack:        z.string().max(500).optional(),
-  status:       z.enum(PROJECT_STATUS).optional(),
+  status:       z.enum(PROJECT_STATUSES).optional(),
   repo_url:     z.string().max(500).optional(),
 }).refine(d => Object.keys(d).length > 0, { message: 'At least one field is required.' });
 
@@ -98,8 +93,8 @@ const createCheckinSchema = z.object({
 const createIssueSchema = z.object({
   title:       z.string().min(1, 'Title is required.').max(255),
   description: z.string().max(10000).optional(),
-  severity:    z.enum(ISSUE_SEVERITY, { errorMap: () => ({ message: 'Invalid severity.' }) }).default('P2-Medium'),
-  status:      z.enum(ISSUE_STATUS, { errorMap: () => ({ message: 'Invalid status.' }) }).default('open'),
+  severity:    z.enum(ISSUE_SEVERITIES, { errorMap: () => ({ message: 'Invalid severity.' }) }).default('P2-Medium'),
+  status:      z.enum(ISSUE_STATUSES, { errorMap: () => ({ message: 'Invalid status.' }) }).default('open'),
   component:   z.string().max(100).optional(),
   assignee:    z.string().max(100).optional(),
 });
@@ -107,8 +102,8 @@ const createIssueSchema = z.object({
 const patchIssueSchema = z.object({
   title:       z.string().min(1).max(255).optional(),
   description: z.string().max(10000).optional(),
-  severity:    z.enum(ISSUE_SEVERITY).optional(),
-  status:      z.enum(ISSUE_STATUS).optional(),
+  severity:    z.enum(ISSUE_SEVERITIES).optional(),
+  status:      z.enum(ISSUE_STATUSES).optional(),
   component:   z.string().max(100).optional(),
   assignee:    z.string().max(100).optional(),
 }).refine(d => Object.keys(d).length > 0, { message: 'At least one field is required.' });

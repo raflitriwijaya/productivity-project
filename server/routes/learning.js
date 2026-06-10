@@ -3,6 +3,7 @@
 
 import { Router } from 'express';
 import { z }      from 'zod';
+import { LEARNING_TYPES, LEARNING_STATUSES } from '../lib/enums.js';
 import { validate }           from '../middleware/validate.js';
 import { AppError }           from '../lib/AppError.js';
 import { logger }             from '../lib/logger.js';
@@ -19,14 +20,11 @@ const router = Router();
 
 // ─── Zod schemas ────────────────────────────────────────────────────────────
 
-const TYPE_ENUM   = ['course', 'book', 'video', 'article', 'other'];
-const STATUS_ENUM = ['not_started', 'in_progress', 'completed', 'on_hold'];
-
 const createSchema = z.object({
   title:        z.string().min(1, 'Title is required.').max(255),
-  type:         z.enum(TYPE_ENUM).default('course'),
+  type:         z.enum(LEARNING_TYPES).default('course'),
   source:       z.string().max(255).optional().nullable(),
-  status:       z.enum(STATUS_ENUM).default('not_started'),
+  status:       z.enum(LEARNING_STATUSES).default('not_started'),
   priority:     z.number().int().min(1).max(3).default(2),
   progress:     z.number().int().min(0).max(100).default(0),
   total_hours:  z.number().positive().optional().nullable(),
@@ -56,7 +54,7 @@ router.get('/', async (req, res, next) => {
   try {
     const page    = Math.max(1, parseInt(req.query.page    ?? '1',  10));
     const perPage = Math.min(100, Math.max(1, parseInt(req.query.per_page ?? '20', 10)));
-    const status  = STATUS_ENUM.includes(req.query.status) ? req.query.status : undefined;
+    const status  = LEARNING_STATUSES.includes(req.query.status) ? req.query.status : undefined;
     const sort    = req.query.sort  ?? 'created_at';
     const order   = req.query.order ?? 'desc';
 

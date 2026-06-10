@@ -17,6 +17,7 @@
 
 import pool from '../lib/db.js';
 import { AppError } from '../lib/AppError.js';
+import { TX_TYPES } from '../lib/enums.js';
 
 // Phase 8: defensive range check so a direct model caller (script/test/new route)
 // passing an out-of-range month can never reach make_date() and 500.
@@ -58,7 +59,6 @@ const DEFAULT_CATEGORIES = [
 // Which transaction types credit dest / debit source.
 const CREDITS_DEST   = ['Income', 'Transfer', 'Balance Adjustment', 'Market Adjustment'];
 const DEBITS_SOURCE  = ['Expense', 'Transfer'];
-const TX_TYPES       = ['Income', 'Expense', 'Transfer', 'Balance Adjustment', 'Market Adjustment'];
 
 // ─── Default provisioning ──────────────────────────────────────────────────────
 
