@@ -70,6 +70,36 @@ app.use(cors({
   allowedHeaders: ['Content-Type'],
 }));
 
+// ─── Rate limiters ────────────────────────────────────────────────────────────
+// Phase 1: stop credential-stuffing on auth endpoints and cap general API abuse.
+// Defined here so generalLimiter can be mounted globally before body parsers.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (_req, res) => res.status(429).json({
+    success: false,
+    error: { code: 'RATE_LIMITED', message: 'Too many attempts. Please try again in 15 minutes.' },
+  }),
+});
+
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (_req, res) => res.status(429).json({
+    success: false,
+    error: { code: 'RATE_LIMITED', message: 'Too many requests. Please slow down.' },
+  }),
+});
+
+// ─── Global rate limiter ──────────────────────────────────────────────────────
+// Phase 12: apply before body parsers so flood payloads are dropped before the
+// JSON parser allocates memory. authLimiter stays per-route on login/register.
+app.use(generalLimiter);
+
 // ─── Body parsers ─────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false, limit: '1mb' }));
@@ -122,30 +152,6 @@ app.use(helmet({
     : false,
 }));
 
-// ─── Rate limiters ────────────────────────────────────────────────────────────
-// Phase 1: stop credential-stuffing on auth endpoints and cap general API abuse.
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5,
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: (_req, res) => res.status(429).json({
-    success: false,
-    error: { code: 'RATE_LIMITED', message: 'Too many attempts. Please try again in 15 minutes.' },
-  }),
-});
-
-const generalLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 100,
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: (_req, res) => res.status(429).json({
-    success: false,
-    error: { code: 'RATE_LIMITED', message: 'Too many requests. Please slow down.' },
-  }),
-});
-
 // ─── Uploads dir ──────────────────────────────────────────────────────────────
 // Ensure the uploads directory exists; no longer served statically — all
 // attachment downloads now go through the authenticated route in research.js.
@@ -153,30 +159,34 @@ const generalLimiter = rateLimit({
 fs.mkdirSync(uploadsDir, { recursive: true });
 
 // ─── Health check (no auth) ───────────────────────────────────────────────────
-app.get('/health', (_req, res) => res.json({ status: 'ok', ts: new Date().toISOString() }));
+// Phase 12: verify DB connectivity so Docker healthcheck and nginx depends_on
+// reflect real availability, not just process liveness.
+app.get('/health', async (_req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ status: 'ok', db: 'connected' });
+  } catch {
+    res.status(503).json({ status: 'degraded', db: 'disconnected' });
+  }
+});
 
 // ─── Auth routes (public, no requireAuth) ────────────────────────────────────
 // Phase 6: apply the strict brute-force limiter ONLY to the credential-guessable
-// verbs. /me (session heartbeat, called on every protected-route mount) and
-// /logout must NOT share the 5-req/15-min budget or a normal refresh pattern
+// verbs. /me and /logout ride the global generalLimiter (100/min) — they must
+// NOT share the 5-req/15-min authLimiter budget or a normal refresh pattern
 // self-DoSes the user for 15 minutes (§3-N1).
-//
-// Mount order matters: the path-specific limiters run BEFORE the router mount,
-// so POST /api/auth/login passes through authLimiter first, then falls through
-// to generalLimiter + router. /me and /logout match only generalLimiter + router.
 app.use('/api/auth/login',    authLimiter); // Phase 6: brute-force guard, credentials only
 app.use('/api/auth/register', authLimiter); // Phase 6: brute-force guard, credentials only
-app.use('/api/auth', generalLimiter, authRouter); // Phase 6: /me + /logout get the lenient 100/min budget
+app.use('/api/auth', authRouter);
 
 // ─── Protected resource routes ────────────────────────────────────────────────
 // requireAuth middleware (§6.6a) attaches req.user = { id } and returns 401
 // for any request with no valid session cookie.
-// Phase 1: generalLimiter caps all protected API calls at 100 req / min / IP.
-app.use('/api/todos',    generalLimiter, requireAuth, todosRouter);
-app.use('/api/finances', generalLimiter, requireAuth, financesRouter);
-app.use('/api/learning', generalLimiter, requireAuth, learningRouter);
-app.use('/api/research', generalLimiter, requireAuth, researchRouter);
-app.use('/api/engineer', generalLimiter, requireAuth, engineerRouter);
+app.use('/api/todos',    requireAuth, todosRouter);
+app.use('/api/finances', requireAuth, financesRouter);
+app.use('/api/learning', requireAuth, learningRouter);
+app.use('/api/research', requireAuth, researchRouter);
+app.use('/api/engineer', requireAuth, engineerRouter);
 
 // ─── 404 for unmatched API routes ────────────────────────────────────────────
 app.use('/api', (_req, res) => {

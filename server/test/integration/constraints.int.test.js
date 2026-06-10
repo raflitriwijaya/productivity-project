@@ -54,4 +54,21 @@ describe.skipIf(!hasDb)('DB constraints (real DB)', () => {
       constraint: 'idx_transactions_transfer_dedup',
     });
   });
+
+  it('rejects a duplicate NULL-description Transfer (NULLS NOT DISTINCT fix — migration 006)', async () => {
+    // This was the NULL hole: two Transfers with description = NULL both succeeded
+    // because Postgres treats NULL as distinct in a unique index. Migration 006
+    // recreates the index with NULLS NOT DISTINCT so NULL = NULL for dedup.
+    const ins = () => pool.query(
+      `INSERT INTO transactions
+         (user_id, type, amount, date, source_account_id, dest_account_id, description)
+       VALUES ($1, 'Transfer', 200, '2026-06-02', $2, $3, NULL)`,
+      [user, acct1, acct2]
+    );
+    await ins(); // first insert succeeds
+    await expect(ins()).rejects.toMatchObject({
+      code: '23505',
+      constraint: 'idx_transactions_transfer_dedup',
+    });
+  });
 });

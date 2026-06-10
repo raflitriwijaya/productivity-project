@@ -9,6 +9,7 @@
 
 import 'dotenv/config';
 import pg from 'pg';
+import { logger } from './logger.js';
 
 const { Pool } = pg;
 
@@ -18,20 +19,20 @@ if (!process.env.DATABASE_URL) {
 
 /**
  * Shared pg connection pool. Pool sizing/timeouts (§ hardening 3A):
- *  - max: 10                       cap concurrent connections
+ *  - max: PG_POOL_MAX (env) or 10  cap concurrent connections; ops-configurable
  *  - idleTimeoutMillis: 30000      reclaim idle clients after 30s
  *  - connectionTimeoutMillis: 2000 fail fast if the DB is unreachable
  */
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  max: 10,
+  max: parseInt(process.env.PG_POOL_MAX ?? '10', 10),
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
 });
 
 // Surface unexpected pool-level errors instead of crashing silently.
 pool.on('error', (err) => {
-  console.error(`[${new Date().toISOString()}] Unexpected pg pool error:`, err);
+  logger.error({ err }, 'Unexpected pg pool error');
 });
 
 export default pool;

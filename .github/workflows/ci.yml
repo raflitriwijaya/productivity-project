@@ -37,7 +37,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: server/package-lock.json
 
@@ -60,6 +60,11 @@ jobs:
       - name: Tests
         run: npm test
 
+      # Phase 12: coverage report — continue-on-error until a floor is enforced
+      - name: Run tests with coverage
+        run: npm run test:coverage
+        continue-on-error: true
+
   client:
     name: Client — lint, build, audit, test
     runs-on: ubuntu-latest
@@ -71,7 +76,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: client/package-lock.json
 

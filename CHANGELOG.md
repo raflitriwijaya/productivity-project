@@ -7,6 +7,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Phase 12 — Audit V3 Quick-Wins: Health DB Check, Dedup NULL Fix, Container Hardening, Coverage, Redact, Pool Env (2026-06-10)
+
+#### Fixed
+- **`GET /health` returns 200 even when Postgres is unreachable (§2.1 High)** — the endpoint previously returned a static `{ status: 'ok' }`. Docker healthcheck and nginx `depends_on: service_healthy` both gate on it, so a DB outage left the container "healthy" while every request 500'd. The route now runs `await pool.query('SELECT 1')` and returns `503 { status: 'degraded', db: 'disconnected' }` on failure, restoring the auto-restart / readiness guarantee.
+- **Transfer-dedup index has a NULL hole (§3.1 High)** — `idx_transactions_transfer_dedup` treated `description = NULL` as distinct from itself (Postgres default), so two identical Transfers with no description both succeeded. Migration `006_fix_dedup_nulls.sql` drops and recreates the index with `NULLS NOT DISTINCT` (Postgres 15+), making `NULL = NULL` for dedup purposes. A new integration test asserts that the second NULL-description Transfer raises `23505 idx_transactions_transfer_dedup`.
+- **Server container runs as root (§7.1 Medium)** — `server/Dockerfile` now adds `RUN chown -R node:node /app` + `USER node` after the COPY step, using the built-in non-root user that `node:22-alpine` provides.
+- **CI pins Node 20 while prod image uses Node 22 (§7.2 Medium)** — both server and client `setup-node` steps in `.github/workflows/ci.yml` updated to `node-version: 22`.
+- **No coverage tooling (§6.1 Medium)** — `server/package.json` gains `"test:coverage": "vitest run --coverage"`; CI server job gains a `Run tests with coverage` step (`continue-on-error: true` until a floor is set).
+- **pino logs `cookie` / `authorization` headers in plaintext (§8.2 Low)** — `server/lib/logger.js` pino instance now includes `redact: ['req.headers.cookie', 'req.headers.authorization']`.
+- **Pool `max: 10` hardcoded (§2.3 Low)** — `server/lib/db.js` now reads `parseInt(process.env.PG_POOL_MAX ?? '10', 10)` so ops can tune without a code change.
+- **Pool errors logged via `console.error` instead of pino (§2.6 Low)** — pool `error` event now calls `logger.error({ err }, …)` for structured log output consistent with the rest of the server.
+- **`generalLimiter` applied per-router, after body parsers (§2.4 Low)** — moved to a global `app.use(generalLimiter)` before `express.json()` and `express.urlencoded()`, so flood payloads are rejected before the JSON parser allocates memory. Rate limiter definitions moved above the global mount to avoid the TDZ. `authLimiter` remains per-route on `/api/auth/login` and `/api/auth/register`.
+
 ### Phase 11 — Frontend Optimization: Lazy-load Research, Vendor-split Editor, Duplicate-Transfer Error (2026-06-10)
 
 #### Fixed
