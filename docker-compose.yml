@@ -57,11 +57,18 @@ services:
   # Phase 3: pg_dump sidecar — dumps DB on a cron schedule to a dedicated backup volume
   # Restore: docker run --rm -v postgres_backups:/backups -e PGPASSWORD=<DB_PASSWORD> postgres:16-alpine \
   #   sh -c "gunzip -c /backups/<file>.sql.gz | psql postgresql://productivity:<DB_PASSWORD>@db:5432/productivity_db"
+  # Phase 7: optional off-host sync via S3/R2 — set BACKUP_S3_BUCKET to enable; see .env.docker.example
   db_backup:
     image: postgres:16-alpine
     environment:
       PGPASSWORD: ${DB_PASSWORD}
       BACKUP_SCHEDULE: ${BACKUP_SCHEDULE:-0 2 * * *}
+      # Phase 7: optional off-host sync. Leave S3_BUCKET empty to keep local-only behaviour.
+      S3_BUCKET: ${BACKUP_S3_BUCKET:-}
+      S3_ENDPOINT: ${BACKUP_S3_ENDPOINT:-}
+      AWS_ACCESS_KEY_ID: ${BACKUP_S3_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${BACKUP_S3_SECRET_ACCESS_KEY:-}
+      AWS_DEFAULT_REGION: ${BACKUP_S3_REGION:-auto}
     volumes:
       - postgres_backups:/backups
     depends_on:
@@ -70,7 +77,25 @@ services:
     restart: unless-stopped
     entrypoint: >
       sh -c "
-        echo \"$$BACKUP_SCHEDULE cd /backups && pg_dump postgresql://productivity:$$PGPASSWORD@db:5432/productivity_db | gzip > /backups/backup_\$$(date +\\%Y\\%m\\%d_\\%H\\%M\\%S).sql.gz\" | crontab - &&
+        apk add --no-cache aws-cli >/dev/null 2>&1 || true;
+        cat > /usr/local/bin/do-backup.sh << 'BACKUPEOF'
+      #!/bin/sh
+      set -e
+      F=/backups/backup_$$(date +%Y%m%d_%H%M%S).sql.gz
+      pg_dump postgresql://productivity:$$PGPASSWORD@db:5432/productivity_db | gzip > \"$$F\"
+      echo \"local backup written: $$F\"
+      if [ -n \"$$S3_BUCKET\" ]; then
+        if [ -n \"$$S3_ENDPOINT\" ]; then
+          aws --endpoint-url \"$$S3_ENDPOINT\" s3 cp \"$$F\" \"s3://$$S3_BUCKET/$$(basename $$F)\" && echo \"off-host copy ok\";
+        else
+          aws s3 cp \"$$F\" \"s3://$$S3_BUCKET/$$(basename $$F)\" && echo \"off-host copy ok\";
+        fi
+      else
+        echo \"S3_BUCKET unset — off-host sync disabled (local backup only)\";
+      fi
+      BACKUPEOF
+        chmod +x /usr/local/bin/do-backup.sh;
+        echo \"$$BACKUP_SCHEDULE /usr/local/bin/do-backup.sh >> /backups/backup.log 2>&1\" | crontab -;
         crond -f -l 8
       "
 

@@ -15,6 +15,25 @@ The `db_backup` sidecar service in `docker-compose.yml` runs `pg_dump` on a cron
 docker exec productivity_db_backup ls -lh /backups/
 ```
 
+### 1a. Off-host backups & monthly restore drill (Phase 7)
+
+When `BACKUP_S3_BUCKET` is configured, each nightly dump is copied to object
+storage after it is written locally (`db_backup` sidecar). Verify both copies:
+
+```bash
+docker exec productivity_db_backup ls -lh /backups          # local dumps
+aws --endpoint-url $BACKUP_S3_ENDPOINT s3 ls s3://$BACKUP_S3_BUCKET/
+```
+
+**Monthly restore drill (do not skip — an untested backup is not a backup):**
+
+1. Pull the most recent off-host dump to a scratch machine.
+2. Spin up a throwaway Postgres: `docker run --rm -d --name restore-test -e POSTGRES_PASSWORD=x postgres:16-alpine`.
+3. `gunzip -c <dump>.sql.gz | docker exec -i restore-test psql -U postgres`.
+4. Assert row counts are non-zero and plausible:
+   `docker exec restore-test psql -U postgres -c "SELECT count(*) FROM transactions;"`.
+5. Record the date and row counts in the incident log; tear the container down.
+
 ### Manual pg_dump
 
 ```bash
@@ -80,6 +99,20 @@ Steps:
 1. Create the new DB password in Postgres: `ALTER USER postgres PASSWORD 'new_password';`
 2. Update `DATABASE_URL` in the production env.
 3. Restart `api` and `db_backup` containers.
+
+**Phase 7 — dev secrets are compromised by default.** The `SESSION_SECRET` and
+DB password in `server/.env` were used in development and must be treated as
+public. Before any production deploy:
+
+1. Generate fresh values:
+   ```bash
+   SESSION_SECRET=$(openssl rand -hex 32)
+   DB_PASSWORD=$(openssl rand -base64 24)
+   ```
+2. Put them in the production host's `.env` (gitignored) or a secret manager —
+   never in a tracked file, never the dev value.
+3. Rotating `SESSION_SECRET` invalidates all sessions (every user is logged out);
+   schedule it for a low-traffic window. Restart `api` after rotation.
 
 ---
 

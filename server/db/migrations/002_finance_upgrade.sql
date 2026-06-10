@@ -22,6 +22,23 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- ── Phase 7: refuse to run against a populated ledger ────────────────────────
+-- This migration DROPs `transactions` (and the rest of the finance schema). The
+-- runner normally applies each file once, but if schema_migrations is cleared,
+-- a partial DB is restored, or the file is run by hand, an unguarded re-run
+-- would destroy every ledger row. Abort loudly instead. to_regclass returns NULL
+-- when the table does not exist (fresh install), so this is a no-op on first run.
+-- To intentionally re-run after a real reset: TRUNCATE transactions first.
+DO $$
+BEGIN
+  IF to_regclass('public.transactions') IS NOT NULL
+     AND (SELECT count(*) FROM transactions) > 0 THEN
+    RAISE EXCEPTION
+      'Refusing to drop a populated transactions table (% rows). Snapshot with pg_dump and TRUNCATE first if this is intentional. See docs/RUNBOOK.md §2.',
+      (SELECT count(*) FROM transactions);
+  END IF;
+END $$;
+
 -- ── Drop in dependency order (children before parents) ───────────────────────
 DROP TABLE IF EXISTS budgets       CASCADE;
 DROP TABLE IF EXISTS portfolio     CASCADE;
