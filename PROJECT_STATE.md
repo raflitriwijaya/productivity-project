@@ -11,7 +11,7 @@
 
 ## npm packages
 
-**Server** (`server/package.json`, `"type": "module"`): `express`, `cors`, `express-session`, `connect-pg-simple`, `bcryptjs` (Phase 2/3: replaced `bcrypt` — drop-in API-compatible, pure JS, eliminates the `tar`/`node-pre-gyp` high-severity transitive vulns), `pg`, `zod`, `dotenv`, `multer` (research attachment uploads), `helmet`, `express-rate-limit`, `pino`, `pino-http` (Phase 3: structured logging). **Phase 9 devDeps:** `eslint`, `@eslint/js`, `globals` — flat ESLint config at `server/eslint.config.js`. Requires Node `>=18`. Scripts: `dev` (`node --watch index.js`), `start`, `migrate` (`node db/migrate.js`), `lint` (`eslint . --max-warnings 0`).
+**Server** (`server/package.json`, `"type": "module"`): `express`, `cors`, `express-session`, `connect-pg-simple`, `bcryptjs` (Phase 2/3: replaced `bcrypt` — drop-in API-compatible, pure JS, eliminates the `tar`/`node-pre-gyp` high-severity transitive vulns), `pg`, `zod`, `dotenv`, `multer` (research attachment uploads), `helmet`, `express-rate-limit`, `pino`, `pino-http` (Phase 3: structured logging). **Phase 9 devDeps:** `eslint`, `@eslint/js`, `globals` — flat ESLint config at `server/eslint.config.js`. Requires Node `>=18`. Scripts: `dev` (`node --watch index.js`), `start`, `migrate` (`node db/migrate.js`), `lint` (`eslint . --max-warnings 0`), `test` (`vitest run` — all files; integration suites skip without DB), `test:integration` (`vitest run test/integration` — runs only the integration suite; requires `DATABASE_URL`).
 
 **Client** (`client/package.json`, `"type": "module"`): runtime — `react`, `react-dom`, `react-router-dom`, `axios`, `lucide-react`, `prism-react-renderer` (snippet syntax highlighting), `@uiw/react-md-editor` **4.1.1** (pinned exact — `^` removed; Docs markdown editor), `rehype-sanitize` (Phase 1: strips unsafe HTML/JS from rendered markdown); build — `vite`, `@vitejs/plugin-react`, `tailwindcss` (v3), `postcss`, `autoprefixer`, eslint toolchain.
 
@@ -107,6 +107,29 @@ Migrations live under `server/db/migrations/` (not `server/migrations/`). All fo
 - `005_idempotency_guards.sql` — Phase 2: adds `CHECK (amount <> 0)` on `transactions.amount`; adds partial UNIQUE index `idx_transactions_transfer_dedup` on `(user_id, date, amount, source_account_id, dest_account_id, description) WHERE type = 'Transfer'` to reject exact duplicate Transfer rows at the DB level.
 
 **Migration runner** — `server/db/migrate.js` (`npm run migrate`). Tracks applied files in a `schema_migrations` table; applies each pending `*.sql` in its own transaction. Handles two cases: a pre-existing DB where the v1 tables were created out-of-band (a CREATE that fails with "already exists" is recorded as applied), and dependency ordering on a fresh DB (a file referencing a not-yet-created table is deferred and retried in a later pass). Date-prefixed v1 files sort before the `NNN_` v2+ series so `002_finance_upgrade.sql` runs after the base tables. **Phase 2:** the runner now acquires a Postgres advisory lock (`pg_advisory_lock(7391842)`) for the lifetime of each run, released in a `finally` block, so concurrent replicas on rolling deploys cannot race and double-apply migrations.
+
+---
+
+## Test Architecture
+
+### Fast (mocked) unit tests — `server/test/*.js`
+
+All five files mock `../lib/db.js` (and `../lib/logger.js`) via `vi.mock`. They never connect to Postgres. Run via `npm test` on any machine.
+
+- `auth.test.js` — register/login hash and session logic
+- `ownership.test.js` — cross-user 404 guards (model layer)
+- `finance.math.test.js` — balance arithmetic, summary, budget math
+- `settle.atomicity.test.js` — `settleLedger` BEGIN/COMMIT/ROLLBACK flow (SQL-matching mocks — order-independent since Phase 10)
+- `upload.filter.test.js` — multer file-type rejection via the **real `researchFileFilter`** exported from `research.js` (Phase 10; previously used a re-implemented copy)
+
+### Integration tests — `server/test/integration/`
+
+Require `DATABASE_URL` (CI `postgres:16-alpine` service, or a local Docker Postgres). All suites are wrapped in `describe.skipIf(!hasDb)` so `npm test` stays green without a DB. Run the full suite with `npm run test:integration`.
+
+- `db.setup.js` — shared harness: runs `db/migrate.js` once via `execFileSync`, creates a `pg.Pool`, exports `makeUser`/`cleanupUsers` helpers with timestamp-unique emails to avoid collisions on reruns.
+- `isolation.int.test.js` — `getTransactionById(bTx.id, userA)` returns `null` against a real DB, proving the `WHERE t.user_id = $2` ownership clause fires.
+- `settle.int.test.js` — `settleLedger` with a non-owned `account_id` rejects and leaves the receivable `outstanding` (no partial state), proven against a real transaction.
+- `constraints.int.test.js` — zero-amount `INSERT` raises `23514` (`transactions_amount_nonzero` CHECK); duplicate Transfer raises `23505` on `idx_transactions_transfer_dedup` (requires non-NULL `source_account_id`/`dest_account_id` — two accounts are seeded in `beforeAll`).
 
 ---
 

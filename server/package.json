@@ -13,6 +13,7 @@
     "migrate": "node db/migrate.js",
     "lint": "eslint . --max-warnings 0",
     "test": "vitest run",
+    "test:integration": "vitest run test/integration",
     "openapi": "node scripts/generate-openapi.js"
   },
   "keywords": [],

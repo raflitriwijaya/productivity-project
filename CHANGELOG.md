@@ -7,6 +7,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Phase 10 — Integration Test Suite: Real-DB Tests, Real Multer Filter, De-brittle Settle Test (2026-06-10)
+
+#### Added
+- **Real-Postgres integration suite (`server/test/integration/`)** — three new test files exercise the riskiest DB guarantees that the mocked unit tests cannot verify:
+  - `isolation.int.test.js` — user A cannot read user B's transaction (`getTransactionById` returns `null` when queried with a foreign `user_id`).
+  - `settle.int.test.js` — a `settleLedger` call that receives a non-owned account ID rolls back completely; the receivable row stays `outstanding` with `settled_at = null`.
+  - `constraints.int.test.js` — a zero-amount `INSERT` on `transactions` fires `23514` (`transactions_amount_nonzero` CHECK); a duplicate Transfer `INSERT` fires `23505` on `idx_transactions_transfer_dedup`.
+  - `db.setup.js` — shared harness: runs `db/migrate.js` once via `execFileSync`, creates a `pg.Pool`, and provides `makeUser`/`cleanupUsers` helpers. All suites are wrapped in `describe.skipIf(!hasDb)` so `npm test` remains green on any machine without `DATABASE_URL`.
+- **`npm run test:integration`** script (`"vitest run test/integration"`) for running only the integration suite.
+
+#### Fixed
+- **`upload.filter.test.js` tested a copy, not the shipped filter (§7)** — the test re-declared `ALLOWED_EXT`, `ALLOWED_MIME`, and a fresh `multer({…})` instead of importing from `research.js`. A regression in the real filter would not have failed the test. Fix: `research.js` now exports `researchFileFilter` (and the two allowlist Sets); the test imports and mounts the real function with `multer.memoryStorage()` so no disk writes occur. All six assertion cases are retained.
+- **`settle.atomicity.test.js` brittle positional mock chain (§7)** — the three tests chained `mockResolvedValueOnce` in the exact query-call order; any reordering of equally-correct SQL would desync the chain without a real defect. Replaced with `mockImplementation` that branches on SQL content (`/FROM receivables/i`, `'BEGIN'`, `'COMMIT'`, etc.) so the mock is order-independent. Outcome assertions (`ROLLBACK` present, `COMMIT` absent/present, `result.status`) are unchanged.
+
 ### Phase 9 — DevOps: Client Sentry Docker, Env Parameterization, Server Lint, CI Postgres (2026-06-10)
 
 #### Fixed

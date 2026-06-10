@@ -78,16 +78,21 @@ const storage = multer.diskStorage({
   },
 });
 
+// Exported so the test exercises the SHIPPED filter, not a re-implemented copy.
+export function researchFileFilter(req, file, cb) {
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (!ALLOWED_EXT.has(ext) || !ALLOWED_MIME.has(file.mimetype)) {
+    return cb(new AppError('Unsupported file type.', 400, 'VALIDATION_ERROR', 'file'));
+  }
+  cb(null, true);
+}
+
+export { ALLOWED_EXT, ALLOWED_MIME };
+
 const upload = multer({
   storage,
   limits: { fileSize: MAX_FILE_SIZE },
-  fileFilter: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    if (!ALLOWED_EXT.has(ext) || !ALLOWED_MIME.has(file.mimetype)) {
-      return cb(new AppError('Unsupported file type.', 400, 'VALIDATION_ERROR', 'file'));
-    }
-    cb(null, true);
-  },
+  fileFilter: researchFileFilter,
 });
 
 // ─── Zod schemas ────────────────────────────────────────────────────────────

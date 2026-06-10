@@ -1,7 +1,8 @@
 // Phase 4: settle atomicity test — a mid-settle failure leaves no partial ledger state
+// Phase 10: replaced positional mockResolvedValueOnce chains with SQL-matching
+// mockImplementation so reordering equally-correct SQL doesn't desync the mock.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// We need to capture the mocked client before any module is imported
 const mockClient = {
   query: vi.fn(),
   release: vi.fn(),
@@ -30,18 +31,18 @@ beforeEach(() => {
 
 describe('settleLedger atomicity', () => {
   it('rolls back when the transaction INSERT fails mid-settle', async () => {
-    // BEGIN → SELECT ledger (found, outstanding) → SELECT account → INSERT (FAILS) → ROLLBACK
-    mockClient.query
-      .mockResolvedValueOnce({ rows: [] })             // BEGIN
-      .mockResolvedValueOnce({                          // SELECT ledger FOR UPDATE
-        rows: [{
-          id: 1, user_id: 1, person: 'Alice', description: 'test',
-          amount: '500.00', status: 'outstanding', account_id: 10, due_date: null,
-        }],
-      })
-      .mockResolvedValueOnce({ rows: [{ id: 10 }] })  // SELECT account ownership check
-      .mockRejectedValueOnce(new Error('DB write error')) // INSERT transactions FAILS
-      .mockResolvedValueOnce({ rows: [] });             // ROLLBACK
+    // Phase 10: match on SQL content, not call order — reordering correct SQL won't desync.
+    mockClient.query.mockImplementation((sql) => {
+      if (sql === 'BEGIN')    return Promise.resolve({ rows: [] });
+      if (sql === 'ROLLBACK') return Promise.resolve({ rows: [] });
+      if (/FROM receivables/i.test(sql)) return Promise.resolve({ rows: [{
+        id: 1, user_id: 1, person: 'Alice', description: 'test',
+        amount: '500.00', status: 'outstanding', account_id: 10, due_date: null,
+      }] });
+      if (/FROM accounts/i.test(sql))              return Promise.resolve({ rows: [{ id: 10 }] });
+      if (/INSERT INTO transactions/i.test(sql))   return Promise.reject(new Error('DB write error'));
+      return Promise.resolve({ rows: [] });
+    });
 
     await expect(settleLedger('receivables', 1, 1, { account_id: 10 }))
       .rejects.toThrow('DB write error');
@@ -52,14 +53,14 @@ describe('settleLedger atomicity', () => {
   });
 
   it('rolls back when the row is already settled', async () => {
-    // BEGIN → SELECT ledger (settled) → ROLLBACK (inside if-block) → outer catch also calls ROLLBACK
-    mockClient.query
-      .mockResolvedValueOnce({ rows: [] })   // BEGIN
-      .mockResolvedValueOnce({               // SELECT ledger → already settled
-        rows: [{ id: 2, status: 'settled', account_id: 10, amount: '200.00', user_id: 1 }],
-      })
-      .mockResolvedValueOnce({ rows: [] })   // ROLLBACK inside the 'if settled' branch
-      .mockResolvedValueOnce({ rows: [] });  // ROLLBACK in outer catch (always-rollback guard)
+    mockClient.query.mockImplementation((sql) => {
+      if (sql === 'BEGIN')    return Promise.resolve({ rows: [] });
+      if (sql === 'ROLLBACK') return Promise.resolve({ rows: [] });
+      if (/FROM receivables/i.test(sql)) return Promise.resolve({ rows: [{
+        id: 2, status: 'settled', account_id: 10, amount: '200.00', user_id: 1,
+      }] });
+      return Promise.resolve({ rows: [] });
+    });
 
     await expect(settleLedger('receivables', 2, 1, {}))
       .rejects.toMatchObject({ code: 'ALREADY_SETTLED' });
@@ -70,21 +71,20 @@ describe('settleLedger atomicity', () => {
   });
 
   it('commits successfully when all steps pass', async () => {
-    // BEGIN → SELECT ledger → SELECT account → INSERT transaction → UPDATE ledger → COMMIT
-    mockClient.query
-      .mockResolvedValueOnce({ rows: [] })             // BEGIN
-      .mockResolvedValueOnce({                          // SELECT ledger
-        rows: [{
-          id: 3, user_id: 1, person: 'Bob', description: null,
-          amount: '1000.00', status: 'outstanding', account_id: 10, due_date: null,
-        }],
-      })
-      .mockResolvedValueOnce({ rows: [{ id: 10 }] })  // SELECT account
-      .mockResolvedValueOnce({ rows: [] })             // INSERT transaction
-      .mockResolvedValueOnce({ rows: [] })             // UPDATE ledger
-      .mockResolvedValueOnce({ rows: [] });            // COMMIT
+    mockClient.query.mockImplementation((sql) => {
+      if (sql === 'BEGIN')    return Promise.resolve({ rows: [] });
+      if (sql === 'COMMIT')   return Promise.resolve({ rows: [] });
+      if (/FROM receivables/i.test(sql)) return Promise.resolve({ rows: [{
+        id: 3, user_id: 1, person: 'Bob', description: null,
+        amount: '1000.00', status: 'outstanding', account_id: 10, due_date: null,
+      }] });
+      if (/FROM accounts/i.test(sql))            return Promise.resolve({ rows: [{ id: 10 }] });
+      if (/INSERT INTO transactions/i.test(sql)) return Promise.resolve({ rows: [] });
+      if (/UPDATE receivables/i.test(sql))       return Promise.resolve({ rows: [] });
+      return Promise.resolve({ rows: [] });
+    });
 
-    // getLedgerById after commit uses pool.query (not the transaction client)
+    // getLedgerById after COMMIT uses pool.query (not the transaction client)
     pool.query.mockResolvedValueOnce({
       rows: [{
         id: 3, person: 'Bob', amount: '1000.00', status: 'settled',
