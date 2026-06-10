@@ -11,6 +11,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { validate } from '../middleware/validate.js';
 import { AppError } from '../lib/AppError.js';
+import { logger } from '../lib/logger.js';
 import {
   listAccounts, getBalances, patchAccount,
   listCategories,
@@ -219,16 +220,20 @@ for (const table of ['receivables', 'payables']) {
 
   router.post(`/${table}/:id/settle`, validate(settleSchema), async (req, res, next) => {
     try {
-      const row = await settleLedger(table, Number(req.params.id), req.user.id, req.body);
+      const id = Number(req.params.id);
+      const row = await settleLedger(table, id, req.user.id, req.body);
       if (!row) throw new AppError('Record not found.', 404, 'NOT_FOUND');
+      (req.log ?? logger).info({ event: 'SETTLE', userId: req.user.id, ledgerType: table, ledgerId: id, reqId: req.id }, `User ${req.user.id} settled ${table} ${id}`);
       res.json({ success: true, data: row });
     } catch (err) { next(err); }
   });
 
   router.delete(`/${table}/:id`, async (req, res, next) => {
     try {
-      const ok = await deleteLedger(table, Number(req.params.id), req.user.id);
+      const id = Number(req.params.id);
+      const ok = await deleteLedger(table, id, req.user.id);
       if (!ok) throw new AppError('Record not found.', 404, 'NOT_FOUND');
+      (req.log ?? logger).info({ event: 'DELETE', userId: req.user.id, resource: table, resourceId: id, reqId: req.id }, `User ${req.user.id} deleted ${table} ${id}`);
       res.json({ success: true, data: null });
     } catch (err) { next(err); }
   });
@@ -314,6 +319,7 @@ router.get('/:id', async (req, res, next) => {
 router.post('/', validate(txCreateSchema), async (req, res, next) => {
   try {
     const row = await createTransaction(req.user.id, req.body);
+    (req.log ?? logger).info({ event: 'TRANSACTION_CREATE', userId: req.user.id, type: req.body.type, amount: req.body.amount, transactionId: row.id, reqId: req.id }, `User ${req.user.id} created ${req.body.type} transaction ${row.id} for ${req.body.amount}`);
     res.status(201).json({ success: true, data: row });
   } catch (err) { next(err); }
 });
@@ -328,8 +334,10 @@ router.patch('/:id', validate(txPatchSchema), async (req, res, next) => {
 
 router.delete('/:id', async (req, res, next) => {
   try {
-    const deleted = await deleteTransaction(Number(req.params.id), req.user.id);
+    const id = Number(req.params.id);
+    const deleted = await deleteTransaction(id, req.user.id);
     if (!deleted) throw new AppError('Transaction not found.', 404, 'NOT_FOUND');
+    (req.log ?? logger).info({ event: 'DELETE', userId: req.user.id, resource: 'transaction', resourceId: id, reqId: req.id }, `User ${req.user.id} deleted transaction ${id}`);
     res.json({ success: true, data: null });
   } catch (err) { next(err); }
 });

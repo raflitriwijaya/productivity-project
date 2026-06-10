@@ -124,14 +124,17 @@ Balance rule: Income → +dest; Expense → −source; Transfer → −source +d
 
 1. `pino-http` — structured logging; assigns `req.id` to every request
 2. `cors` — origin `CLIENT_ORIGIN`, `credentials: true`
-3. `express.json` / `express.urlencoded` — 1 MB body limit
-4. `express-session` — Postgres session store, `httpOnly` + `secure` (prod) cookie `sid`
-5. `trust proxy: 1` — (prod only) so Express sees real IP behind nginx
-6. `helmet` — CSP, HSTS (prod), X-Frame-Options, X-Content-Type-Options, Referrer-Policy
-7. `authLimiter` / `generalLimiter` — rate limiting per IP
-8. Route handlers
-9. 404 catch-all for `/api`
-10. `errorHandler` — standard error envelope; Phase 5: captures to Sentry when `SENTRY_DSN` set
+3. HTTP metrics middleware — records duration + count per request via `prom-client`
+4. `express.json` / `express.urlencoded` — 1 MB body limit
+5. `express-session` — Postgres session store, `httpOnly` + `secure` (prod) cookie `sid`
+6. `trust proxy: 1` — (prod only) so Express sees real IP behind nginx
+7. `helmet` — CSP, HSTS (prod), X-Frame-Options, X-Content-Type-Options, Referrer-Policy
+8. `authLimiter` / `generalLimiter` — rate limiting per IP
+9. `/metrics` — unauthenticated Prometheus scrape endpoint (restrict via nginx/Cloudflare in prod; see [RUNBOOK §6.3](RUNBOOK.md#63-metrics-endpoint-security))
+10. `/health` — unauthenticated DB connectivity probe
+11. Route handlers
+12. 404 catch-all for `/api`
+13. `errorHandler` — standard error envelope; Phase 5: captures to Sentry when `SENTRY_DSN` set
 
 ---
 

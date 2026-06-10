@@ -227,6 +227,14 @@ router.get('/export', async (req, res, next) => {
       return next(new AppError('Format must be json or csv.', 400, 'VALIDATION_ERROR', 'format'));
     }
 
+    (req.log ?? logger).info({
+      event: 'EXPORT',
+      userId: req.user.id,
+      format,
+      filters: { q: req.query.q, tags: req.query.tags, date_from: req.query.date_from, date_to: req.query.date_to, topic_id: req.query.topic_id },
+      reqId: req.id,
+    }, `User ${req.user.id} exported research data as ${format}`);
+
     // Phase 8: bound export memory — cap at EXPORT_MAX rows and reject larger
     // result sets with 413 so a single request can't pin the container heap.
     const EXPORT_MAX = 10000;
@@ -495,6 +503,7 @@ router.delete('/:id', async (req, res, next) => {
     const id = parseInt(req.params.id, 10);
     const deleted = await deleteResearchEntry(id, req.user.id);
     if (!deleted) return next(new AppError('Research entry not found.', 404, 'NOT_FOUND'));
+    (req.log ?? logger).info({ event: 'DELETE', userId: req.user.id, resource: 'research_entry', resourceId: id, reqId: req.id }, `User ${req.user.id} deleted research_entry ${id}`);
     res.json({ success: true, data: { id } });
   } catch (err) {
     next(err);

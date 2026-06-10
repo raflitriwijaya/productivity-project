@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { findByEmail, createUser, findById } from '../models/user.model.js';
 import { AppError } from '../lib/AppError.js';
 import { validate } from '../middleware/validate.js';
+import { logger } from '../lib/logger.js';
 
 export const authRouter = Router();
 
@@ -46,6 +47,8 @@ authRouter.post('/register', validate(registerSchema), async (req, res, next) =>
     // Establish session immediately after registration (auto-login).
     req.session.userId = user.id;
 
+    (req.log ?? logger).info({ event: 'REGISTER_SUCCESS', userId: user.id, reqId: req.id }, `New user registered: ${user.id}`);
+
     return res.status(201).json({
       success: true,
       data: user,
@@ -69,6 +72,7 @@ authRouter.post('/login', validate(loginSchema), async (req, res, next) => {
 
     const passwordMatch = await bcrypt.compare(password, user.password_hash);
     if (!passwordMatch) {
+      (req.log ?? logger).info({ event: 'LOGIN_FAILURE', email: email.toLowerCase().trim(), reason: 'invalid_password', reqId: req.id }, `Failed login attempt for ${email}`);
       throw new AppError('Invalid email or password.', 401, 'INVALID_CREDENTIALS');
     }
 
@@ -76,6 +80,8 @@ authRouter.post('/login', validate(loginSchema), async (req, res, next) => {
     req.session.regenerate((err) => {
       if (err) return next(err);
       req.session.userId = user.id;
+
+      (req.log ?? logger).info({ event: 'LOGIN_SUCCESS', userId: user.id, reqId: req.id }, `User ${user.id} logged in`);
 
       // Strip password_hash before sending response.
       const { password_hash: _omit, ...safeUser } = user;
@@ -93,8 +99,10 @@ authRouter.post('/login', validate(loginSchema), async (req, res, next) => {
 // ─── POST /api/auth/logout ────────────────────────────────────────────────────
 
 authRouter.post('/logout', (req, res, next) => {
+  const userId = req.session?.userId;
   req.session.destroy((err) => {
     if (err) return next(err);
+    (req.log ?? logger).info({ event: 'LOGOUT', userId, reqId: req.id }, `User ${userId} logged out`);
     res.clearCookie('sid'); // 'sid' must match the cookie name set in express-session config (see index.js).
     return res.json({ success: true, data: null });
   });

@@ -189,3 +189,56 @@ Attachment files are currently stored on the `api` container's local filesystem,
 
 - `generalLimiter` is 100 req/min/IP. Behind a corporate NAT all users share one IP. Increase `max` or switch to a user-ID key if needed.
 - `authLimiter` is 5 req/15 min/IP — intentionally strict.
+
+---
+
+## 6. Alerting & Monitoring
+
+### 6.1 Metrics Endpoint
+
+The API exposes a `/metrics` endpoint (Prometheus text format) with:
+
+| Metric | Type | Labels | Description |
+|--------|------|--------|-------------|
+| `productivity_http_request_duration_seconds` | Histogram | method, route, status_code | Request latency with 10ms–10s buckets |
+| `productivity_http_requests_total` | Counter | method, route, status_code | Total request count |
+| `productivity_pg_pool_connections` | Gauge | state (total/idle/waiting) | Database pool saturation |
+| `productivity_*` (default) | Various | — | CPU, memory, event loop lag, GC |
+
+### 6.2 Recommended Alert Rules
+
+If using Prometheus + Alertmanager (or any compatible monitoring stack), alert on:
+
+| Alert | Expression | Threshold | Severity |
+|-------|-----------|-----------|----------|
+| **High Error Rate** | `rate(productivity_http_requests_total{status_code=~"5.."}[5m]) / rate(productivity_http_requests_total[5m])` | > 0.05 (5%) for 5 min | Critical |
+| **P99 Latency Spike** | `histogram_quantile(0.99, rate(productivity_http_request_duration_seconds_bucket[5m]))` | > 2s for 5 min | Warning |
+| **Pool Exhaustion** | `productivity_pg_pool_connections{state="waiting"}` | > 0 for 5 min | Critical |
+| **Pool Near Capacity** | `productivity_pg_pool_connections{state="total"} / 10` | > 0.8 (80%) for 10 min | Warning |
+| **Health Check Failing** | `rate(productivity_http_requests_total{route="/health",status_code="503"}[5m])` | > 0 for 2 min | Critical |
+| **No Metrics** | `up{job="productivity"}` | == 0 for 5 min | Critical |
+
+### 6.3 Metrics Endpoint Security
+
+`/metrics` is **unauthenticated** (Prometheus cannot log in). In production, restrict access via:
+
+- **Cloudflare Tunnel:** add a WAF rule allowing only your Prometheus IP or blocking all external traffic to `/metrics`
+- **Nginx:** add `allow <prometheus-ip>; deny all;` to the `/metrics` location block
+- **Docker network:** don't expose the API port publicly; scrape from a Prometheus container on the same Docker network
+
+### 6.4 Audit Log Events
+
+The following events are logged at `info` level with `userId` and `reqId` as structured fields:
+
+| Event | Logged When |
+|-------|-------------|
+| `LOGIN_SUCCESS` | User successfully authenticates |
+| `LOGIN_FAILURE` | Invalid password provided |
+| `REGISTER_SUCCESS` | New user account created |
+| `LOGOUT` | User explicitly logs out |
+| `EXPORT` | Research data exported (JSON/CSV) |
+| `SETTLE` | Receivable/payable settled |
+| `TRANSACTION_CREATE` | New financial transaction created |
+| `DELETE` | Any resource deleted (todos, finances, research, learning, engineer) |
+
+Audit events are structured JSON via pino and include `reqId` for cross-referencing with error logs and Sentry reports. Search by `reqId` across both to reconstruct any incident timeline.

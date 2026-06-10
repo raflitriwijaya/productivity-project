@@ -5,6 +5,7 @@ import { Router } from 'express';
 import { z }      from 'zod';
 import { validate }           from '../middleware/validate.js';
 import { AppError }           from '../lib/AppError.js';
+import { logger }             from '../lib/logger.js';
 import {
   listLearningItems,
   getLearningItemById,
@@ -108,9 +109,11 @@ router.patch('/:id', validate(patchSchema), async (req, res, next) => {
 // ─── DELETE /api/learning/:id ────────────────────────────────────────────────
 router.delete('/:id', async (req, res, next) => {
   try {
-    const deleted = await deleteLearningItem(parseInt(req.params.id, 10), req.user.id);
+    const id = parseInt(req.params.id, 10);
+    const deleted = await deleteLearningItem(id, req.user.id);
     if (!deleted) return next(new AppError('Learning item not found.', 404, 'NOT_FOUND'));
-    res.json({ success: true, data: { id: parseInt(req.params.id, 10) } });
+    (req.log ?? logger).info({ event: 'DELETE', userId: req.user.id, resource: 'learning_item', resourceId: id, reqId: req.id }, `User ${req.user.id} deleted learning_item ${id}`);
+    res.json({ success: true, data: { id } });
   } catch (err) {
     next(err);
   }

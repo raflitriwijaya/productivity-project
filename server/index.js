@@ -19,6 +19,8 @@ import helmet from 'helmet'; // Phase 1: security headers
 import rateLimit from 'express-rate-limit'; // Phase 1: brute-force / abuse protection
 import pinoHttp from 'pino-http'; // Phase 3: per-request logging + auto request IDs
 import { logger } from './lib/logger.js'; // Phase 3: shared pino instance
+import { register, httpRequestDuration, httpRequestTotal } from './lib/metrics.js';
+import { startPoolMetrics, stopPoolMetrics } from './lib/poolMetrics.js';
 
 // ── Internal modules ──────────────────────────────────────────────────────────
 import { pool } from './lib/db.js';
@@ -158,6 +160,31 @@ app.use(helmet({
 // Phase 1: public static mount removed to gate downloads behind auth + ownership.
 fs.mkdirSync(uploadsDir, { recursive: true });
 
+// ─── HTTP metrics middleware ──────────────────────────────────────────────────
+// Records duration and count for every request. Placed after pino-http so
+// req.log is available, and before routes so all paths are instrumented.
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = (Date.now() - start) / 1000;
+    const route = req.route?.path ?? req.path ?? 'unknown';
+    const statusCode = res.statusCode.toString();
+    httpRequestDuration.observe({ method: req.method, route, status_code: statusCode }, duration);
+    httpRequestTotal.inc({ method: req.method, route, status_code: statusCode });
+  });
+  next();
+});
+
+// ─── Metrics endpoint (unauthenticated — restrict via nginx/Cloudflare in prod)
+app.get('/metrics', async (_req, res) => {
+  try {
+    res.set('Content-Type', register.contentType);
+    res.end(await register.metrics());
+  } catch {
+    res.status(500).end();
+  }
+});
+
 // ─── Health check (no auth) ───────────────────────────────────────────────────
 // Phase 12: verify DB connectivity so Docker healthcheck and nginx depends_on
 // reflect real availability, not just process liveness.
@@ -203,6 +230,7 @@ app.use(errorHandler);
 // Phase 2: capture server handle for graceful shutdown
 const server = app.listen(parseInt(PORT, 10), () => {
   logger.info({ port: PORT, env: NODE_ENV }, 'Server started'); // Phase 3: structured startup log
+  startPoolMetrics();
 });
 
 // Phase 2: drain in-flight requests then close the pg pool on SIGTERM/SIGINT
@@ -216,6 +244,7 @@ function shutdown(signal) {
 
   server.close(() => {
     logger.info('HTTP server closed');
+    stopPoolMetrics();
     pool.end(() => {
       logger.info('pg pool drained — bye');
       process.exit(0);

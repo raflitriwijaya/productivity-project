@@ -10,6 +10,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { validate } from '../middleware/validate.js';
 import { AppError } from '../lib/AppError.js';
+import { logger } from '../lib/logger.js';
 import {
   // projects
   listProjects, getProjectById, createProject, patchProject, deleteProject,
@@ -201,6 +202,7 @@ router.delete('/snippets/:id', async (req, res, next) => {
     const id = parseId(req.params.id);
     const deleted = await deleteSnippet(id, req.user.id);
     if (!deleted) return next(new AppError('Snippet not found.', 404, 'NOT_FOUND'));
+    (req.log ?? logger).info({ event: 'DELETE', userId: req.user.id, resource: 'snippet', resourceId: id, reqId: req.id }, `User ${req.user.id} deleted snippet ${id}`);
     res.json({ success: true, data: { id } });
   } catch (err) { next(err); }
 });
@@ -229,6 +231,7 @@ router.delete('/documents/:id', async (req, res, next) => {
     const id = parseId(req.params.id);
     const deleted = await deleteDocument(id, req.user.id);
     if (!deleted) return next(new AppError('Document not found.', 404, 'NOT_FOUND'));
+    (req.log ?? logger).info({ event: 'DELETE', userId: req.user.id, resource: 'document', resourceId: id, reqId: req.id }, `User ${req.user.id} deleted document ${id}`);
     res.json({ success: true, data: { id } });
   } catch (err) { next(err); }
 });
@@ -250,6 +253,7 @@ router.delete('/issues/:id', async (req, res, next) => {
     const id = parseId(req.params.id);
     const deleted = await deleteIssue(id, req.user.id);
     if (!deleted) return next(new AppError('Issue not found.', 404, 'NOT_FOUND'));
+    (req.log ?? logger).info({ event: 'DELETE', userId: req.user.id, resource: 'issue', resourceId: id, reqId: req.id }, `User ${req.user.id} deleted issue ${id}`);
     res.json({ success: true, data: { id } });
   } catch (err) { next(err); }
 });
@@ -383,6 +387,7 @@ router.delete('/:id', async (req, res, next) => {
     const id = parseId(req.params.id);
     const deleted = await deleteProject(id, req.user.id);
     if (!deleted) return next(new AppError('Project not found.', 404, 'NOT_FOUND'));
+    (req.log ?? logger).info({ event: 'DELETE', userId: req.user.id, resource: 'project', resourceId: id, reqId: req.id }, `User ${req.user.id} deleted project ${id}`);
     res.json({ success: true, data: { id } });
   } catch (err) { next(err); }
 });

@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { validate } from '../middleware/validate.js';
 import { AppError } from '../lib/AppError.js';
+import { logger } from '../lib/logger.js';
 import {
   listTodos,
   getTodoById,
@@ -108,6 +109,7 @@ router.delete('/:id', async (req, res, next) => {
     const id = parseInt(req.params.id, 10);
     const deleted = await deleteTodo(id, req.user.id);
     if (!deleted) throw new AppError('Todo not found.', 404, 'NOT_FOUND');
+    (req.log ?? logger).info({ event: 'DELETE', userId: req.user.id, resource: 'todo', resourceId: id, reqId: req.id }, `User ${req.user.id} deleted todo ${id}`);
     res.json({ success: true, data: null });
   } catch (err) {
     next(err);
