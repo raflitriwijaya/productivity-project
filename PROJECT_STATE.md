@@ -447,6 +447,25 @@ Three medium-priority issues from AUDIT_REPORT_V2.md (§2, §4-NEW) fixed:
 3. **Corrected App.jsx comment** — the old comment claimed Engineering was "the only" route pulling in the editor; rewritten to name both Engineering and Research as code-split consumers and reference the Phase 11 lazy-load.
 4. **Actionable duplicate-transfer error** — `errorHandler.js` now branches on `err.constraint === 'idx_transactions_transfer_dedup'` before the generic `23505` fallback, returning `{ code: 'DUPLICATE_TRANSFER', message: '…add or change the description…', field: 'description' }`. All other unique-constraint violations (email, budget category, etc.) keep the existing generic `CONFLICT` path. No migration or model change needed.
 
+## Post-V3 Enhancements (2026-06-11)
+
+### Observability & Metrics
+- **`prom-client` metrics** exposed at `/metrics` (unauthenticated; restrict via nginx in prod): HTTP request duration histogram (10ms–10s buckets), request counter labeled by method/route/status_code, and pool gauge (`total`/`idle`/`waiting`, sampled every 15s via `poolMetrics.js`). Default process metrics (CPU, memory, event loop) under `productivity_` prefix.
+- **Audit trail**: structured `logger.info()` events for `REGISTER_SUCCESS`, `LOGIN_SUCCESS`, `LOGIN_FAILURE`, `LOGOUT`, `EXPORT`, `SETTLE`, `TRANSACTION_CREATE`, and all `DELETE` operations — each with `userId` + `reqId` for cross-referencing with error logs and Sentry.
+- **Pino redaction**: `redact: ['req.headers.cookie', 'req.headers.authorization']` in logger config.
+- **Alerting runbook**: [RUNBOOK.md §6](docs/RUNBOOK.md) — 6 Prometheus alert rules for error rate, latency, pool exhaustion, and health.
+
+### E2E Testing & Accessibility
+- **Playwright**: `client/playwright.config.js` with `chromium-desktop` + `chromium-mobile` projects; `client/e2e/auth.setup.js` shared auth helper; `client/e2e/smoke.spec.js` (login, dashboard, create transaction, research upload→download, dark mode, mobile nav); `client/e2e/a11y.spec.js` (axe-core WCAG AA on 7 pages × 2 viewports). 30 total tests. Dedicated CI `e2e` job with Postgres service.
+- **Modal focus trap**: rewritten `Modal.jsx` traps Tab/Shift+Tab within dialog, body scroll lock, auto-focus first element, restores focus to opener on close.
+- **Per-route titles**: `useDocumentTitle` hook on all 20 pages ("Page Name — Rafli's Productivity Suite").
+
+### API Documentation & Code Quality
+- **OpenAPI 57 paths**: regenerated `docs/openapi.json` covering all modules; CI-gated (≥75 `addPath` calls in generator script).
+- **Shared enums**: `server/lib/enums.js` centralizes all magic strings; routes and models import from it.
+- **Doc hierarchy**: `ARCHITECTURE.md` is canonical; `PROJECT_STATE.md` is a chronological phase log.
+- **Legacy `file_path`**: attachment creation now stores only `filename`; download/delete reconstruct path.
+
 ## Pending / Known Issues
 
 - **Two justified inline `style` widths.** `LearningRow.jsx` and `RecentLearning.jsx` progress bars use `style={{ width: \`${pct}%\` }}` — a runtime 0–100% width has no static Tailwind equivalent. This is the sole accepted exception to §10 NEVER #2.

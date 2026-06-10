@@ -3,7 +3,7 @@
 // ancestors can't trap it (§10 ALWAYS #10). Esc and backdrop-click close it.
 // Phase 12: traps Tab focus within the dialog and restores focus on close.
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
@@ -32,8 +32,7 @@ const sizeMap = {
 export function Modal({ isOpen, onClose, title, size = 'md', showClose = true, children, footer }) {
   const modalRef = useRef(null);
   const previousActiveElement = useRef(null);
-  // Stable unique ID per modal instance so multiple nested modals don't share the same labelledby.
-  const titleId = useRef(`modal-title-${Math.random().toString(36).slice(2, 9)}`);
+  const titleId = useId();
 
   // Focus trap: cycle Tab/Shift+Tab within focusable elements inside the dialog.
   const trapFocus = useCallback((e) => {
@@ -114,13 +113,13 @@ export function Modal({ isOpen, onClose, title, size = 'md', showClose = true, c
         ref={modalRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby={titleId.current}
+        aria-labelledby={titleId}
         tabIndex={-1}
         className={`relative z-10 w-full ${sizeMap[size] ?? sizeMap.md} max-h-[90vh] bg-white dark:bg-gray-800 rounded-2xl shadow-xl flex flex-col overflow-hidden focus:outline-none focus:ring-2 focus:ring-moss-500`}
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200 dark:border-gray-700 flex-shrink-0">
           <h2
-            id={titleId.current}
+            id={titleId}
             className="text-lg font-semibold text-stone-900 dark:text-gray-50 tracking-[-0.01em]"
           >
             {title}

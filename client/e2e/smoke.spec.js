@@ -9,7 +9,7 @@ test.describe('Smoke Tests', () => {
   let credentials;
   let baseURL;
 
-  test.beforeAll(async ({ browser, request }) => {
+  test.beforeAll(async ({ browser: _browser, request }) => {
     baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173';
     credentials = await ensureTestUser(request);
   });

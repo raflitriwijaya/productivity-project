@@ -7,6 +7,31 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [Phase 13–15] — 2026-06-11
+
+### Phase 13 — Observability & Metrics
+- **Added `prom-client` metrics endpoint at `/metrics`** with HTTP request histogram, request counter, and pool saturation gauge (`total`/`idle`/`waiting`, sampled every 15s)
+- **Added pool metrics module** (`server/lib/poolMetrics.js`) with lifecycle (`startPoolMetrics`/`stopPoolMetrics`) tied to server start/shutdown
+- **Added audit-trail structured logging** for `LOGIN_SUCCESS`, `LOGIN_FAILURE`, `LOGOUT`, `REGISTER_SUCCESS`, `EXPORT`, `SETTLE`, `TRANSACTION_CREATE`, and `DELETE` across all routers — each with `userId`+`reqId`
+- **Added pino `redact`** for `req.headers.cookie` and `req.headers.authorization` to prevent secret leakage into logs
+- **Added alerting runbook** (`docs/RUNBOOK.md` §6) with 6 Prometheus alert expressions: high error rate, p99 latency, pool exhaustion, pool near-capacity, `/health` 503s, and scrape-down
+
+### Phase 14 — E2E Testing & Accessibility
+- **Installed Playwright** with 30 tests across `chromium-desktop` and `chromium-mobile` projects (`smoke.spec.js` 8 tests, `a11y.spec.js` 7 pages × 2 viewports)
+- **Installed `@axe-core/playwright`** for WCAG AA accessibility audits on Dashboard, Todo, Finance, Finance Dashboard, Accounts, Learning, and Research
+- **Rewrote `Modal.jsx` with full focus trap:** Tab/Shift+Tab cycle within dialog, body scroll lock, auto-focus first element, restore focus to opener on close
+- **Added `useDocumentTitle` hook** with per-route titles ("Page Name — Rafli's Productivity Suite") on all 20 pages
+- **Added `data-testid="stat-card"`** to StatCard component for e2e selectors
+- **Added dedicated e2e CI job** with Postgres service, server/client boot, Playwright execution, and screenshot artifact upload on failure
+
+### Phase 15 — API Documentation & Code Cleanup
+- **Regenerated OpenAPI spec to 57 paths** (up from 14) via `server/scripts/generate-openapi.js` (94 `addPath` calls), covering all auth, todos, finances (transactions/receivables/payables/portfolio/budgets/accounts/categories/dashboard), learning, research (entries/topics/tags/stats/attachments/export/bulk), engineer (projects/snippets/documents/checkins/issues/roadmap), `/health`, and `/metrics`
+- **Added CI gate** that fails the build if `addPath` count drops below 75
+- **Extracted `server/lib/enums.js`** — centralized `TX_TYPES`, `ACCOUNT_TYPES`, `TODO_STATUSES`, `LEARNING_*`, `ENTRY_*`, `TOPIC_STATUSES`, `ALLOWED_EXT/MIME`, `PROJECT_*`, `ISSUE_*`, `ROADMAP_CATEGORIES` — replacing duplicated magic strings across routes and models
+- **Demoted `PROJECT_STATE.md` to chronological phase log** and made `docs/ARCHITECTURE.md` the canonical architecture reference
+- **Stopped writing legacy absolute `file_path`** in attachment creation (`file.filename` only)
+
+
 ### Phase 12 — Audit V3 Quick-Wins: Health DB Check, Dedup NULL Fix, Container Hardening, Coverage, Redact, Pool Env (2026-06-10)
 
 #### Fixed
