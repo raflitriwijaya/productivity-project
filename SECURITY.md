@@ -35,6 +35,10 @@ Once a fix is merged, the vulnerability will be documented in [CHANGELOG.md](CHA
 | Password hashing | `bcryptjs` at cost factor 12 |
 | Upload filenames | `crypto.randomUUID()` — no user-controlled path components |
 | Attachment auth | Downloads gated behind `requireAuth` + ownership check; no public `/uploads/` static mount |
+| Pre-upload ownership | `requireOwnedEntry` middleware verifies entry ownership *before* multer writes to disk; unauthorized upload requests are rejected without touching `server/uploads/` |
+| Attachment delete path | DELETE reconstructs path from `filename` only (`path.join(uploadsDir, filename)`), never trusts the stored absolute `file_path`; host/mount-independent |
+| Export size cap | `/api/research/export` capped at 10,000 rows; returns `413` on overflow to prevent a single request from pinning the container heap |
+| Month/year validation | Finance endpoints reject present-but-invalid `?month`/`?year` params with `400 VALIDATION_ERROR` rather than silently treating them as all-time queries |
 | DB errors | pg `23505` mapped to `409`; 500 details masked from client |
 | Error reporting | Sentry captures unhandled exceptions (when `SENTRY_DSN` set); request ID (`reqId`) surfaced for correlation |
 

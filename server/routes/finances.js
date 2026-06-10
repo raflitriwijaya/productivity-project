@@ -30,12 +30,28 @@ const ADJUSTMENTS = ['Balance Adjustment', 'Market Adjustment'];
 const DATE_RE    = /^\d{4}-\d{2}-\d{2}$/;
 const nonEmpty   = (d) => Object.keys(d).length > 0;
 
-/** Parse ?month & ?year query params into integers, or undefined if absent/invalid. */
+/**
+ * Parse ?month & ?year query params into integers.
+ * Phase 8: absent → {} (all-time). Present-but-invalid (e.g. month=13, month=0,
+ * year=abc, or only one of the two) → throw 400 instead of silently returning
+ * all-time data, which looked like a successful filter to the user.
+ */
 function parseMonthYear(req) {
+  const hasMonth = req.query.month !== undefined && req.query.month !== '';
+  const hasYear  = req.query.year  !== undefined && req.query.year  !== '';
+  if (!hasMonth && !hasYear) return {}; // neither supplied → all-time
+
   const month = parseInt(req.query.month, 10);
   const year  = parseInt(req.query.year, 10);
-  const valid = Number.isInteger(month) && month >= 1 && month <= 12 && Number.isInteger(year) && year >= 1900;
-  return valid ? { month, year } : {};
+  const valid = Number.isInteger(month) && month >= 1 && month <= 12
+             && Number.isInteger(year)  && year >= 1900;
+  if (!valid) {
+    throw new AppError(
+      'month must be 1–12 and year must be a 4-digit year (both required together).',
+      400, 'VALIDATION_ERROR', 'month'
+    );
+  }
+  return { month, year };
 }
 
 const nullableId = z.number().int().positive().nullable().optional();

@@ -16,6 +16,7 @@ import multer from 'multer';
 
 import { validate } from '../middleware/validate.js';
 import { AppError } from '../lib/AppError.js';
+import { logger } from '../lib/logger.js';
 import {
   listResearchEntries,
   getResearchEntryById,
@@ -149,6 +150,22 @@ const bulkDeleteSchema = z.object({
   ids: z.array(z.number().int().positive()).min(1, 'At least one id is required.'),
 });
 
+// ─── Pre-upload ownership guard ───────────────────────────────────────────────
+// Phase 8: verify entry ownership BEFORE multer writes anything to disk, so a
+// flood of uploads to non-owned :id values never churns the filesystem. Stashes
+// the entry on req so the POST handler doesn't re-query.
+async function requireOwnedEntry(req, res, next) {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const entry = await getResearchEntryById(id, req.user.id);
+    if (!entry) return next(new AppError('Research entry not found.', 404, 'NOT_FOUND'));
+    req.ownedEntry = entry;
+    next();
+  } catch (err) {
+    next(err);
+  }
+}
+
 // ─── Shared query-param parsing for list-style endpoints ─────────────────────
 
 function parseListOpts(query) {
@@ -205,14 +222,23 @@ router.get('/export', async (req, res, next) => {
       return next(new AppError('Format must be json or csv.', 400, 'VALIDATION_ERROR', 'format'));
     }
 
-    // Export all matching rows, not just one page.
-    const opts = { ...parseListOpts(req.query), page: 1, per_page: 100000 };
-    const { rows } = await listResearchEntries(req.user.id, opts);
+    // Phase 8: bound export memory — cap at EXPORT_MAX rows and reject larger
+    // result sets with 413 so a single request can't pin the container heap.
+    const EXPORT_MAX = 10000;
+    const opts = { ...parseListOpts(req.query), page: 1, per_page: EXPORT_MAX };
+    const { rows, total } = await listResearchEntries(req.user.id, opts);
+
+    if (total > EXPORT_MAX) {
+      return next(new AppError(
+        `Export too large: ${total} entries match (max ${EXPORT_MAX}). Narrow the filters (type, topic, date range, or search) and try again.`,
+        413, 'PAYLOAD_TOO_LARGE'
+      ));
+    }
 
     if (format === 'json') {
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('Content-Disposition', 'attachment; filename="research-export.json"');
-      return res.send(JSON.stringify(rows, null, 2));
+      return res.send(JSON.stringify(rows)); // Phase 8: no pretty-print — halves payload + heap
     }
 
     // CSV
@@ -383,8 +409,14 @@ router.delete('/attachments/:id', async (req, res, next) => {
     const entry = await getResearchEntryById(attachment.entry_id, req.user.id);
     if (!entry) return next(new AppError('Attachment not found.', 404, 'NOT_FOUND'));
 
-    // Remove the file from disk first (best effort), then the metadata row.
-    fs.rm(attachment.file_path, { force: true }, () => {});
+    // Phase 8: reconstruct path from filename (matches the download route) —
+    // never trust the stored absolute file_path, which breaks on a host/mount move.
+    const filePath = path.join(uploadsDir, attachment.filename);
+    try {
+      await fs.promises.rm(filePath, { force: true });
+    } catch (rmErr) {
+      (req.log ?? logger).error({ err: rmErr, path: filePath }, 'Failed to remove attachment file');
+    }
     await deleteAttachment(attId);
 
     res.json({ success: true, data: { id: attId } });
@@ -511,7 +543,9 @@ router.get('/:id/topics', async (req, res, next) => {
 // ─── Entry attachments ───────────────────────────────────────────────────────
 
 // POST /api/research/:id/attachments  → single-file upload
-router.post('/:id/attachments', (req, res, next) => {
+// Phase 8: requireOwnedEntry runs FIRST (no disk write for unauthorized callers),
+// then multer, then persist. Any post-write failure cleans up with an awaited rm.
+router.post('/:id/attachments', requireOwnedEntry, (req, res, next) => {
   upload.single('file')(req, res, (err) => {
     if (err) {
       if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
@@ -523,16 +557,9 @@ router.post('/:id/attachments', (req, res, next) => {
   });
 }, async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id, 10);
-    const entry = await getResearchEntryById(id, req.user.id);
-    if (!entry) {
-      // Entry not owned/found: clean up the just-uploaded file.
-      if (req.file) fs.rm(req.file.path, { force: true }, () => {});
-      return next(new AppError('Research entry not found.', 404, 'NOT_FOUND'));
-    }
     if (!req.file) return next(new AppError('No file uploaded.', 400, 'VALIDATION_ERROR', 'file'));
 
-    const attachment = await createAttachment(id, {
+    const attachment = await createAttachment(req.ownedEntry.id, {
       filename:      req.file.filename,
       original_name: req.file.originalname,
       file_path:     req.file.path,
@@ -541,6 +568,14 @@ router.post('/:id/attachments', (req, res, next) => {
     });
     res.status(201).json({ success: true, data: attachment });
   } catch (err) {
+    // Phase 8: row insert failed but file is on disk — clean up, awaited + logged.
+    if (req.file) {
+      try {
+        await fs.promises.rm(req.file.path, { force: true });
+      } catch (rmErr) {
+        (req.log ?? logger).error({ err: rmErr, path: req.file.path }, 'Failed to clean up orphaned upload');
+      }
+    }
     next(err);
   }
 });

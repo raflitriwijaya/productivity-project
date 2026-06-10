@@ -7,6 +7,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Phase 8 — Backend Resilience: Export Cap, Pre-Upload Ownership, Host-Independent Delete, Strict Month/Year (2026-06-10)
+
+#### Fixed
+- **Export memory unbounded (§3)** — `/api/research/export` previously requested up to 100,000 rows and `JSON.stringify(rows, null, 2)`'d the whole result set into memory. Now capped at `EXPORT_MAX = 10000`; if `total > EXPORT_MAX` the endpoint returns `413 PAYLOAD_TOO_LARGE` with a message instructing the user to narrow filters. JSON export drops the `null, 2` pretty-print (halves payload + heap). CSV path shares the same cap via the 413 guard.
+- **Disk-churn DoS on upload to non-owned entry (§3/§9)** — `POST /api/research/:id/attachments` previously ran multer (writing bytes to disk) before verifying entry ownership. A flood of POSTs to a foreign `:id` would churn `server/uploads/` and silently swallow cleanup errors. Fix: a new `requireOwnedEntry` middleware (mirrors the existing `requireOwnedProject` pattern in `engineer.js`) now runs *before* `upload.single('file')`, so unauthorized callers are rejected before multer opens a file handle. The entry is stashed on `req.ownedEntry` to avoid a second DB query in the handler. Any post-write cleanup (rare insert failure) is now `await`ed via `fs.promises.rm` and logs on failure rather than being swallowed.
+- **Attachment DELETE trusts stored absolute `file_path` (§4)** — the `DELETE /api/research/attachments/:id` handler called `fs.rm(attachment.file_path, …)`, trusting the stored absolute path. The download route had already been fixed to reconstruct from `path.join(uploadsDir, attachment.filename)`. DELETE now does the same — host/mount-independent. Removal is `await`ed via `fs.promises.rm` and logs on failure. `attachment.file_path` is no longer read anywhere in `research.js`.
+- **`?month=13` silently returns all-time data (§9)** — `parseMonthYear` in `finances.js` previously returned `{}` (all-time) for any present-but-invalid month/year (out-of-range, missing partner, non-integer), making `GET /api/finances?month=13` look like a successful filter. Now distinguishes absent (→ `{}`, all-time, unchanged) from present-but-invalid (→ throws `AppError(400, VALIDATION_ERROR)`). The three model functions that accept month/year (`listTransactions`, `getSummary`, `listBudgets`) now call a new `assertMonthYear` guard at entry so a direct caller passing `month: 13` gets a clean 400 instead of a `make_date` 500.
+
+---
+
 ### Phase 7 — Data Durability & Secret Hygiene (2026-06-10)
 
 #### Fixed

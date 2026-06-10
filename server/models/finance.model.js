@@ -18,6 +18,15 @@
 import pool from '../lib/db.js';
 import { AppError } from '../lib/AppError.js';
 
+// Phase 8: defensive range check so a direct model caller (script/test/new route)
+// passing an out-of-range month can never reach make_date() and 500.
+function assertMonthYear(month, year) {
+  if (month === undefined && year === undefined) return;
+  const ok = Number.isInteger(month) && month >= 1 && month <= 12
+          && Number.isInteger(year)  && year >= 1900;
+  if (!ok) throw new AppError('Invalid month/year.', 400, 'VALIDATION_ERROR', 'month');
+}
+
 // ─── Standard seed data ───────────────────────────────────────────────────────
 
 const DEFAULT_ACCOUNTS = [
@@ -245,6 +254,7 @@ const TX_SELECT = `
  */
 export async function listTransactions(userId, opts = {}) {
   const { month, year, type, categoryId, accountId, search, page = 1, perPage = 50 } = opts;
+  assertMonthYear(month, year); // Phase 8: clean 400 instead of make_date 500
 
   const conditions = ['t.user_id = $1'];
   const params = [userId];
@@ -379,6 +389,7 @@ export async function deleteTransaction(id, userId) {
  * @param {{ month?: number, year?: number }} opts
  */
 export async function getSummary(userId, { month, year } = {}) {
+  assertMonthYear(month, year); // Phase 8: clean 400 instead of make_date 500
   const scoped = Number.isInteger(month) && Number.isInteger(year);
   const params = [userId];
   let dateFilter = '';
@@ -709,6 +720,7 @@ export async function deletePortfolio(id, userId) {
  * @param {{ month?: number, year?: number }} opts
  */
 export async function listBudgets(userId, { month, year } = {}) {
+  assertMonthYear(month, year); // Phase 8: clean 400 instead of make_date 500
   await ensureDefaults(userId);
   const now = new Date();
   const m = Number.isInteger(month) ? month : now.getMonth() + 1;
