@@ -7,6 +7,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Phase 7 — Data Durability & Secret Hygiene (2026-06-10)
+
+#### Fixed
+- **Data loss guard on `002_finance_upgrade.sql` (§4)** — inserted a `DO $$ … RAISE EXCEPTION` block immediately before the `DROP TABLE` cascade. If `transactions` already exists and contains rows the migration aborts loudly with a row count and a pointer to the runbook, so an accidental re-run (cleared `schema_migrations`, manual invocation, partial restore) cannot wipe the ledger. Fresh installs pass through (`to_regclass` returns `NULL` when the table is absent). Intentional resets still work via `TRUNCATE transactions` first.
+- **Single-host backup risk (§6)** — extended the `db_backup` sidecar to optionally push each nightly dump to S3 / Cloudflare R2 after writing it locally. Conditional on `BACKUP_S3_BUCKET`; with that var absent behaviour is identical to before (local-only). `--endpoint-url` makes it work against R2 as well as AWS S3. Five new optional `BACKUP_S3_*` vars documented in `.env.docker.example`.
+- **Dev secrets treated as compromised (§8)** — added explicit "generate fresh, never reuse dev" warnings to both `.env.docker.example` and `server/.env.example`; extended `docs/RUNBOOK.md §3` with the exact `openssl rand` commands and the rule that the dev `SESSION_SECRET`/DB password must never be promoted to production.
+
+#### Added
+- **`docs/RUNBOOK.md §1a`** — "Off-host backups & monthly restore drill": how to verify both local and off-host copies, and a step-by-step monthly restore procedure against a throwaway Postgres container.
+
+---
+
 ### Phase 6 — Rate-Limit Self-Lockout Fix (2026-06-10)
 
 #### Fixed

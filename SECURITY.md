@@ -56,6 +56,9 @@ Once a fix is merged, the vulnerability will be documented in [CHANGELOG.md](CHA
 | Static asset caching | `Cache-Control: public, immutable` + 1-year `expires` for Vite-hashed assets |
 | Container isolation | `api` and `db` are on an internal Docker network; only nginx exposes port 80 |
 | DB healthcheck | nginx waits for `api` to pass `GET /health` before serving traffic |
+| Backup durability | `db_backup` sidecar pushes nightly `pg_dump` off-host to S3/R2 when `BACKUP_S3_BUCKET` is set, so a host failure cannot destroy both live data and its only backup |
+| Migration data-loss guard | `002_finance_upgrade.sql` aborts with `RAISE EXCEPTION` if `transactions` is populated, preventing accidental ledger wipeout on manual re-runs or `schema_migrations` resets |
+| Secret hygiene | Dev `SESSION_SECRET`/DB password treated as compromised; rotation procedure documented in `docs/RUNBOOK.md §3`; example env files carry explicit generate-fresh warnings |
 
 ---
 

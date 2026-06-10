@@ -101,7 +101,7 @@ Migrations live under `server/db/migrations/` (not `server/migrations/`). All fo
 - `20240102_create_transactions.sql` — `transactions`; CHECK on `type`/`amount`; indexes on `user_id`, `type`, `date`
 - `20240103_create_learning.sql` — `learning_items`; CHECK on `progress`; indexes on `user_id`, `status`, `type`
 - `20240101_create_research_entries.sql` — `research_entries`; indexes on `user_id`, `type`, `status`
-- `002_finance_upgrade.sql` — drops the old `transactions` table and creates the 7 finance-ledger tables above (re-runnable: every CREATE is preceded by `DROP … IF EXISTS`).
+- `002_finance_upgrade.sql` — drops the old `transactions` table and creates the 7 finance-ledger tables above (re-runnable: every CREATE is preceded by `DROP … IF EXISTS`). **Phase 7:** a `DO $$ … RAISE EXCEPTION` guard immediately before the drops aborts the migration if `transactions` already has rows, preventing accidental data loss on manual re-runs or `schema_migrations` resets; fresh installs pass through (`to_regclass` returns `NULL`).
 - `003_engineer_toolkit.sql` — creates the 8 `engineer_*` tables above plus their indexes/triggers, and seeds the two global tables (4 templates, 12 roadmap months). Re-runnable: every CREATE is preceded by `DROP … IF EXISTS CASCADE`, and the global seed rows are re-inserted each run. Per-user rows (snippets, roadmap skills) are seeded lazily by the model, not here.
 - `004_research_topics.sql` — adds `research_topics`, `research_entry_topics` (pivot), `research_attachments`, and the `research_entries.is_pinned` column. Re-runnable: `DROP … IF EXISTS CASCADE` before each CREATE, `ADD COLUMN IF NOT EXISTS` for the column.
 - `005_idempotency_guards.sql` — Phase 2: adds `CHECK (amount <> 0)` on `transactions.amount`; adds partial UNIQUE index `idx_transactions_transfer_dedup` on `(user_id, date, amount, source_account_id, dest_account_id, description) WHERE type = 'Transfer'` to reject exact duplicate Transfer rows at the DB level.
@@ -294,13 +294,13 @@ All containers defined in `docker-compose.yml` at project root. Four services (P
 - `db` — `postgres:16-alpine`; data persisted in `postgres_data` Docker volume; healthcheck gates `api` start
 - `api` — built from `server/Dockerfile` (`node:22-alpine`, production deps only via `npm ci --omit=dev`); **Phase 2:** CMD is now `node db/migrate.js && node index.js` — migrations run automatically on every deploy; attachments persisted in `uploads_data` named volume; **Phase 3:** healthcheck (`wget /health`) lets nginx wait for a healthy API before serving
 - `nginx` — built from `client/Dockerfile` (multi-stage: `node:22-alpine` builds React, `nginx:alpine` serves static + proxies `/api` and `/health` to `api:3000`); exposes port `80`; **Phase 3:** `depends_on: api: condition: service_healthy`
-- `db_backup` — **Phase 3:** `postgres:16-alpine` sidecar; runs `pg_dump` on a cron schedule (default `0 2 * * *`, overridable via `BACKUP_SCHEDULE` env var) and gzips dumps into `postgres_backups` named volume
+- `db_backup` — **Phase 3:** `postgres:16-alpine` sidecar; runs `pg_dump` on a cron schedule (default `0 2 * * *`, overridable via `BACKUP_SCHEDULE` env var) and gzips dumps into `postgres_backups` named volume. **Phase 7:** optionally pushes each dump off-host to S3/R2 after writing locally; controlled by `BACKUP_S3_BUCKET` (unset = local-only, no regression)
 
 Named volumes: `postgres_data`, `uploads_data` (Phase 2 — attachments survive rebuilds), `postgres_backups` (Phase 3)
 
 Nginx config for Docker lives at `client/nginx.docker.conf` (separate from the manual-deploy config). **Phase 3:** emits security headers (`X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, CSP) and `Cache-Control: public, immutable` / `expires 1y` for Vite-hashed static assets.
 
-`.env.docker.example` at root — only two vars needed: `DB_PASSWORD` and `SESSION_SECRET`. `DATABASE_URL` and other vars are constructed inline in `docker-compose.yml`.
+`.env.docker.example` at root — two required vars (`DB_PASSWORD`, `SESSION_SECRET`) plus optional Sentry and **Phase 7** `BACKUP_S3_*` vars for off-host backups. `DATABASE_URL` and other vars are constructed inline in `docker-compose.yml`.
 
 ```bash
 cp .env.docker.example .env   # fill DB_PASSWORD and SESSION_SECRET
@@ -384,6 +384,14 @@ Six data-integrity and resilience gaps from the audit closed:
 - **Healthchecks** — `api` container: `wget /health` every 30 s, 10 s start period; `nginx` container: `wget /` every 30 s; nginx `depends_on: api: condition: service_healthy`.
 - **Nginx security + cache headers** — `client/nginx.docker.conf` now emits `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, and a strict CSP (`default-src 'self'`, `frame-ancestors 'none'`). Hashed static assets (`*.js|css|svg|png|woff2|woff|ttf|ico`) get `Cache-Control: public, immutable` with a 1-year `expires`.
 - **DB backup sidecar** — `db_backup` service in `docker-compose.yml` runs `pg_dump` on cron (default `0 2 * * *`, overridable via `BACKUP_SCHEDULE`) and gzips dumps into `postgres_backups` named volume; restore command documented in the compose file comment.
+
+## Data Durability & Secret Hygiene — Phase 7 (2026-06-10)
+
+Closed the three highest-impact durability/secrecy gaps from AUDIT_REPORT_V2.md (§4, §6, §8):
+
+1. **Migration guard** — `002_finance_upgrade.sql` now opens with a `DO $$ … RAISE EXCEPTION` block that aborts the migration if `transactions` already has rows, preventing accidental ledger wipeout on manual re-runs or `schema_migrations` resets. Fresh installs are unaffected (`to_regclass` returns `NULL`).
+2. **Off-host backups** — `db_backup` sidecar extended to push each nightly dump to S3/Cloudflare R2 when `BACKUP_S3_BUCKET` is set; `BACKUP_S3_ENDPOINT` supports R2's S3-compatible endpoint. `BACKUP_S3_*` vars documented in `.env.docker.example`. Backward-compatible: unset = local-only. `docs/RUNBOOK.md §1a` adds a monthly restore drill.
+3. **Secret rotation docs** — both `.env.docker.example` and `server/.env.example` now carry a prominent "generate fresh, never reuse dev" warning with the exact `openssl rand` commands. `docs/RUNBOOK.md §3` extended with the "dev secrets are compromised by default" rule.
 
 ## Pending / Known Issues
 

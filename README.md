@@ -165,10 +165,17 @@ Fill in `.env`:
 
 | Variable | Required | Description |
 |---|---|---|
-| `DB_PASSWORD` | yes | PostgreSQL password |
-| `SESSION_SECRET` | yes | Random string, minimum 32 characters |
+| `DB_PASSWORD` | yes | PostgreSQL password — generate with `openssl rand -base64 24` |
+| `SESSION_SECRET` | yes | Random string ≥ 32 chars — generate with `openssl rand -hex 32` |
 | `SENTRY_DSN` | no | Server-side Sentry DSN — omit to disable |
 | `VITE_SENTRY_DSN` | no | Client-side Sentry DSN — omit to disable |
+| `BACKUP_S3_BUCKET` | no | S3 / R2 bucket name — omit to keep local-only backups |
+| `BACKUP_S3_ENDPOINT` | no | R2: `https://<account>.r2.cloudflarestorage.com`; AWS S3: leave blank |
+| `BACKUP_S3_ACCESS_KEY_ID` | no | Object storage access key |
+| `BACKUP_S3_SECRET_ACCESS_KEY` | no | Object storage secret key |
+| `BACKUP_S3_REGION` | no | `auto` for R2; e.g. `ap-southeast-1` for AWS S3 |
+
+> **Security:** never reuse a development `SESSION_SECRET` or `DB_PASSWORD` in production — treat the dev values as compromised. See [docs/RUNBOOK.md §3](docs/RUNBOOK.md) for the rotation procedure.
 
 **3. Build and start all containers**
 
@@ -176,7 +183,7 @@ Fill in `.env`:
 docker compose up --build -d
 ```
 
-This starts four containers: `db` (PostgreSQL), `api` (Express), `nginx` (React + reverse proxy), and `db_backup` (scheduled `pg_dump` sidecar). **Migrations run automatically** on every `api` startup — no manual step required.
+This starts four containers: `db` (PostgreSQL), `api` (Express), `nginx` (React + reverse proxy), and `db_backup` (scheduled `pg_dump` sidecar — dumps land in the `postgres_backups` volume and, when `BACKUP_S3_BUCKET` is set, are also pushed off-host to S3/R2). **Migrations run automatically** on every `api` startup — no manual step required.
 
 **4. Verify**
 
