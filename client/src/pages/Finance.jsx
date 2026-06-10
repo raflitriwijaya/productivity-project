@@ -17,6 +17,7 @@ import { ErrorState } from '../components/ui/ErrorState';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Modal } from '../components/ui/Modal';
 
+import useDocumentTitle from '../hooks/useDocumentTitle';
 import { MonthYearSelector } from '../components/finance/MonthYearSelector';
 import { FinanceSummaryCards } from '../components/finance/FinanceSummaryCards';
 import { CreateTransactionModal } from '../components/finance/CreateTransactionModal';
@@ -38,6 +39,7 @@ const FILTER_TABS = [
 ];
 
 export default function Finance() {
+  useDocumentTitle('Finance — Transactions');
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear]   = useState(now.getFullYear());

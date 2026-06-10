@@ -5,6 +5,7 @@ import api from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 /**
  * Public login page. Handles four states per §7.3:
@@ -13,6 +14,7 @@ import { Button } from '../components/ui/Button';
  * @returns {JSX.Element}
  */
 export default function Login() {
+  useDocumentTitle('Sign In');
   const navigate = useNavigate();
   const { user, loading } = useAuth();
 

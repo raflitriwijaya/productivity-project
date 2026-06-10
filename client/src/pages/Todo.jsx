@@ -8,6 +8,7 @@ import { Plus, ClipboardCheck, Trash2 } from 'lucide-react';
 import api            from '../lib/api';
 import { useApi }     from '../hooks/useApi';
 import { useToast }   from '../hooks/useToast';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 import { Card, CardHeader, CardBody } from '../components/ui/Card';
 import { Button }     from '../components/ui/Button';
 import { Badge }      from '../components/ui/Badge';
@@ -42,6 +43,7 @@ const STATUS_FILTERS = [
 ];
 
 export default function Todo() {
+  useDocumentTitle('To-Do List');
   // ── State ────────────────────────────────────────────────────────────────
   const [isCreateOpen,  setIsCreateOpen]  = useState(false);
   const [editingTodo,   setEditingTodo]   = useState(/** @type {Todo|null} */ (null));

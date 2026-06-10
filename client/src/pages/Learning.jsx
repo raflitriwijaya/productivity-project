@@ -7,6 +7,7 @@ import { Plus, GraduationCap, BookOpen, Clock, CheckCircle2 } from 'lucide-react
 import api              from '../lib/api';
 import { useApi }       from '../hooks/useApi';
 import { useToast }     from '../hooks/useToast';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 import { Card, CardHeader, CardBody } from '../components/ui/Card';
 import { Button }      from '../components/ui/Button';
@@ -61,6 +62,7 @@ function StatsSkeleton() {
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function Learning() {
+  useDocumentTitle('Learning Tracker');
   const { addToast } = useToast();
 
   // ── State ──────────────────────────────────────────────────────────────────

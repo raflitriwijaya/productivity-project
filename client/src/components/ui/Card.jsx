@@ -8,14 +8,14 @@
  * @param {React.ReactNode} props.children
  * @returns {JSX.Element}
  */
-export function Card({ variant = 'default', className = '', children }) {
+export function Card({ variant = 'default', className = '', children, ...rest }) {
   const variants = {
     default:   'bg-white dark:bg-gray-800 rounded-xl border border-stone-200 dark:border-gray-700 shadow-sm',
     flat:      'bg-stone-50 dark:bg-gray-700 rounded-xl border border-stone-200 dark:border-gray-600',
     highlight: 'bg-white dark:bg-gray-800 rounded-xl border-2 border-moss-500 dark:border-moss-400 shadow-sm',
   };
   return (
-    <div className={`${variants[variant]} ${className}`}>
+    <div className={`${variants[variant]} ${className}`} {...rest}>
       {children}
     </div>
   );

@@ -8,6 +8,7 @@ import { Plus, PieChart as PieIcon, Pencil, Trash2 } from 'lucide-react';
 import api from '../lib/api';
 import { useApi } from '../hooks/useApi';
 import { useToast } from '../hooks/useToast';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 import { Card, CardHeader, CardBody } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -59,6 +60,7 @@ function CurrentPriceCell({ row, onSave }) {
 }
 
 export default function Portfolio() {
+  useDocumentTitle('Finance — Portfolio');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [deleting, setDeleting] = useState(null);

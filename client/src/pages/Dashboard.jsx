@@ -2,6 +2,7 @@
 import { CheckSquare, TrendingUp, BookOpen, GraduationCap } from 'lucide-react';
 import api from '../lib/api';
 import { useApi } from '../hooks/useApi';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 import { formatIdr } from '../lib/formatIdr';
 import { Card, CardBody } from '../components/ui/Card';
 import { StatCard } from '../components/ui/StatCard';
@@ -59,6 +60,7 @@ function TodoStatsRow({ loading, error, data, refetch }) {
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
+  useDocumentTitle('Dashboard');
   // Dedicated stats call — no per_page=100 workaround
   const {
     data: todoStats,

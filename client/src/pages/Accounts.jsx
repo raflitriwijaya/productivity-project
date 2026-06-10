@@ -8,6 +8,7 @@ import { Banknote, Landmark, Wallet, ShoppingBag, Smartphone, TrendingUp, Pencil
 import api from '../lib/api';
 import { useApi } from '../hooks/useApi';
 import { useToast } from '../hooks/useToast';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 import { Card, CardBody } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -71,6 +72,7 @@ function AccountEditModal({ isOpen, onClose, onSubmit, account }) {
 }
 
 export default function Accounts() {
+  useDocumentTitle('Finance — Accounts');
   const { data: balances, loading, error, refetch } = useApi(() => api.get('/api/finances/balances'), []);
   const [editing, setEditing] = useState(null);
   const { addToast } = useToast();

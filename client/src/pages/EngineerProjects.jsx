@@ -8,6 +8,7 @@ import { Plus, Wrench, Rocket, Lightbulb, Hammer } from 'lucide-react';
 
 import api from '../lib/api';
 import { useApi } from '../hooks/useApi';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 import { Card, CardHeader, CardBody } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -46,6 +47,7 @@ const STATUS_FILTERS = [
 // ─── Page component ───────────────────────────────────────────────────────────
 
 export default function EngineerProjects() {
+  useDocumentTitle('Engineering — Projects');
   const navigate = useNavigate();
 
   // ── UI state ──────────────────────────────────────────────────────────────

@@ -5,6 +5,7 @@
 import { PieChart } from 'lucide-react';
 import api from '../lib/api';
 import { useApi } from '../hooks/useApi';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 import { Card, CardHeader, CardBody } from '../components/ui/Card';
 import { ErrorState } from '../components/ui/ErrorState';
@@ -28,6 +29,7 @@ function ChartSkeleton() {
 }
 
 export default function FinanceDashboard() {
+  useDocumentTitle('Finance — Dashboard');
   const { data, loading, error, refetch } = useApi(() => api.get('/api/finances/dashboard'), []);
 
   const balances = data?.balances ?? [];

@@ -8,6 +8,7 @@ import { Target } from 'lucide-react';
 import api from '../lib/api';
 import { useApi } from '../hooks/useApi';
 import { useToast } from '../hooks/useToast';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 import { Card, CardHeader, CardBody } from '../components/ui/Card';
 import { StatCard } from '../components/ui/StatCard';
@@ -56,6 +57,7 @@ function BudgetAmountCell({ row, onSave }) {
 }
 
 export default function Budget() {
+  useDocumentTitle('Finance — Budget');
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());

@@ -11,6 +11,7 @@ import { Plus, FileText, Trash2, Eye, Pencil } from 'lucide-react';
 import api from '../lib/api';
 import { useApi } from '../hooks/useApi';
 import { useToast } from '../hooks/useToast';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 import { Card, CardHeader, CardBody } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -37,6 +38,7 @@ const DOC_TYPE_LABEL = DOC_TYPES.reduce((acc, t) => { acc[t.value] = t.label; re
 const blankDraft = () => ({ id: null, title: '', doc_type: '', content: '' });
 
 export default function EngineerDocs() {
+  useDocumentTitle('Engineering — Docs');
   const [searchParams, setSearchParams] = useSearchParams();
   const projectId = searchParams.get('project') ?? '';
   const { addToast } = useToast();

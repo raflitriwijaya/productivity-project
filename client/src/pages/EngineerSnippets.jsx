@@ -10,6 +10,7 @@ import { Plus, Search, Code } from 'lucide-react';
 
 import api from '../lib/api';
 import { useApi } from '../hooks/useApi';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 import { Card, CardBody } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -26,6 +27,7 @@ import { SNIPPET_LANGUAGES, LANGUAGE_LABEL } from '../components/engineer/snippe
 import { splitTags } from '../components/engineer/ProjectRow';
 
 export default function EngineerSnippets() {
+  useDocumentTitle('Engineering — Snippets');
   // ── UI state ──────────────────────────────────────────────────────────────
   const [query,         setQuery]         = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');

@@ -9,6 +9,7 @@ import { Map as MapIcon } from 'lucide-react';
 import api from '../lib/api';
 import { useApi } from '../hooks/useApi';
 import { useToast } from '../hooks/useToast';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 import { Card, CardBody } from '../components/ui/Card';
 import { ListSkeleton } from '../components/ui/Skeleton';
@@ -19,6 +20,7 @@ import { RoadmapMonthCard } from '../components/engineer/RoadmapMonthCard';
 import { MiniProgressBar } from '../components/engineer/MiniProgressBar';
 
 export default function EngineerRoadmap() {
+  useDocumentTitle('Engineering — Roadmap');
   const { addToast } = useToast();
   const [togglingId, setTogglingId] = useState(null);
 

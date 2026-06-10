@@ -9,6 +9,7 @@ import { Plus, Bug } from 'lucide-react';
 
 import api from '../lib/api';
 import { useApi } from '../hooks/useApi';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 import { Card, CardHeader, CardBody } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -41,6 +42,7 @@ const STATUS_FILTERS = [
 ];
 
 export default function EngineerIssues() {
+  useDocumentTitle('Engineering — Issues');
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();

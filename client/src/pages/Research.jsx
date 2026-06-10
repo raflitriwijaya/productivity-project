@@ -8,6 +8,7 @@
 //   • Type pills (above the table) — client-side filter within the loaded set.
 
 import { useState, useMemo, useEffect, useRef } from 'react';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 import { Plus, BookOpen, Search, X, Download, ChevronDown, Archive, Trash2 } from 'lucide-react';
 
 import api from '../lib/api';
@@ -67,6 +68,7 @@ const TYPE_FILTERS = [
 // ─── Page component ───────────────────────────────────────────────────────────
 
 export default function Research() {
+  useDocumentTitle('Research Journal');
   // ── UI state ────────────────────────────────────────────────────────────────
   const [selectedTopicId, setSelectedTopicId] = useState(null); // null = All Entries
   const [typeFilter,      setTypeFilter]      = useState('all');

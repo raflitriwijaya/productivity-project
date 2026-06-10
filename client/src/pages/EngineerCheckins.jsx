@@ -12,6 +12,7 @@ import { Plus, ClipboardCheck, Bug } from 'lucide-react';
 
 import api from '../lib/api';
 import { useApi } from '../hooks/useApi';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 import { Card, CardHeader, CardBody } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -45,6 +46,7 @@ function formatDate(iso) {
 }
 
 export default function EngineerCheckins() {
+  useDocumentTitle('Engineering — Check-ins');
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const projectId = searchParams.get('project') ?? '';

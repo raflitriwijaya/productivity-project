@@ -20,7 +20,7 @@ export function StatCard({ label, value, delta, icon: Icon }) {
       ? 'text-moss-600 dark:text-moss-400'
       : 'text-red-600 dark:text-red-400';
   return (
-    <Card className="relative overflow-hidden">
+    <Card data-testid="stat-card" className="relative overflow-hidden">
       <CardBody>
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs font-medium text-stone-500 dark:text-gray-400 tracking-wide uppercase">{label}</p>

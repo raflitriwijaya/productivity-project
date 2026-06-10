@@ -2,8 +2,10 @@
 // Money the user OWES. All behaviour lives in the shared LedgerPage.
 
 import { LedgerPage } from '../components/finance/LedgerPage';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 export default function Payables() {
+  useDocumentTitle('Finance — Payables');
   return (
     <LedgerPage
       kind="payable"
