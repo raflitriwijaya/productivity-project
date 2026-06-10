@@ -1,7 +1,7 @@
 // Phase 4: multer upload file-type rejection test
 // Uses supertest against a minimal Express app that mounts only the upload middleware,
 // without requiring a real DB or real filesystem writes.
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import express from 'express';
 import request from 'supertest';
 import path from 'node:path';

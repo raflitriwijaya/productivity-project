@@ -16,8 +16,8 @@ import {
   listCategories,
   listTransactions, getTransactionById, createTransaction, patchTransaction, deleteTransaction,
   getSummary, getDashboard,
-  listLedger, getLedgerById, createLedger, patchLedger, deleteLedger, settleLedger,
-  listPortfolio, getPortfolioById, createPortfolio, patchPortfolio, deletePortfolio,
+  listLedger, createLedger, patchLedger, deleteLedger, settleLedger,
+  listPortfolio, createPortfolio, patchPortfolio, deletePortfolio,
   listBudgets, upsertBudget,
 } from '../models/finance.model.js';
 

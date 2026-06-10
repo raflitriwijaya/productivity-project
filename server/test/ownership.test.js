@@ -20,7 +20,7 @@ const {
 beforeEach(() => vi.clearAllMocks());
 
 const USER_A = 1;
-const USER_B = 2;
+const _USER_B = 2;
 
 describe('Transaction ownership — user A cannot access user B rows', () => {
   it('getTransactionById returns null for a row owned by user B', async () => {

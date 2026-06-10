@@ -168,7 +168,9 @@ Fill in `.env`:
 | `DB_PASSWORD` | yes | PostgreSQL password — generate with `openssl rand -base64 24` |
 | `SESSION_SECRET` | yes | Random string ≥ 32 chars — generate with `openssl rand -hex 32` |
 | `SENTRY_DSN` | no | Server-side Sentry DSN — omit to disable |
-| `VITE_SENTRY_DSN` | no | Client-side Sentry DSN — omit to disable |
+| `VITE_SENTRY_DSN` | no | Client-side Sentry DSN — baked into the bundle at build time; omit to disable |
+| `CLIENT_ORIGIN` | no | Browser origin the API allows via CORS (default: `https://raflitriwijaya.my.id`) |
+| `VITE_API_URL` | no | API base URL baked into the client bundle (default: `https://raflitriwijaya.my.id`; requires rebuild to change) |
 | `BACKUP_S3_BUCKET` | no | S3 / R2 bucket name — omit to keep local-only backups |
 | `BACKUP_S3_ENDPOINT` | no | R2: `https://<account>.r2.cloudflarestorage.com`; AWS S3: leave blank |
 | `BACKUP_S3_ACCESS_KEY_ID` | no | Object storage access key |
@@ -301,8 +303,10 @@ A GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push and pu
 
 | Job | Steps |
 |---|---|
-| **Server** | `npm ci` → security audit (`--audit-level=high`) → lint → tests (if wired) |
-| **Client** | `npm ci` → security audit → lint → `npm run build` → tests (if wired) |
+| **Server** | `npm ci` → security audit (`--audit-level=high`) → lint → migrate test DB → tests |
+| **Client** | `npm ci` → security audit → lint → `npm run build` → tests |
+
+The server CI job runs against a real `postgres:16-alpine` service container so integration tests (Phase 10) can exercise a fully-migrated schema. The existing mocked unit tests are unaffected.
 
 Any high-severity npm advisory or build failure blocks the run. To enforce it as a merge gate: **Settings → Branches → Branch protection rules → Require status checks → select "Server" and "Client"**.
 

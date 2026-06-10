@@ -11,7 +11,7 @@
 
 ## npm packages
 
-**Server** (`server/package.json`, `"type": "module"`): `express`, `cors`, `express-session`, `connect-pg-simple`, `bcryptjs` (Phase 2/3: replaced `bcrypt` — drop-in API-compatible, pure JS, eliminates the `tar`/`node-pre-gyp` high-severity transitive vulns), `pg`, `zod`, `dotenv`, `multer` (research attachment uploads), `helmet`, `express-rate-limit`, `pino`, `pino-http` (Phase 3: structured logging). Requires Node `>=18`. Scripts: `dev` (`node --watch index.js`), `start`, `migrate` (`node db/migrate.js`).
+**Server** (`server/package.json`, `"type": "module"`): `express`, `cors`, `express-session`, `connect-pg-simple`, `bcryptjs` (Phase 2/3: replaced `bcrypt` — drop-in API-compatible, pure JS, eliminates the `tar`/`node-pre-gyp` high-severity transitive vulns), `pg`, `zod`, `dotenv`, `multer` (research attachment uploads), `helmet`, `express-rate-limit`, `pino`, `pino-http` (Phase 3: structured logging). **Phase 9 devDeps:** `eslint`, `@eslint/js`, `globals` — flat ESLint config at `server/eslint.config.js`. Requires Node `>=18`. Scripts: `dev` (`node --watch index.js`), `start`, `migrate` (`node db/migrate.js`), `lint` (`eslint . --max-warnings 0`).
 
 **Client** (`client/package.json`, `"type": "module"`): runtime — `react`, `react-dom`, `react-router-dom`, `axios`, `lucide-react`, `prism-react-renderer` (snippet syntax highlighting), `@uiw/react-md-editor` **4.1.1** (pinned exact — `^` removed; Docs markdown editor), `rehype-sanitize` (Phase 1: strips unsafe HTML/JS from rendered markdown); build — `vite`, `@vitejs/plugin-react`, `tailwindcss` (v3), `postcss`, `autoprefixer`, eslint toolchain.
 
@@ -300,7 +300,7 @@ Named volumes: `postgres_data`, `uploads_data` (Phase 2 — attachments survive 
 
 Nginx config for Docker lives at `client/nginx.docker.conf` (separate from the manual-deploy config). **Phase 3:** emits security headers (`X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, CSP) and `Cache-Control: public, immutable` / `expires 1y` for Vite-hashed static assets.
 
-`.env.docker.example` at root — two required vars (`DB_PASSWORD`, `SESSION_SECRET`) plus optional Sentry and **Phase 7** `BACKUP_S3_*` vars for off-host backups. `DATABASE_URL` and other vars are constructed inline in `docker-compose.yml`.
+`.env.docker.example` at root — two required vars (`DB_PASSWORD`, `SESSION_SECRET`) plus optional Sentry, **Phase 7** `BACKUP_S3_*` vars, and **Phase 9** `CLIENT_ORIGIN`/`VITE_API_URL` domain overrides. `DATABASE_URL` and other vars are constructed inline in `docker-compose.yml`.
 
 ```bash
 cp .env.docker.example .env   # fill DB_PASSWORD and SESSION_SECRET
@@ -384,6 +384,16 @@ Six data-integrity and resilience gaps from the audit closed:
 - **Healthchecks** — `api` container: `wget /health` every 30 s, 10 s start period; `nginx` container: `wget /` every 30 s; nginx `depends_on: api: condition: service_healthy`.
 - **Nginx security + cache headers** — `client/nginx.docker.conf` now emits `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, and a strict CSP (`default-src 'self'`, `frame-ancestors 'none'`). Hashed static assets (`*.js|css|svg|png|woff2|woff|ttf|ico`) get `Cache-Control: public, immutable` with a 1-year `expires`.
 - **DB backup sidecar** — `db_backup` service in `docker-compose.yml` runs `pg_dump` on cron (default `0 2 * * *`, overridable via `BACKUP_SCHEDULE`) and gzips dumps into `postgres_backups` named volume; restore command documented in the compose file comment.
+
+## DevOps Hardening — Phase 9 (2026-06-10)
+
+Five DevOps gaps from AUDIT_REPORT_V2.md (§6-N1, §6, §7, §1) closed:
+
+1. **Client Sentry wired in Docker** — `client/Dockerfile` accepts `ARG VITE_SENTRY_DSN` (empty default = no-op); `docker-compose.yml` nginx service converted to long-form `build.args` passing `VITE_SENTRY_DSN` and `VITE_API_URL`; nginx CSP `connect-src` extended with `https://*.ingest.sentry.io`; `SECURITY.md` corrected to state the build-arg requirement.
+2. **Env parameterization** — `CLIENT_ORIGIN` in `docker-compose.yml` is now `${CLIENT_ORIGIN:-…}` and `VITE_API_URL` is passed as a build arg, both documented in `.env.docker.example`. New environments require only a `.env` change.
+3. **Server lint** — `server/eslint.config.js` (ESLint 9 flat config, Node ESM + vitest globals); `"lint": "eslint . --max-warnings 0"` added to `server/package.json`; 5 pre-existing errors fixed; CI drops `--if-present` — lint is now enforced.
+4. **CI Postgres** — server CI job has a `postgres:16-alpine` service + healthcheck; `DATABASE_URL`/`SESSION_SECRET`/`CLIENT_ORIGIN`/`NODE_ENV` set at job level; "Migrate test DB" step prepares the schema for the Phase 10 integration suite.
+5. **Repo root cleanup** — `hehe.md` (raw audit prompt) moved to `docs/prompt/AUDIT_PROMPT_ARCHIVE.md`.
 
 ## Backend Resilience — Phase 8 (2026-06-10)
 

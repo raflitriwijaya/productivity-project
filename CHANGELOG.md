@@ -7,6 +7,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Phase 9 — DevOps: Client Sentry Docker, Env Parameterization, Server Lint, CI Postgres (2026-06-10)
+
+#### Fixed
+- **Client Sentry dead in Docker (§6-N1)** — `client/Dockerfile` now accepts `ARG VITE_SENTRY_DSN` (empty default → no-op without config) and exposes it as an `ENV` so `main.jsx`'s `Sentry.init` guard actually compiles the DSN into the bundle when one is provided. `docker-compose.yml` passes it as a build arg via the long-form `build.args` block. `client/nginx.docker.conf` CSP `connect-src` extended with `https://*.ingest.sentry.io` so the browser can POST events when the DSN is set. `SECURITY.md` client error-reporting row updated to state the build-arg requirement.
+- **Hardcoded `CLIENT_ORIGIN` and `VITE_API_URL` (§6)** — `docker-compose.yml` api service `CLIENT_ORIGIN` is now `${CLIENT_ORIGIN:-https://raflitriwijaya.my.id}`, and the nginx build uses `${VITE_API_URL:-https://raflitriwijaya.my.id}` as a build arg. Both vars documented in `.env.docker.example`. Staging or any other domain is now a `.env` change only — no tracked-file edits required.
+- **Server linting silently skipped in CI (§6/§7)** — `server/package.json` gains a `"lint": "eslint . --max-warnings 0"` script backed by a new `server/eslint.config.js` (ESLint 9 flat config, Node ESM + vitest globals). Five pre-existing lint errors fixed: unused import of `getLedgerById`/`getPortfolioById` in `finances.js`; unused `USER_B` in `ownership.test.js`; unused `beforeEach` import in `upload.filter.test.js`; useless post-increment of `i` in `engineer.model.js`. CI server job Lint step drops `--if-present` — lint now fails the build on errors.
+- **No Postgres in server CI (§6/§7)** — server CI job gains a `postgres:16-alpine` service with healthcheck; `DATABASE_URL`, `SESSION_SECRET`, `CLIENT_ORIGIN`, and `NODE_ENV` are set at job level; a "Migrate test DB" step (`npm run migrate`) runs before the test suite so the Phase 10 integration suite can use a fully-migrated schema. Existing mocked unit tests are unaffected.
+- **Stray `hehe.md` in repo root (§1)** — raw audit-prompt file moved to `docs/prompt/AUDIT_PROMPT_ARCHIVE.md` alongside the existing phase-solve prompts; repo root is clean.
+
+---
+
 ### Phase 8 — Backend Resilience: Export Cap, Pre-Upload Ownership, Host-Independent Delete, Strict Month/Year (2026-06-10)
 
 #### Fixed

@@ -18,7 +18,8 @@ services:
     build: ./server
     environment:
       DATABASE_URL: postgresql://productivity:${DB_PASSWORD}@db:5432/productivity_db
-      CLIENT_ORIGIN: https://raflitriwijaya.my.id
+      # Phase 9: parameterized so staging/other domains don't require editing this file.
+      CLIENT_ORIGIN: ${CLIENT_ORIGIN:-https://raflitriwijaya.my.id}
       SESSION_SECRET: ${SESSION_SECRET}
       NODE_ENV: production
       PORT: 3000
@@ -38,7 +39,13 @@ services:
       start_period: 10s
 
   nginx:
-    build: ./client
+    build:
+      context: ./client
+      args:
+        # Phase 9 / Fix 2: parameterized so staging/other domains work without editing this file.
+        VITE_API_URL: ${VITE_API_URL:-https://raflitriwijaya.my.id}
+        # Phase 9 / Fix 1: pass the Sentry DSN as a build arg so Sentry.init compiles in.
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
     ports:
       - "80:80"
     # Phase 3: wait for api to pass healthcheck before nginx starts serving

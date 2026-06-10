@@ -566,8 +566,8 @@ export async function listIssues(projectId, userId, opts = {}) {
   const params = [projectId, userId];
   let i = 3;
 
-  if (status)   { conditions.push(`status = $${i++}`);   params.push(status); }
-  if (severity) { conditions.push(`severity = $${i++}`); params.push(severity); }
+  if (status)   { conditions.push(`status = $${i}`);   params.push(status);   i++; }
+  if (severity) { conditions.push(`severity = $${i}`); params.push(severity); }
 
   const { rows } = await pool.query(
     `SELECT * FROM engineer_issues

@@ -50,7 +50,7 @@ Once a fix is merged, the vulnerability will be documented in [CHANGELOG.md](CHA
 | Error boundary | `ErrorBoundary` wraps `<App />` to prevent white-screen data leaks on crashes |
 | Attachment download | Axios blob fetch → object URL (no unauthenticated `<a href>` to `/uploads/`) |
 | No secrets in bundle | Only `VITE_`-prefixed env vars reach the browser |
-| Error reporting | Sentry initialized before render (when `VITE_SENTRY_DSN` set) |
+| Error reporting | Sentry initialized before render **when `VITE_SENTRY_DSN` is supplied as a Docker build arg** (disabled by default; the nginx CSP `connect-src` allows `https://*.ingest.sentry.io`) |
 
 ### Infrastructure (nginx / Docker)
 
