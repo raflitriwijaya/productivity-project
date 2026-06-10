@@ -155,9 +155,18 @@ fs.mkdirSync(uploadsDir, { recursive: true });
 // ─── Health check (no auth) ───────────────────────────────────────────────────
 app.get('/health', (_req, res) => res.json({ status: 'ok', ts: new Date().toISOString() }));
 
-// ─── Auth routes — strict rate-limited (public, no requireAuth) ──────────────
-// Phase 1: authLimiter caps login + register at 5 attempts / 15 min / IP.
-app.use('/api/auth', authLimiter, authRouter);
+// ─── Auth routes (public, no requireAuth) ────────────────────────────────────
+// Phase 6: apply the strict brute-force limiter ONLY to the credential-guessable
+// verbs. /me (session heartbeat, called on every protected-route mount) and
+// /logout must NOT share the 5-req/15-min budget or a normal refresh pattern
+// self-DoSes the user for 15 minutes (§3-N1).
+//
+// Mount order matters: the path-specific limiters run BEFORE the router mount,
+// so POST /api/auth/login passes through authLimiter first, then falls through
+// to generalLimiter + router. /me and /logout match only generalLimiter + router.
+app.use('/api/auth/login',    authLimiter); // Phase 6: brute-force guard, credentials only
+app.use('/api/auth/register', authLimiter); // Phase 6: brute-force guard, credentials only
+app.use('/api/auth', generalLimiter, authRouter); // Phase 6: /me + /logout get the lenient 100/min budget
 
 // ─── Protected resource routes ────────────────────────────────────────────────
 // requireAuth middleware (§6.6a) attaches req.user = { id } and returns 401

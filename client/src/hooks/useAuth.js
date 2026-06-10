@@ -17,5 +17,9 @@ import api from '../lib/api';
 export function useAuth() {
   const { data: user, loading, error } = useApi(() => api.get('/api/auth/me'));
 
-  return { user: user ?? null, loading, error };
+  // Phase 6: a 429 means "throttled", not "unauthenticated". Treat it as a
+  // transient error so AuthGuard does NOT redirect to /login on rate-limiting.
+  const throttled = error?.status === 429;
+
+  return { user: user ?? null, loading, error, throttled };
 }

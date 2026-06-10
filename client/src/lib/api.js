@@ -38,9 +38,20 @@ api.interceptors.response.use(
       }
     }
 
+    // Phase 6: a 429 is rate-limiting, NOT an auth failure. Do NOT redirect to
+    // /login (that page shares a limiter and would deepen the lockout). Surface
+    // the server's "slow down" message and let the caller show a toast.
     const message =
-      error.response?.data?.error?.message || 'An unexpected error occurred.';
-    return Promise.reject(new Error(message));
+      error.response?.data?.error?.message ||
+      (status === 429
+        ? "You're doing that too fast — please wait a moment and try again."
+        : 'An unexpected error occurred.');
+
+    // Phase 6: attach the HTTP status so callers (e.g. useAuth) can distinguish
+    // 429 (throttled) from 401 (unauthenticated) instead of nulling the session.
+    const err = new Error(message);
+    err.status = status;
+    return Promise.reject(err);
   }
 );
 

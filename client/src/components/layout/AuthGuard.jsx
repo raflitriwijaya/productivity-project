@@ -13,9 +13,11 @@ import { Skeleton } from '../ui/Skeleton';
  * @returns {JSX.Element}
  */
 export function AuthGuard() {
-  const { user, loading } = useAuth();
+  const { user, loading, throttled } = useAuth();
 
-  if (loading) {
+  // Phase 6: show the skeleton while loading OR while throttled (429). A 429
+  // is a transient rate-limit, not a sign the session is gone — don't redirect.
+  if (loading || throttled) {
     return (
       <div className="min-h-screen bg-stone-50 dark:bg-gray-900 flex flex-col gap-4 p-8">
         <Skeleton className="h-8 w-48" />
