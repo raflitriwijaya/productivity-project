@@ -256,6 +256,8 @@ Route tree:
   - Engineering section: `/engineer` (Projects), `/engineer/snippets`, `/engineer/docs`, `/engineer/checkins`, `/engineer/issues`, `/engineer/roadmap`, and `/engineer/:id` (detail — registered after the literal sub-routes so static segments match first)
 - Catch-all `*` → `Navigate to="/" replace` (AuthGuard handles downstream redirect to `/login`)
 
+**Phase 11 — code-split routes:** `Research` is now `React.lazy`-loaded (alongside the Engineering pages) and its `/research` route is wrapped in `<Suspense fallback={<PageFallback />}>`. `@uiw/react-md-editor` and `prism-react-renderer` are vendor-split into their own cacheable chunks via `manualChunks` in `client/vite.config.js`. The main bundle drops from ~304 kB to ~243 kB; the editor chunk (~1,060 kB) is only downloaded on first visit to `/research` or `/engineer/docs`.
+
 `AppLayout` sidebar nav is grouped into labelled sections (`NAV_SECTIONS`): top-level (Dashboard, To-Do), **Finance** (Overview, Transactions, Accounts, Receivables, Payables, Portfolio, Budget), **Knowledge** (Research, Learning), **Engineering** (Projects, Snippets, Docs, Check-ins, Issues, Roadmap). `/finance` and `/engineer` use `end` so they aren't active on their sub-routes.
 
 Client lib: `client/src/lib/formatIdr.js` — `formatIdr` (→ "Rp 1.500.000"), `parseIdrInput`, `formatIdrInput` (grouped digits for input fields). All finance money display goes through these.
@@ -299,7 +301,7 @@ Entry point is fully implemented with:
 - `server/lib/db.js` — shared `pg.Pool` (`max:10`, `idleTimeoutMillis:30000`, `connectionTimeoutMillis:2000`); exported both named (`{ pool }`) and default to satisfy all model import styles
 - `server/lib/AppError.js` — operational error (`statusCode`, `code`, optional `field`) (§6.6)
 - `server/lib/logger.js` — **Phase 3:** shared `pino` instance (stdout JSON in prod, pretty-printed in dev); imported by `index.js` for `pino-http` and by `errorHandler.js`
-- `server/middleware/errorHandler.js` — last middleware; standard error envelope; masks 500 details (§6.6). **Phase 2:** catches pg error code `23505` (unique violation) and maps to a clean `409 CONFLICT` before any other handling. **Phase 3:** uses `req.log ?? logger` (pino) instead of `console.error`; echoes `req.id` in error responses so users can quote it in bug reports.
+- `server/middleware/errorHandler.js` — last middleware; standard error envelope; masks 500 details (§6.6). **Phase 2:** catches pg error code `23505` (unique violation) and maps to a clean `409 CONFLICT` before any other handling. **Phase 3:** uses `req.log ?? logger` (pino) instead of `console.error`; echoes `req.id` in error responses so users can quote it in bug reports. **Phase 11:** `23505` branch now checks `err.constraint` first — if the violated constraint is `idx_transactions_transfer_dedup`, returns `{ code: 'DUPLICATE_TRANSFER', message: '…add or change the description…', field: 'description' }` instead of the generic `CONFLICT` message; all other `23505` errors fall through to the unchanged generic path.
 - `server/middleware/validate.js` — `validate(schema)` zod body validation → `VALIDATION_ERROR` (§6.6b)
 - `server/middleware/auth.js` — `requireAuth` (§6.6a)
 
@@ -435,9 +437,17 @@ Closed the three highest-impact durability/secrecy gaps from AUDIT_REPORT_V2.md 
 2. **Off-host backups** — `db_backup` sidecar extended to push each nightly dump to S3/Cloudflare R2 when `BACKUP_S3_BUCKET` is set; `BACKUP_S3_ENDPOINT` supports R2's S3-compatible endpoint. `BACKUP_S3_*` vars documented in `.env.docker.example`. Backward-compatible: unset = local-only. `docs/RUNBOOK.md §1a` adds a monthly restore drill.
 3. **Secret rotation docs** — both `.env.docker.example` and `server/.env.example` now carry a prominent "generate fresh, never reuse dev" warning with the exact `openssl rand` commands. `docs/RUNBOOK.md §3` extended with the "dev secrets are compromised by default" rule.
 
+## Frontend Optimization — Phase 11 (2026-06-10)
+
+Three medium-priority issues from AUDIT_REPORT_V2.md (§2, §4-NEW) fixed:
+
+1. **Research lazy-loaded** — `Research` removed from the eager import block in `App.jsx` and converted to `const Research = lazy(() => import('./pages/Research'))`. Its `/research` route is now wrapped in `<Suspense fallback={<PageFallback />}>` (same pattern as all Engineering routes). `@uiw/react-md-editor` no longer ships in the main chunk on every page load.
+2. **Vendor-split for editor and highlighter** — `client/vite.config.js` gains `build.rollupOptions.output.manualChunks` (function form, required by Vite 8 / rolldown). `@uiw/react-md-editor` and its codemirror sub-packages land in `mdeditor-*.js` (~1,060 kB, cached after first `/research` or `/engineer/docs` visit); `prism-react-renderer` lands in `prism-*.js` (~85 kB). Main `index-*.js` drops from ~304 kB to ~243 kB.
+3. **Corrected App.jsx comment** — the old comment claimed Engineering was "the only" route pulling in the editor; rewritten to name both Engineering and Research as code-split consumers and reference the Phase 11 lazy-load.
+4. **Actionable duplicate-transfer error** — `errorHandler.js` now branches on `err.constraint === 'idx_transactions_transfer_dedup'` before the generic `23505` fallback, returning `{ code: 'DUPLICATE_TRANSFER', message: '…add or change the description…', field: 'description' }`. All other unique-constraint violations (email, budget category, etc.) keep the existing generic `CONFLICT` path. No migration or model change needed.
+
 ## Pending / Known Issues
 
 - **Two justified inline `style` widths.** `LearningRow.jsx` and `RecentLearning.jsx` progress bars use `style={{ width: \`${pct}%\` }}` — a runtime 0–100% width has no static Tailwind equivalent. This is the sole accepted exception to §10 NEVER #2.
 - **Research inline `style` colours.** `TopicBadge.jsx`, `TopicSidebar.jsx`, `TopicSelector.jsx`, and the `Research.jsx` topic heading set a topic's dot/swatch via `style={{ backgroundColor: color }}` — a user-defined hex with no static Tailwind equivalent (same sanctioned §10 exception; no `dark:` variant by design).
 - **Research Phases 2–5 not browser-verified.** Build + API/unit flows pass; the rendered page (mobile tab strip, hover actions, dark mode, markdown editor, tag autocomplete, export dropdown, detail modal, bulk checkboxes/bar, pin/duplicate/citation controls, native date pickers) has not been eyeballed. `navigator.clipboard` requires a secure context — confirm on the deployed origin.
-- **MDEditor inflates the Research bundle.** Importing `MarkdownEditor` into `CreateResearchModal` pulls `@uiw/react-md-editor` into the main Research chunk, pushing `index-*.js` past 1.4 MB. Functionally fine; lazy-load the editor (`React.lazy`) if load time matters.

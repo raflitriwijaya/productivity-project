@@ -13,15 +13,16 @@ import Receivables from './pages/Receivables';
 import Payables from './pages/Payables';
 import Portfolio from './pages/Portfolio';
 import Budget from './pages/Budget';
-import Research from './pages/Research';
 import Learning from './pages/Learning';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
-// Engineering Toolkit pages are code-split: they are the only routes that pull in
-// the heavy `@uiw/react-md-editor` (Docs) and `prism-react-renderer` (Snippets,
-// Project Detail) dependencies. Lazy-loading keeps those bundles out of the main
-// chunk so they download only when an Engineering route is first visited.
+// Code-split routes: the Engineering Toolkit pages (Docs editor, Snippets/Project
+// Detail highlighter) AND the Research page all pull in the heavy
+// `@uiw/react-md-editor` and/or `prism-react-renderer`. Lazy-loading them (Phase 11
+// also lazy-loaded Research) keeps those vendor chunks out of the main bundle so
+// they download only when one of those routes is first visited.
+const Research              = lazy(() => import('./pages/Research'));
 const EngineerProjects      = lazy(() => import('./pages/EngineerProjects'));
 const EngineerProjectDetail = lazy(() => import('./pages/EngineerProjectDetail'));
 const EngineerSnippets      = lazy(() => import('./pages/EngineerSnippets'));
@@ -91,7 +92,7 @@ export default function App() {
             <Route path="/finance/payables" element={<Payables />} />
             <Route path="/finance/portfolio" element={<Portfolio />} />
             <Route path="/finance/budget" element={<Budget />} />
-            <Route path="/research" element={<Research />} />
+            <Route path="/research" element={<Suspense fallback={<PageFallback />}><Research /></Suspense>} />
             <Route path="/learning" element={<Learning />} />
 
             {/* Engineering Toolkit — lazy-loaded. Literal sub-routes precede the

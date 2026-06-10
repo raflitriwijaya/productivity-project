@@ -7,6 +7,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Phase 11 — Frontend Optimization: Lazy-load Research, Vendor-split Editor, Duplicate-Transfer Error (2026-06-10)
+
+#### Fixed
+- **`Research` page loaded eagerly, inflating the main bundle (§2)** — `Research` was imported at the top of `App.jsx` alongside the non-lazy pages, which pulled `CreateResearchModal` → `EntryDetailModal` → `MarkdownEditor` → `@uiw/react-md-editor` into the main `index-*.js` chunk on every page load. `Research` is now `React.lazy`-loaded and its `/research` route is wrapped in `<Suspense fallback={<PageFallback />}>` (identical pattern to the Engineering routes). The `PageFallback` skeleton renders inside `<AppLayout>`'s `<Outlet />` so the sidebar stays mounted during chunk download.
+- **`@uiw/react-md-editor` and `prism-react-renderer` not vendor-split (§2)** — `client/vite.config.js` had no `build.rollupOptions.output.manualChunks`. Both heavy packages now land in their own cacheable chunks (`mdeditor-*.js`, `prism-*.js`) via a function-based `manualChunks` (required by Vite 8 / rolldown). The main `index-*.js` drops from ~304 kB to ~243 kB; `mdeditor-*.js` is ~1,060 kB (cached after first visit to `/research` or `/engineer/docs`); `prism-*.js` is ~85 kB.
+- **Inaccurate App.jsx comment claimed Engineering was the only md-editor consumer (§2)** — the comment said Engineering routes "are the only routes that pull in the heavy `@uiw/react-md-editor`", which was false (Research also uses it). Rewritten to name both Engineering and Research as code-split routes and to note the Phase 11 Research lazy-load.
+- **Generic 409 for duplicate Transfer blocks legitimate re-submissions (§4-NEW/§3)** — `idx_transactions_transfer_dedup` can reject a second genuinely-intended identical Transfer (same day, accounts, amount, blank description) with the same generic "A record with this value already exists." message as every other `23505`. `errorHandler.js` now branches on `err.constraint === 'idx_transactions_transfer_dedup'` before the generic fallback and returns `{ code: 'DUPLICATE_TRANSFER', message: 'This looks like a duplicate transfer … add or change the description to record it as a separate transfer.', field: 'description' }`. All other unique-constraint violations keep the existing generic `CONFLICT` path.
+
 ### Phase 10 — Integration Test Suite: Real-DB Tests, Real Multer Filter, De-brittle Settle Test (2026-06-10)
 
 #### Added
