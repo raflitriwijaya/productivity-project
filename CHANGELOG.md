@@ -7,6 +7,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Phase 6 — Rate-Limit Self-Lockout Fix (2026-06-10)
+
+#### Fixed
+- **Critical: `/api/auth/me` self-lockout (§3-N1)** — `GET /api/auth/me` and `POST /api/auth/logout` were mounted behind `authLimiter` (5 req / 15 min / IP) along with `login` and `register`. Because `useAuth()` calls `/me` on every protected-route mount, six page loads / refreshes / open tabs in 15 minutes triggered a `429` self-lockout. Fix: `authLimiter` is now applied only to `/api/auth/login` and `/api/auth/register` via path-specific `app.use` mounts registered before the router; the router itself runs under `generalLimiter` (100/min), so `/me` and `/logout` are no longer counted against the credential-guessing budget.
+- **Critical: `429` cascade to `/login` (§5/§8/§9)** — a `429` from the axios interceptor previously fell through to the generic error path, which caused `useAuth` to return `user: null` and `AuthGuard` to redirect to `/login` — which is on the same exhausted limiter, deepening the lockout. Fix: the interceptor now has an explicit `429` branch that surfaces the server's "slow down" message without redirecting; the rejected `Error` carries `err.status`; `useAuth` exposes a `throttled` flag (`error?.status === 429`); `AuthGuard` shows the loading skeleton (not a redirect) when `throttled` is true.
+
+---
+
 ### Phase 5 — Documentation, Observability & Future-Proofing (2026-06-10)
 
 #### Added

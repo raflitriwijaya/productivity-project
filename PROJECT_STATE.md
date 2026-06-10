@@ -120,7 +120,7 @@ Migrations live under `server/db/migrations/` (not `server/migrations/`). All fo
 
 ### Layout
 - `client/src/components/layout/AppLayout.jsx` — Owns the visual frame (desktop sidebar, mobile drawer, top bar, `<Outlet />`). Sidebar footer has the theme toggle and a **Log out** `Button` → `POST /api/auth/logout` then `navigate('/login', { replace: true })` (toasts on success/failure; redirects even if the request fails).
-- `client/src/components/layout/AuthGuard.jsx` — Wraps all protected routes; calls `useAuth` to check session via `GET /api/auth/me`; renders full-screen skeleton while loading, redirects to `/login` (replace) if no user or 401, renders `<Outlet />` when authenticated
+- `client/src/components/layout/AuthGuard.jsx` — Wraps all protected routes; calls `useAuth` to check session via `GET /api/auth/me`; renders full-screen skeleton while loading **or throttled (429)**; redirects to `/login` (replace) if no user and not throttled; renders `<Outlet />` when authenticated. **Phase 6:** redirect is gated on `!throttled` to prevent a rate-limit from ejecting a valid session.
 
 ### Dashboard
 - `client/src/components/dashboard/RecentTodos.jsx` — Shows 5 most recent todos with priority dot, status badge, priority badge; fetches `GET /api/todos?per_page=5&sort=created_at&order=desc`
@@ -179,7 +179,7 @@ Migrations live under `server/db/migrations/` (not `server/migrations/`). All fo
 - `client/src/hooks/useApi.js` — Generic data-fetching hook; returns `{ data, loading, error, refetch }`; used by all pages and `useAuth`. Includes an `isMounted` ref guard against setState-after-unmount.
 - `client/src/hooks/useTheme.js` — Dark mode toggle; persists to `localStorage` key `"theme"`; applies/removes `.dark` on `document.documentElement`
 - `client/src/hooks/useToast.jsx` — `ToastProvider` + `useToast()`; global, portal-rendered, bottom-right, cap 3, auto-dismiss 4s (§5.7). Wraps the app in `main.jsx` outside the router.
-- `client/src/hooks/useAuth.js` — Calls `GET /api/auth/me` via `useApi`; returns `{ user, loading, error }`; `user` is `null` when unauthenticated or on 401
+- `client/src/hooks/useAuth.js` — Calls `GET /api/auth/me` via `useApi`; returns `{ user, loading, error, throttled }`; `user` is `null` when unauthenticated or on 401; **Phase 6:** `throttled` is `true` when `error.status === 429` so callers can distinguish rate-limited from logged-out
 
 ---
 
@@ -220,6 +220,7 @@ Axios instance with:
 - `withCredentials: true` — sends the `sid` session cookie cross-origin
 - Response interceptor — unwraps `response.data` (standard envelope §6.4) on success
 - 401 interceptor — calls `window.location.replace('/login')` on any 401 response, guarded against redirect loops on `/login` and `/register`
+- **Phase 6:** 429 interceptor — surfaces the server's rate-limit message without redirecting; attaches `err.status` to the rejected `Error` so `useAuth` / `AuthGuard` can distinguish throttled from unauthenticated
 
 ---
 
@@ -246,11 +247,11 @@ Entry point is fully implemented with:
 - `cors` — origin `CLIENT_ORIGIN`, `credentials: true`
 - `express-session` — `connect-pg-simple` store, `httpOnly` + `secure` (prod only) cookie named `sid`, 7-day TTL
 - `trust proxy: 1` in production
-- **Phase 1:** `helmet` (CSP, HSTS in prod, X-Frame-Options, etc.) + `express-rate-limit` (`authLimiter` 5/15min on `/api/auth`, `generalLimiter` 100/min on all protected routes)
+- **Phase 1:** `helmet` (CSP, HSTS in prod, X-Frame-Options, etc.) + `express-rate-limit` (`authLimiter` 5/15min on login+register, `generalLimiter` 100/min on all other routes)
 - **Phase 3:** `pino-http` structured per-request logging (assigns `req.id`; used by error handler)
 - **Uploads** — `fs.mkdirSync(uploadsDir, { recursive: true })` on startup; static mount removed (Phase 1) — downloads go through authenticated route in `research.js`
 - `GET /health` — public uptime check
-- `app.use('/api/auth', authLimiter, authRouter)` — public, rate-limited
+- **Phase 6 auth mount:** `app.use('/api/auth/login', authLimiter)` + `app.use('/api/auth/register', authLimiter)` (credential-guessing guard) registered *before* `app.use('/api/auth', generalLimiter, authRouter)` — `/me` and `/logout` run under `generalLimiter` only and do not consume the 5-req/15-min credential budget
 - `app.use('/api/todos|finances|learning|research|engineer', generalLimiter, requireAuth, …Router)`
 - `app.use(errorHandler)` — last middleware
 - **Phase 2: graceful shutdown** — `app.listen` return value captured as `server`; `SIGTERM`/`SIGINT` handlers call `server.close()` → `pool.end()` → `process.exit(0)`; 10 s force-exit fallback via `setTimeout(...).unref()`
