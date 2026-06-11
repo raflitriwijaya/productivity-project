@@ -32,6 +32,7 @@ const spec = {
     { name: 'Research',    description: 'Research journal with topics, tags, and attachments' },
     { name: 'Engineering', description: 'IoT/Embedded/Robotics project toolkit' },
     { name: 'Links',       description: 'Universal cross-module entity linking' },
+    { name: 'Dashboard',   description: 'Dashboard and daily briefing' },
   ],
   components: {
     securitySchemes: {
@@ -1121,6 +1122,18 @@ addPath('delete', '/api/engineer/documents/{id}', {
   responses: { ...ok200, ...auth401, ...r404 },
 });
 
+addPath('get', '/api/engineer/issues', {
+  tags: ['Engineering'],
+  summary: 'List open issues across all projects (severity-ordered, for the Today briefing)',
+  security: cookie,
+  parameters: [
+    { name: 'severity', in: 'query', schema: { type: 'string' }, description: 'Comma-separated severities (P0-Critical, P1-High, …)' },
+    { name: 'status',   in: 'query', schema: { type: 'string' }, description: 'Comma-separated statuses; defaults to open,in_progress' },
+    { name: 'per_page', in: 'query', schema: { type: 'integer', default: 5 } },
+  ],
+  responses: { ...ok200, ...auth401 },
+});
+
 addPath('patch', '/api/engineer/issues/{id}', {
   tags: ['Engineering'],
   summary: 'Update an issue',
@@ -1373,6 +1386,20 @@ addPath('delete', '/api/links/{id}', {
   security: cookie,
   parameters: idParam,
   responses: { ...ok200, ...auth401, ...r404 },
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// DASHBOARD (Roadmap Wave 2 — Today briefing)
+// ═════════════════════════════════════════════════════════════════════════════
+
+addPath('get', '/api/dashboard/today', {
+  tags: ['Dashboard'],
+  summary: 'Get today briefing data across all modules (todos, finance, learning, engineer, research)',
+  security: cookie,
+  responses: {
+    '200': { description: 'Today briefing data' },
+    ...auth401,
+  },
 });
 
 // ─── Write output ─────────────────────────────────────────────────────────────

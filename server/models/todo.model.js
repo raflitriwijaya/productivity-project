@@ -142,3 +142,33 @@ export async function getTodoStats(userId) {
     overdue:     parseInt(row.overdue,     10),
   };
 }
+
+/**
+ * Date-scoped stats for the Today Dashboard briefing (Roadmap Wave 2).
+ * Counts the user's open tasks (pending / in_progress), tasks completed *today*
+ * (status flipped to 'done' with updated_at on the current date), and overdue
+ * tasks (not done with a due_date in the past). Status values follow
+ * TODO_STATUSES — note 'done', not 'completed'.
+ *
+ * @param {number} userId
+ * @returns {Promise<{ pending: number, in_progress: number, completed_today: number, overdue: number }>}
+ */
+export async function getTodayStats(userId) {
+  const result = await pool.query(
+    `SELECT
+       COUNT(*) FILTER (WHERE status = 'pending')                                 AS pending,
+       COUNT(*) FILTER (WHERE status = 'in_progress')                             AS in_progress,
+       COUNT(*) FILTER (WHERE status = 'done' AND updated_at::date = CURRENT_DATE) AS completed_today,
+       COUNT(*) FILTER (WHERE status != 'done' AND due_date < CURRENT_DATE)        AS overdue
+     FROM todos
+     WHERE user_id = $1`,
+    [userId]
+  );
+  const row = result.rows[0];
+  return {
+    pending:         parseInt(row.pending,         10),
+    in_progress:     parseInt(row.in_progress,     10),
+    completed_today: parseInt(row.completed_today, 10),
+    overdue:         parseInt(row.overdue,         10),
+  };
+}

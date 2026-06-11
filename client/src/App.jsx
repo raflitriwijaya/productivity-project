@@ -4,6 +4,7 @@ import { AppLayout } from './components/layout/AppLayout';
 import { AuthGuard } from './components/layout/AuthGuard';
 import { Card, CardBody } from './components/ui/Card';
 import { ListSkeleton } from './components/ui/Skeleton';
+import TodayDashboard from './pages/TodayDashboard';
 import Dashboard from './pages/Dashboard';
 import Todo from './pages/Todo';
 import Finance from './pages/Finance';
@@ -62,7 +63,8 @@ function PageFallback() {
  *  Protected (requires active session):
  *    AppLayout (sidebar + frame)
  *      AuthGuard (checks GET /api/auth/me; redirects to /login on failure)
- *        /           → Dashboard
+ *        /           → TodayDashboard (Wave 2 daily briefing)
+ *        /dashboard  → Dashboard (legacy lifetime statistics)
  *        /todo       → Todo
  *        /finance    → Finance (+ sub-pages)
  *        /research   → Research
@@ -83,7 +85,8 @@ export default function App() {
         {/* Protected routes — AppLayout owns the visual frame; AuthGuard owns the session check */}
         <Route element={<AppLayout />}>
           <Route element={<AuthGuard />}>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/" element={<TodayDashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/todo" element={<Todo />} />
             <Route path="/finance" element={<Finance />} />
             <Route path="/finance/dashboard" element={<FinanceDashboard />} />

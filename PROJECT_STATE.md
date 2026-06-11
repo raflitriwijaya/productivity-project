@@ -23,7 +23,8 @@
 
 - `/login` → `client/src/pages/Login.jsx` — Email + password form; calls `POST /api/auth/login`; redirects to `/` on success; redirects to `/` if already authenticated; client-side field validation + server error banner
 - `/register` → `client/src/pages/Register.jsx` — Name + email + password form; calls `POST /api/auth/register`; redirects to `/login` on success; redirects to `/` if already authenticated; client-side field validation (min 8-char password) + server error banner
-- `/` → `client/src/pages/Dashboard.jsx` — Overview dashboard with per-module stat cards (todos, finance, learning, research) and four recent-activity widgets (RecentTodos, RecentTransactions, RecentResearch, RecentLearning); todo stats fetched from `GET /api/todos/stats` (no longer using the `per_page=100` workaround)
+- `/` → `client/src/pages/TodayDashboard.jsx` — **Roadmap Wave 2 daily briefing** (replaces the legacy Dashboard at `/`). One `GET /api/dashboard/today` call drives five date-scoped stat cards (Tasks, Today's Finance, Learning, Research, Engineering) plus four action-item widgets (`TodayTodoList`, `TodayFinanceSummary`, `TodayLearningList`, `TodayEngineerIssues`). Header button + sidebar button + Cmd/Ctrl+K all open the global Quick Capture palette; a `quick-capture-created` event refetches the briefing.
+- `/dashboard` → `client/src/pages/Dashboard.jsx` — Legacy lifetime-statistics dashboard (preserved): per-module stat cards (todos, finance, learning, research) and four recent-activity widgets (RecentTodos, RecentTransactions, RecentResearch, RecentLearning); todo stats fetched from `GET /api/todos/stats`
 - `/todo` → `client/src/pages/Todo.jsx` — Task management with create, edit, delete, status filter, stat cards
 - `/finance` → `client/src/pages/Finance.jsx` — Transactions ledger: month/year selector, monthly Income/Expense/Net/Net-Worth totals, typed create/edit form (Type/Amount(IDR)/Source/Dest/Category/Reconciliation), type filter tabs, colour-coded rows/badges, delete with confirmation
 - `/finance/dashboard` → `client/src/pages/FinanceDashboard.jsx` — 12-month income/expense trend chart, this-month expense donut, per-account balance bars (`GET /api/finances/dashboard`)
@@ -295,7 +296,7 @@ Entry point is fully implemented with:
 - **Uploads** — `fs.mkdirSync(uploadsDir, { recursive: true })` on startup; static mount removed (Phase 1) — downloads go through authenticated route in `research.js`
 - `GET /health` — public uptime check
 - **Phase 6 auth mount:** `app.use('/api/auth/login', authLimiter)` + `app.use('/api/auth/register', authLimiter)` (credential-guessing guard) registered *before* `app.use('/api/auth', generalLimiter, authRouter)` — `/me` and `/logout` run under `generalLimiter` only and do not consume the 5-req/15-min credential budget
-- `app.use('/api/todos|finances|learning|research|engineer|links', generalLimiter, requireAuth, …Router)` (`/api/links` added in Roadmap Wave 1; `generalLimiter` is applied globally before the body parsers, so each mount is `requireAuth, …Router`)
+- `app.use('/api/todos|finances|learning|research|engineer|links|dashboard', generalLimiter, requireAuth, …Router)` (`/api/links` added in Roadmap Wave 1, `/api/dashboard` in Wave 2; `generalLimiter` is applied globally before the body parsers, so each mount is `requireAuth, …Router`)
 - `app.use(errorHandler)` — last middleware
 - **Phase 2: graceful shutdown** — `app.listen` return value captured as `server`; `SIGTERM`/`SIGINT` handlers call `server.close()` → `pool.end()` → `process.exit(0)`; 10 s force-exit fallback via `setTimeout(...).unref()`
 
@@ -493,6 +494,17 @@ The foundation of the 6-wave "Polymath OS" roadmap: a polymorphic cross-module r
 - **Tests/docs:** `test/integration/links.int.test.js` (9 tests, all pass against a real DB); 3 new OpenAPI paths under a `Links` tag (`npm run openapi` → 59 paths).
 - **Quality gates:** server lint clean, client lint clean, client `vite build` clean, server `vitest run` 24 passed, `npm audit` 0 vulnerabilities (both packages).
 - **Deliberate scope limits (per V4 risk notes):** `OWNERSHIP_VALIDATORS` covers 5 types (others pass through with a warn); the picker surfaces 5 modules; `LinkedItems` shows `{Type} #{id}` rather than resolving each linked entity's title (avoids an N+1 across modules — Wave 3 Unified Search will enrich). Transaction/learning/todo only have create/edit modals, not read-detail views, so `LinkedItems` was added to the two modules that have one.
+
+## Today Dashboard & Quick Capture — Roadmap Wave 2 (2026-06-11)
+
+Transforms the home page from a lifetime-statistics board into a daily briefing ("what should I do today?") and adds an instant capture mechanism reachable from anywhere (closes AUDIT_REPORT_V4 §13.2 Workflow Support / §13.5 Missing Capabilities — no daily view, no quick capture).
+
+- **Backend — unified endpoint:** `routes/dashboard.js` (`GET /api/dashboard/today`, mounted `requireAuth`) fans out via `Promise.all` to date-scoped model functions: `getTodayStats` (`todo.model.js` — pending/in_progress/completed_today/overdue; status is `done`, not `completed`), `getTodayDashboard` (`finance.model.js` — today income/expense + receivables/payables due ≤7 days), `getActiveLearningStats` (`learning.model.js`), `getTodayEngineerStats` (`engineer.model.js` — open P0s, this-week check-in, active projects), and the existing `getResearchStats`. Returns `{ todos, finance, learning, engineer, research, date }`.
+- **Backend — cross-project issues:** `GET /api/engineer/issues` + `listOpenIssues(userId, {severities, statuses, limit})` (severity-ordered, comma-separated filters, default `open,in_progress`) — the existing issue list is nested per project, so a global list was needed for the dashboard action card.
+- **Frontend:** `pages/TodayDashboard.jsx` + `components/dashboard/Today{TodoList,FinanceSummary,LearningList,EngineerIssues}.jsx` (each via `useApi`, all four data states). `StatCard` gained an optional `subtitle` prop (additive). `components/shared/QuickCapture.jsx` — global Cmd/Ctrl+K palette mounted **once** in `AppLayout` (single shortcut owner; mounting twice would double-toggle); creates a Todo (`POST /api/todos`) or Research note (`POST /api/research` `type:note`); Tab switches mode, Enter submits, Esc closes; opens via `open-quick-capture` event, emits `quick-capture-created` on success. Routing: `/` → `TodayDashboard`, `/dashboard` → legacy `Dashboard`.
+- **Tests/docs:** `test/dashboard.today.test.js` (model shape/coercion, DB-mocked); `client/src/test/QuickCapture.test.jsx` (closed render + open via event/shortcut). OpenAPI → 61 paths (`Dashboard` tag + `/api/dashboard/today` + `/api/engineer/issues`).
+- **Quality gates:** server lint clean, client lint clean, client `vite build` clean, client `vitest` 8 passed, server `vitest` 29 passed (+14 integration skipped without DB).
+- **Deliberate scope limits:** date comparisons use server `CURRENT_DATE` / client-local components (single-user self-hosted — a cross-timezone `?tz=` param is deferred); the "Tasks" stat counts all open pending/in_progress (the list below it scopes to due-today/overdue); `TodayFinanceSummary` is presentational (parent supplies the payload).
 
 ## Pending / Known Issues
 

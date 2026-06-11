@@ -24,7 +24,7 @@ import {
   // check-ins
   listCheckins, createCheckin,
   // issues
-  listIssues, getIssueById, createIssue, patchIssue, deleteIssue,
+  listIssues, listOpenIssues, getIssueById, createIssue, patchIssue, deleteIssue,
   // roadmap
   getRoadmap, getRoadmapSkillById, setRoadmapSkillCompleted,
 } from '../models/engineer.model.js';
@@ -231,7 +231,30 @@ router.delete('/documents/:id', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// ─── Issues (by-id ops; creation/listing is nested under a project) ───────────
+// ─── Issues (by-id ops; creation/per-project listing is nested under a project) ─
+
+// GET /api/engineer/issues — cross-project open-issue list for the Today
+// Dashboard (Roadmap Wave 2). `severity` and `status` accept comma-separated
+// values; invalid tokens are dropped. Defaults to open + in_progress issues.
+router.get('/issues', async (req, res, next) => {
+  try {
+    const parseList = (raw, allowed) =>
+      typeof raw === 'string'
+        ? raw.split(',').map(s => s.trim()).filter(s => allowed.includes(s))
+        : [];
+
+    const severities = parseList(req.query.severity, ISSUE_SEVERITIES);
+    const statuses   = parseList(req.query.status, ISSUE_STATUSES);
+    const perPage    = Math.min(50, Math.max(1, parseInt(req.query.per_page ?? '5', 10)));
+
+    const issues = await listOpenIssues(req.user.id, {
+      severities: severities.length ? severities : undefined,
+      statuses:   statuses.length ? statuses : ['open', 'in_progress'],
+      limit:      perPage,
+    });
+    res.json({ success: true, data: issues });
+  } catch (err) { next(err); }
+});
 
 router.patch('/issues/:id', validate(patchIssueSchema), async (req, res, next) => {
   try {

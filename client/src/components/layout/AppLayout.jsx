@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import {
-  Menu, Sun, Moon, LogOut,
+  Menu, Sun, Moon, LogOut, Command,
   LayoutDashboard, CheckSquare, BookOpen, GraduationCap,
   LineChart, Receipt, Wallet, ArrowDownLeft, ArrowUpRight, PieChart, Target,
   Wrench, Code, FileText, ClipboardCheck, Bug, Map,
@@ -11,6 +11,7 @@ import api from '../../lib/api';
 import { useTheme } from '../../hooks/useTheme';
 import { useToast } from '../../hooks/useToast';
 import { Button } from '../ui/Button';
+import { QuickCapture } from '../shared/QuickCapture';
 
 // Single source of truth for nav, grouped into labelled sections. The Finance
 // module fans out into its own section after the multi-account upgrade.
@@ -127,8 +128,24 @@ function SidebarContent({ onNavigate }) {
         ))}
       </nav>
 
-      {/* Footer: theme toggle */}
+      {/* Footer: quick capture + theme toggle */}
       <div className="p-4 border-t border-stone-200 dark:border-gray-700 space-y-2">
+        {/* Quick capture trigger — the global Cmd/Ctrl+K listener lives in
+            <QuickCapture/>; this button just opens it via a window event. */}
+        <button
+          onClick={() => { onNavigate?.(); window.dispatchEvent(new Event('open-quick-capture')); }}
+          className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm font-medium
+            text-stone-600 dark:text-gray-400
+            hover:bg-stone-100 dark:hover:bg-gray-700
+            transition-colors duration-150"
+        >
+          <span className="flex items-center gap-3">
+            <Command size={18} />
+            Quick capture
+          </span>
+          <kbd className="px-1.5 py-0.5 text-[10px] bg-stone-200 dark:bg-gray-700 rounded">⌘K</kbd>
+        </button>
+
         <button
           onClick={toggle}
           className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
@@ -209,6 +226,10 @@ export function AppLayout() {
         </main>
 
       </div>
+
+      {/* Global quick-capture palette — single instance owns the Cmd/Ctrl+K
+          shortcut app-wide (mounting twice would double-toggle). */}
+      <QuickCapture />
     </div>
   );
 }

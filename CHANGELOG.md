@@ -7,6 +7,25 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Roadmap Wave 2 — Today Dashboard & Quick Capture (2026-06-11)
+
+#### Today Dashboard
+- **New unified endpoint `GET /api/dashboard/today`** (`server/routes/dashboard.js`, mounted `app.use('/api/dashboard', requireAuth, dashboardRouter)`) — fans out to all five modules in parallel (`Promise.all`) and returns one briefing payload (`{ todos, finance, learning, engineer, research, date }`), replacing four separate client round-trips.
+- **New home page `TodayDashboard.jsx`** now renders at `/` — a date-scoped daily briefing (five stat cards + four action-item widgets) answering "what should I do today?". The legacy lifetime-statistics **`Dashboard` is preserved at `/dashboard`**.
+- **The Engineering module finally appears on the dashboard** — open P0 issue count, this-week check-in status, and active-project count.
+- **New widgets** (`client/src/components/dashboard/`): `TodayTodoList` (tasks due today/overdue), `TodayFinanceSummary` (today's income/expense/net + receivables/payables due within 7 days), `TodayLearningList` (in-progress items with an hours-progress bar), `TodayEngineerIssues` (open P0/P1 issues across all projects + check-in status). Each handles all four data states via `useApi`.
+- **New date-scoped model functions:** `getTodayStats` (`todo.model.js` — pending/in_progress/completed_today/overdue; note status is `done`, not `completed`), `getTodayDashboard` (`finance.model.js`), `getActiveLearningStats` (`learning.model.js`), `getTodayEngineerStats` + cross-project `listOpenIssues` (`engineer.model.js`).
+- **New route `GET /api/engineer/issues`** — cross-project open-issue list (severity-ordered, comma-separated `severity`/`status` filters, default `open,in_progress`) for the dashboard action list, since the existing issues endpoint is nested per project.
+- **`StatCard` gained an optional `subtitle` prop** (additive, backward-compatible) for the briefing captions.
+
+#### Quick Capture (Cmd/Ctrl+K)
+- **New `QuickCapture.jsx`** (`client/src/components/shared/`) — a global command palette mounted once in `AppLayout` so a single Cmd/Ctrl+K listener owns the shortcut app-wide. Captures an idea instantly as a **Todo task** (`POST /api/todos` with server defaults) or a **Research note** (`POST /api/research` `type: note`) without navigating away. **Tab** switches mode, **Enter** submits, **Esc** closes.
+- **Opens** via Cmd/Ctrl+K, the sidebar "Quick capture ⌘K" button, or the dashboard header button (all dispatch an `open-quick-capture` window event); **on success** dispatches a `quick-capture-created` event so the Today Dashboard refetches.
+
+#### API & Docs
+- **OpenAPI** (`generate-openapi.js`) — added the `Dashboard` tag and the `/api/dashboard/today` and `/api/engineer/issues` paths (61 paths total).
+- **Tests** — `server/test/dashboard.today.test.js` (model shape/coercion, DB-mocked) and `client/src/test/QuickCapture.test.jsx` (closed render + open via event/shortcut).
+
 ### Roadmap Wave 1 — Universal Links (2026-06-11)
 - **Added the `entity_links` table** (migration `007_entity_links.sql`) — a polymorphic soft-reference that connects any entity (transaction, research_entry, learning_item, engineer_project, todo, and 11 more types) to any other, scoped by `user_id`. Constraints: `uq_entity_link` UNIQUE `(user_id, from_type, from_id, to_type, to_id)` to block duplicates, `chk_entity_link_types` CHECK whitelisting both type columns (mirrors `LINKABLE_TYPES` in `server/lib/enums.js`). Indexes for forward lookup (`idx_entity_links_from`), reverse lookup (`idx_entity_links_to`), and recency (`idx_entity_links_created`); shared `set_updated_at()` trigger on `updated_at`.
 - **Added `LINKABLE_TYPES`** to `server/lib/enums.js` (16 types) — single source of truth shared by the Zod schema, route validation, and the CHECK constraint.

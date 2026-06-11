@@ -47,6 +47,10 @@
     {
       "name": "Links",
       "description": "Universal cross-module entity linking"
+    },
+    {
+      "name": "Dashboard",
+      "description": "Dashboard and daily briefing"
     }
   ],
   "components": {
@@ -4490,6 +4494,60 @@
         }
       }
     },
+    "/api/engineer/issues": {
+      "get": {
+        "tags": [
+          "Engineering"
+        ],
+        "summary": "List open issues across all projects (severity-ordered, for the Today briefing)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "severity",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated severities (P0-Critical, P1-High, …)"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated statuses; defaults to open,in_progress"
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 5
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
     "/api/engineer/issues/{id}": {
       "patch": {
         "tags": [
@@ -5656,6 +5714,27 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/dashboard/today": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "Get today briefing data across all modules (todos, finance, learning, engineer, research)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Today briefing data"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
           }
         }
       }

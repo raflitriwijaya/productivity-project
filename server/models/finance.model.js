@@ -501,6 +501,53 @@ export async function getDashboard(userId) {
   };
 }
 
+/**
+ * Today-scoped finance briefing for the Today Dashboard (Roadmap Wave 2).
+ * Returns today's income/expense totals plus outstanding receivables/payables
+ * coming due within the next 7 days. All money fields are returned as numbers
+ * (the dashboard formats at the display boundary).
+ * @param {number} userId
+ */
+export async function getTodayDashboard(userId) {
+  const [flow, recv, pay] = await Promise.all([
+    pool.query(
+      `SELECT
+         COALESCE(SUM(amount) FILTER (WHERE type = 'Income'),  0) AS today_income,
+         COALESCE(SUM(amount) FILTER (WHERE type = 'Expense'), 0) AS today_expense
+       FROM transactions
+       WHERE user_id = $1 AND date = CURRENT_DATE`,
+      [userId]
+    ),
+    pool.query(
+      `SELECT COUNT(*) AS count, COALESCE(SUM(amount), 0) AS total
+       FROM receivables
+       WHERE user_id = $1 AND status = 'outstanding'
+         AND due_date IS NOT NULL AND due_date <= CURRENT_DATE + INTERVAL '7 days'`,
+      [userId]
+    ),
+    pool.query(
+      `SELECT COUNT(*) AS count, COALESCE(SUM(amount), 0) AS total
+       FROM payables
+       WHERE user_id = $1 AND status = 'outstanding'
+         AND due_date IS NOT NULL AND due_date <= CURRENT_DATE + INTERVAL '7 days'`,
+      [userId]
+    ),
+  ]);
+
+  return {
+    today_income:  parseFloat(flow.rows[0].today_income),
+    today_expense: parseFloat(flow.rows[0].today_expense),
+    receivables_due_this_week: {
+      count: parseInt(recv.rows[0].count, 10),
+      total: parseFloat(recv.rows[0].total),
+    },
+    payables_due_this_week: {
+      count: parseInt(pay.rows[0].count, 10),
+      total: parseFloat(pay.rows[0].total),
+    },
+  };
+}
+
 // ─── Receivables & Payables (shared shape) ─────────────────────────────────────
 
 const LEDGER_TABLES = { receivables: 'receivables', payables: 'payables' };

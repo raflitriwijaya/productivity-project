@@ -35,6 +35,7 @@ import { learningRouter } from './routes/learning.js';
 import { researchRouter, uploadsDir } from './routes/research.js';
 import { engineerRouter } from './routes/engineer.js';
 import { linksRouter } from './routes/links.js';
+import { dashboardRouter } from './routes/dashboard.js'; // Roadmap Wave 2: Today Dashboard briefing
 
 // ─── Env validation ───────────────────────────────────────────────────────────
 const {
@@ -216,6 +217,7 @@ app.use('/api/learning', requireAuth, learningRouter);
 app.use('/api/research', requireAuth, researchRouter);
 app.use('/api/engineer', requireAuth, engineerRouter);
 app.use('/api/links',    requireAuth, linksRouter); // Roadmap Wave 1: cross-module links
+app.use('/api/dashboard', requireAuth, dashboardRouter); // Roadmap Wave 2: Today briefing
 
 // ─── 404 for unmatched API routes ────────────────────────────────────────────
 app.use('/api', (_req, res) => {

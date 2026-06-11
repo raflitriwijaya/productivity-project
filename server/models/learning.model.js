@@ -143,3 +143,27 @@ export async function getLearningStats(userId) {
     total_spent_hours: parseFloat(row.total_spent_hours),
   };
 }
+
+/**
+ * Active-learning stats for the Today Dashboard briefing (Roadmap Wave 2).
+ * Scopes to in-progress items only and sums their logged vs. target hours.
+ * @param {number} userId
+ * @returns {Promise<{ active_count: number, total_spent_hours: number, total_target_hours: number }>}
+ */
+export async function getActiveLearningStats(userId) {
+  const res = await pool.query(
+    `SELECT
+       COUNT(*)                      AS active_count,
+       COALESCE(SUM(spent_hours), 0) AS total_spent_hours,
+       COALESCE(SUM(total_hours), 0) AS total_target_hours
+     FROM learning_items
+     WHERE user_id = $1 AND status = 'in_progress'`,
+    [userId]
+  );
+  const row = res.rows[0];
+  return {
+    active_count:       parseInt(row.active_count, 10),
+    total_spent_hours:  parseFloat(row.total_spent_hours),
+    total_target_hours: parseFloat(row.total_target_hours),
+  };
+}

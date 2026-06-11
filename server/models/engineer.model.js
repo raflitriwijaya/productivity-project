@@ -154,6 +154,72 @@ export async function getProjectStats(userId) {
   };
 }
 
+/**
+ * Engineering briefing for the Today Dashboard (Roadmap Wave 2): open critical
+ * issue count, whether *this* week (Monday-anchored) already has a check-in, and
+ * the active-project count. Issue status values follow ISSUE_STATUSES — an issue
+ * is "open" for this count when its status is not 'resolved'.
+ * @param {number} userId
+ * @returns {Promise<{ open_p0_issues: number, this_week_checkin_exists: boolean, active_projects: number }>}
+ */
+export async function getTodayEngineerStats(userId) {
+  const [p0, checkin, projects] = await Promise.all([
+    pool.query(
+      `SELECT COUNT(*) AS count FROM engineer_issues
+       WHERE user_id = $1 AND severity = 'P0-Critical' AND status != 'resolved'`,
+      [userId]
+    ),
+    pool.query(
+      `SELECT 1 FROM engineer_checkins
+       WHERE user_id = $1 AND week_start = DATE_TRUNC('week', CURRENT_DATE)::date
+       LIMIT 1`,
+      [userId]
+    ),
+    pool.query(
+      `SELECT COUNT(*) AS count FROM engineer_projects
+       WHERE user_id = $1 AND status IN ('planning', 'development', 'testing')`,
+      [userId]
+    ),
+  ]);
+
+  return {
+    open_p0_issues:           parseInt(p0.rows[0].count, 10),
+    this_week_checkin_exists: checkin.rowCount > 0,
+    active_projects:          parseInt(projects.rows[0].count, 10),
+  };
+}
+
+/**
+ * List open issues across *all* of a user's projects, severity-ordered, for the
+ * Today Dashboard action list (Roadmap Wave 2). Unlike listIssues this is not
+ * scoped to a single project; each row carries its `project_name`.
+ * @param {number} userId
+ * @param {{ severities?: string[], statuses?: string[], limit?: number }} opts
+ * @returns {Promise<object[]>}
+ */
+export async function listOpenIssues(userId, { severities, statuses, limit = 5 } = {}) {
+  const conditions = ['i.user_id = $1'];
+  const params = [userId];
+  let idx = 2;
+
+  if (severities?.length) { conditions.push(`i.severity = ANY($${idx++})`); params.push(severities); }
+  if (statuses?.length)   { conditions.push(`i.status = ANY($${idx++})`);   params.push(statuses); }
+
+  params.push(limit);
+  const { rows } = await pool.query(
+    `SELECT i.*, p.name AS project_name
+       FROM engineer_issues i
+       JOIN engineer_projects p ON p.id = i.project_id
+      WHERE ${conditions.join(' AND ')}
+      ORDER BY
+        array_position(ARRAY['P0-Critical','P1-High','P2-Medium','P3-Low']::text[], i.severity),
+        i.created_at DESC
+      LIMIT $${idx}`,
+    params
+  );
+  return rows;
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 // Templates (global)
 // ──────────────────────────────────────────────────────────────────────────────

@@ -11,9 +11,10 @@ import { Card, CardBody } from './Card';
  * @param {string|number} props.value
  * @param {number} [props.delta]  Optional percentage delta.
  * @param {React.ComponentType<{ className?: string }>} [props.icon] Lucide icon component.
+ * @param {React.ReactNode} [props.subtitle] Optional caption below the value (Wave 2 Today briefing).
  * @returns {JSX.Element}
  */
-export function StatCard({ label, value, delta, icon: Icon }) {
+export function StatCard({ label, value, delta, icon: Icon, subtitle }) {
   const deltaColor = delta == null
     ? ''
     : delta >= 0
@@ -27,6 +28,9 @@ export function StatCard({ label, value, delta, icon: Icon }) {
           {Icon && <Icon className="w-4 h-4 text-stone-400 dark:text-gray-500" />}
         </div>
         <p className="text-2xl font-bold text-stone-900 dark:text-gray-50 tracking-[-0.02em]">{value}</p>
+        {subtitle != null && (
+          <p className="text-xs mt-1 text-stone-400 dark:text-gray-500">{subtitle}</p>
+        )}
         {delta != null && (
           <p className={`text-xs mt-1 ${deltaColor}`}>{delta >= 0 ? '+' : ''}{delta}%</p>
         )}
