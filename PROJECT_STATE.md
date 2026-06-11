@@ -90,6 +90,12 @@ The original flat `transactions` table was **replaced** by a multi-account gener
 - `engineer_roadmap_months` — **global** (no user_id). `month_number` UNIQUE, title, description. Seeded by the migration (12 months).
 - `engineer_roadmap_skills` — id, month_id FK, user_id, `category` (`hardware|software|process`), title, `completed` BOOLEAN. **Seeded lazily per-user** by the model (`seedRoadmapSkillsForUser`, on first `getRoadmap` — 3 skills/month = 36 total).
 
+### Universal Links module (migration `007_entity_links.sql` — Roadmap Wave 1)
+
+1 table, following §6.5:
+
+- `entity_links` — id, user_id, `from_type`/`to_type` (VARCHAR(40), CHECK-whitelisted against the 16 `LINKABLE_TYPES`), `from_id`/`to_id` (INTEGER, **no FK** — the targets live in 16 different tables, so this is a polymorphic soft-reference), `note` (TEXT, optional), created/updated. `UNIQUE(user_id, from_type, from_id, to_type, to_id)` (`uq_entity_link`) blocks duplicate links. Three indexes: `idx_entity_links_from` `(user_id, from_type, from_id)` (forward lookup), `idx_entity_links_to` `(user_id, to_type, to_id)` (reverse lookup), `idx_entity_links_created` `(user_id, created_at DESC)`. Ownership of both referenced entities is validated at the API layer, not by the DB.
+
 ---
 
 ## Existing DB Migrations
@@ -106,6 +112,7 @@ Migrations live under `server/db/migrations/` (not `server/migrations/`). All fo
 - `004_research_topics.sql` — adds `research_topics`, `research_entry_topics` (pivot), `research_attachments`, and the `research_entries.is_pinned` column. Re-runnable: `DROP … IF EXISTS CASCADE` before each CREATE, `ADD COLUMN IF NOT EXISTS` for the column.
 - `005_idempotency_guards.sql` — Phase 2: adds `CHECK (amount <> 0)` on `transactions.amount`; adds partial UNIQUE index `idx_transactions_transfer_dedup` on `(user_id, date, amount, source_account_id, dest_account_id, description) WHERE type = 'Transfer'` to reject exact duplicate Transfer rows at the DB level.
 - `006_fix_dedup_nulls.sql` — Phase 12: drops and recreates `idx_transactions_transfer_dedup` with `NULLS NOT DISTINCT` (Postgres 15+) so duplicate Transfers with `description = NULL` are correctly blocked. Previously NULL was treated as distinct from NULL, leaving the dedup guard a no-op for the most common (no-description) transfer case.
+- `007_entity_links.sql` — Roadmap Wave 1: creates the `entity_links` table (polymorphic cross-module links) with `uq_entity_link` UNIQUE, `chk_entity_link_types` CHECK (whitelists both type columns against `LINKABLE_TYPES`), the three lookup indexes, and the shared `set_updated_at()` trigger on `updated_at`. Re-runnable: `DROP TABLE IF EXISTS … CASCADE` before the CREATE; trigger function is `CREATE OR REPLACE`.
 
 **Migration runner** — `server/db/migrate.js` (`npm run migrate`). Tracks applied files in a `schema_migrations` table; applies each pending `*.sql` in its own transaction. Handles two cases: a pre-existing DB where the v1 tables were created out-of-band (a CREATE that fails with "already exists" is recorded as applied), and dependency ordering on a fresh DB (a file referencing a not-yet-created table is deferred and retried in a later pass). Date-prefixed v1 files sort before the `NNN_` v2+ series so `002_finance_upgrade.sql` runs after the base tables. **Phase 2:** the runner now acquires a Postgres advisory lock (`pg_advisory_lock(7391842)`) for the lifetime of each run, released in a `finally` block, so concurrent replicas on rolling deploys cannot race and double-apply migrations.
 
@@ -131,6 +138,7 @@ Require `DATABASE_URL` (CI `postgres:16-alpine` service, or a local Docker Postg
 - `isolation.int.test.js` — `getTransactionById(bTx.id, userA)` returns `null` against a real DB, proving the `WHERE t.user_id = $2` ownership clause fires.
 - `settle.int.test.js` — `settleLedger` with a non-owned `account_id` rejects and leaves the receivable `outstanding` (no partial state), proven against a real transaction.
 - `constraints.int.test.js` — zero-amount `INSERT` raises `23514` (`transactions_amount_nonzero` CHECK); duplicate Transfer raises `23505` on `idx_transactions_transfer_dedup` (requires non-NULL `source_account_id`/`dest_account_id` — two accounts are seeded in `beforeAll`).
+- `links.int.test.js` — Roadmap Wave 1, 9 tests against the shipped model functions: create a link, `ON CONFLICT` upsert (note updated, same id), forward (`outgoing`) lookup, reverse (`incoming`) lookup, `getLinkStats` per-type counts, cross-user isolation (a second user's `getLinkById`/`deleteLink` return `null` and the owner's row survives), owner delete, and missing-id → `null`. Seeds a research entry + learning item (valid enum values: `note`/`active`, `book`/`not_started`); cleanup cascades via `entity_links.user_id` FK.
 
 ---
 
@@ -196,6 +204,10 @@ Require `DATABASE_URL` (CI `postgres:16-alpine` service, or a local Docker Postg
 - `RoadmapMonthCard.jsx` — month card with `MiniProgressBar` + category-grouped skill checklist (toggle as styled `<button role="checkbox">`)
 - `MiniProgressBar.jsx` — generic 0–100% emerald meter (sanctioned dynamic-width style exception); `ProjectScopePicker.jsx` — shared project `<Select>` for the `?project=`-scoped pages
 
+### Shared / cross-module (`client/src/components/shared/`)
+- `LinkedItems.jsx` — Roadmap Wave 1. Reusable links section embedded in any detail view (`entityType`/`entityId`/`editable` props). Fetches `GET /api/links?type=&id=&direction=both` via `useApi` (four-state); groups results by the linked entity's type with a per-type `Badge`; each row shows `{Type} #{id}` + optional note (no title resolution — deliberate, avoids an N+1 fan-out across 16 tables; Wave 3 Unified Search will enrich). Add/remove controls (remove → `DELETE /api/links/:id` + `refetch`) open the picker. Non-component `TYPE_LABELS`/`TYPE_VARIANTS` maps are module-private (kept un-exported to satisfy `react-refresh/only-export-components`). Embedded today in `EntryDetailModal.jsx` (after attachments) and `EngineerProjectDetail.jsx` (Overview tab "Linked Items" card).
+- `LinkPickerModal.jsx` — the "Link to…" picker (`Modal size="lg"` with a `footer` prop holding Cancel/Create). Three steps: pick a module → browse/search its items (debounced 300ms) → pick one + optional note → `POST /api/links`. `MODULES` lists the 5 modules with list endpoints (research `q` / finance `search` are searchable; learning/engineer/todo browse recent only); the API still accepts all 16 `LINKABLE_TYPES` — the picker is just the UI surface. Item label falls back `title || name || description || #id`.
+
 ---
 
 ## Existing Hooks
@@ -234,6 +246,11 @@ Require `DATABASE_URL` (CI `postgres:16-alpine` service, or a local Docker Postg
 ### Engineering Toolkit
 - `server/routes/engineer.js` — mounted as `app.use('/api/engineer', requireAuth, engineerRouter)`. Zod-validated. **All literal sub-paths registered before `/:id`** (mirrors finances.js): `GET /stats`, `GET /templates`; snippets CRUD (`/snippets`, `?q=`/`?category=`/`?language=`); `GET /documents`, `PATCH/DELETE /documents/:id`; `PATCH/DELETE /issues/:id`; `GET /roadmap`, `PATCH /roadmap/skills/:id`; nested `GET|POST /projects/:id/documents|checkins|issues` (ownership-guarded via `requireOwnedProject`); then projects CRUD (`/`, `/:id`). Standard envelope + `AppError`.
 - `server/models/engineer.model.js` — projects CRUD + `getProjectStats`; `listTemplates`; snippets CRUD + `seedSnippetsForUser` (lazy 16-snippet seed); documents CRUD (project-scoped + global); `listCheckins`/`createCheckin`; issues CRUD; roadmap `getRoadmap` + `seedRoadmapSkillsForUser` (lazy) + `setRoadmapSkillCompleted`. Every per-user query scoped by `user_id`.
+
+### Universal Links (migration `007_entity_links.sql` — Roadmap Wave 1)
+- `server/routes/links.js` — mounted as `app.use('/api/links', requireAuth, linksRouter)`. Endpoints: `GET /` (`?type=&id=&direction=from|to|both` — query parsed by hand since `validate()` only covers the body), `POST /` (Zod-validated; a `.refine` rejects self-links), `DELETE /:id`. An `OWNERSHIP_VALIDATORS` map (`todo`/`transaction`/`research_entry`/`learning_item`/`engineer_project` → each model's `get*ById`, called with the codebase's `(id, userId)` arg order) drives a `verifyOwnership` helper that runs before every read/create — **both** sides of a `POST` are checked. Missing/non-owned → `404` (never `403`). Types without a registered validator pass through with a `warn` (forward-compatibility; `user_id` scoping + UNIQUE still protect the row). `LINK_CREATE`/`LINK_DELETE` logged with `userId`+`reqId`. Exports `{ linksRouter }` + default.
+- `server/models/links.model.js` — `createLink` (INSERT … `ON CONFLICT ON CONSTRAINT uq_entity_link DO UPDATE SET note, updated_at` — idempotent on the pair), `getLinksForEntity` (`from`/`to`/`both` via UNION ALL, each row carrying the *linked* entity's type/id + a `direction` discriminator), `getLinkById`, `deleteLink` (both `user_id`-scoped, `RETURNING *`), `getLinkStats` (per-type counts). Imports `pool` as the default export (matches the finance/research/learning models).
+- `server/lib/enums.js` — `LINKABLE_TYPES` (16 types) added; shared by the Zod schema, route validation, and the migration's CHECK constraint (keep all three in sync).
 
 ---
 
@@ -278,7 +295,7 @@ Entry point is fully implemented with:
 - **Uploads** — `fs.mkdirSync(uploadsDir, { recursive: true })` on startup; static mount removed (Phase 1) — downloads go through authenticated route in `research.js`
 - `GET /health` — public uptime check
 - **Phase 6 auth mount:** `app.use('/api/auth/login', authLimiter)` + `app.use('/api/auth/register', authLimiter)` (credential-guessing guard) registered *before* `app.use('/api/auth', generalLimiter, authRouter)` — `/me` and `/logout` run under `generalLimiter` only and do not consume the 5-req/15-min credential budget
-- `app.use('/api/todos|finances|learning|research|engineer', generalLimiter, requireAuth, …Router)`
+- `app.use('/api/todos|finances|learning|research|engineer|links', generalLimiter, requireAuth, …Router)` (`/api/links` added in Roadmap Wave 1; `generalLimiter` is applied globally before the body parsers, so each mount is `requireAuth, …Router`)
 - `app.use(errorHandler)` — last middleware
 - **Phase 2: graceful shutdown** — `app.listen` return value captured as `server`; `SIGTERM`/`SIGINT` handlers call `server.close()` → `pool.end()` → `process.exit(0)`; 10 s force-exit fallback via `setTimeout(...).unref()`
 
@@ -465,6 +482,17 @@ Three medium-priority issues from AUDIT_REPORT_V2.md (§2, §4-NEW) fixed:
 - **Shared enums**: `server/lib/enums.js` centralizes all magic strings; routes and models import from it.
 - **Doc hierarchy**: `ARCHITECTURE.md` is canonical; `PROJECT_STATE.md` is a chronological phase log.
 - **Legacy `file_path`**: attachment creation now stores only `filename`; download/delete reconstruct path.
+
+## Universal Links — Roadmap Wave 1 (2026-06-11)
+
+The foundation of the 6-wave "Polymath OS" roadmap: a polymorphic cross-module reference so any entity can link to any other (closes AUDIT_REPORT_V4 §13.1 Cross-Module Integration — previously 0 FKs between modules).
+
+- **DB:** migration `007_entity_links.sql` — `entity_links` table (`uq_entity_link` UNIQUE, `chk_entity_link_types` CHECK over the 16 `LINKABLE_TYPES`, forward/reverse/recency indexes, `updated_at` trigger). Applied cleanly; table verified to have all 9 columns + 4 indexes.
+- **Backend:** `LINKABLE_TYPES` in `lib/enums.js`; `models/links.model.js` (create/upsert, bidirectional get, getById, delete, stats); `routes/links.js` (`GET`/`POST`/`DELETE /api/links`) with both-sided ownership verification (404 not 403) + `LINK_CREATE`/`LINK_DELETE` audit logging; mounted in `index.js`.
+- **Frontend:** `components/shared/LinkedItems.jsx` + `LinkPickerModal.jsx`, embedded in the Research entry detail modal and the Engineering project detail Overview tab.
+- **Tests/docs:** `test/integration/links.int.test.js` (9 tests, all pass against a real DB); 3 new OpenAPI paths under a `Links` tag (`npm run openapi` → 59 paths).
+- **Quality gates:** server lint clean, client lint clean, client `vite build` clean, server `vitest run` 24 passed, `npm audit` 0 vulnerabilities (both packages).
+- **Deliberate scope limits (per V4 risk notes):** `OWNERSHIP_VALIDATORS` covers 5 types (others pass through with a warn); the picker surfaces 5 modules; `LinkedItems` shows `{Type} #{id}` rather than resolving each linked entity's title (avoids an N+1 across modules — Wave 3 Unified Search will enrich). Transaction/learning/todo only have create/edit modals, not read-detail views, so `LinkedItems` was added to the two modules that have one.
 
 ## Pending / Known Issues
 

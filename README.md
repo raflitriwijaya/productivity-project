@@ -10,6 +10,7 @@ A personal web-based productivity suite that combines task management, finance t
 - **Research** — research entry logging and tracking
 - **Learning** — learning notes and progress tracking
 - **Engineering** — IoT/embedded/robotics project tracker with scaffolding templates, a syntax-highlighted code snippet library, per-project Markdown docs, weekly check-ins, an issue tracker, and a 12-month skills roadmap
+- **Universal Links** — connect any item to any other across every module (e.g. link a Finance transaction to a Research entry, or a Learning item to an Engineering project), with an optional note per link, surfaced in the relevant detail views
 
 ## Tech Stack
 

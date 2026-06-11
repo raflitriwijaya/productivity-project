@@ -57,6 +57,7 @@ All API responses use the standard envelope:
 | `/api/learning` | session required | `server/routes/learning.js` |
 | `/api/research` | session required | `server/routes/research.js` |
 | `/api/engineer` | session required | `server/routes/engineer.js` |
+| `/api/links` | session required | `server/routes/links.js` |
 
 All protected routers also pass through `generalLimiter` (100 req/min/IP).
 
@@ -86,6 +87,14 @@ All tables follow these conventions (§6.5):
 | `research_topics` | id, user_id, name, description, color (#hex), status (active/archived) |
 | `research_entry_topics` | entry_id, topic_id (pivot; both FK CASCADE) |
 | `research_attachments` | id, entry_id FK, filename (UUID), original_name, file_path, mime_type, size |
+
+### Universal Links (migration `007_entity_links.sql`)
+
+| Table | Key columns |
+|-------|-------------|
+| `entity_links` | id, user_id, from_type, from_id, to_type, to_id, note — UNIQUE `(user_id, from_type, from_id, to_type, to_id)`; CHECK whitelists `from_type`/`to_type` against the 16 `LINKABLE_TYPES`; indexed on `(user_id, from_type, from_id)`, `(user_id, to_type, to_id)`, and `(user_id, created_at DESC)` |
+
+A polymorphic soft-reference: no FK to the target rows (they live in 16 different tables), so ownership of **both** sides is enforced at the API layer (`server/routes/links.js`) rather than by the database. `user_id` scoping plus the type CHECK and UNIQUE constraint protect the table itself.
 
 ### Finance ledger (migration `002_finance_upgrade.sql`)
 
@@ -216,7 +225,7 @@ A model function `ensureUserSettings(userId)` mirrors the `ensureDefaults` patte
 
 ### Migration File
 
-When implemented, create `server/db/migrations/006_user_settings.sql` following the existing conventions.
+When implemented, create the next free sequential migration (`008_user_settings.sql` — `006` and `007` are now taken by `006_fix_dedup_nulls.sql` and `007_entity_links.sql`) following the existing conventions.
 
 ---
 

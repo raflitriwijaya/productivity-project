@@ -39,6 +39,7 @@ Once a fix is merged, the vulnerability will be documented in [CHANGELOG.md](CHA
 | Attachment delete path | DELETE reconstructs path from `filename` only (`path.join(uploadsDir, filename)`), never trusts the stored absolute `file_path`; host/mount-independent |
 | Export size cap | `/api/research/export` capped at 10,000 rows; returns `413` on overflow to prevent a single request from pinning the container heap |
 | Month/year validation | Finance endpoints reject present-but-invalid `?month`/`?year` params with `400 VALIDATION_ERROR` rather than silently treating them as all-time queries |
+| Cross-module link ownership | `POST /api/links` verifies the caller owns **both** referenced entities (via each module's `get*ById`) before creating a link; missing/non-owned entities return `404` (never `403`) to avoid existence disclosure. `DELETE`/`GET` are `user_id`-scoped at the query level |
 | DB errors | pg `23505` mapped to `409`; 500 details masked from client |
 | Error reporting | Sentry captures unhandled exceptions (when `SENTRY_DSN` set); request ID (`reqId`) surfaced for correlation |
 

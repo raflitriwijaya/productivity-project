@@ -83,7 +83,7 @@ Both jobs must pass before a merge. Set them as required status checks in **Sett
 
 ## Adding a DB Migration
 
-1. Create `server/db/migrations/<timestamp>_<description>.sql` (e.g. `006_user_settings.sql`).
+1. Create `server/db/migrations/<NNN>_<description>.sql` using the next free sequential number (the latest is `007_entity_links.sql`, so the next is `008_…`).
 2. Write idempotent SQL: `CREATE TABLE IF NOT EXISTS` / `ADD COLUMN IF NOT EXISTS` / `DROP … IF EXISTS CASCADE` before each `CREATE`.
 3. Test by running `npm run migrate` against a dev database.
 4. The CI pipeline does **not** run migrations automatically — do not rely on migrations running in CI tests.

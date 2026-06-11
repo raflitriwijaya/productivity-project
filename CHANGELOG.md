@@ -7,6 +7,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Roadmap Wave 1 — Universal Links (2026-06-11)
+- **Added the `entity_links` table** (migration `007_entity_links.sql`) — a polymorphic soft-reference that connects any entity (transaction, research_entry, learning_item, engineer_project, todo, and 11 more types) to any other, scoped by `user_id`. Constraints: `uq_entity_link` UNIQUE `(user_id, from_type, from_id, to_type, to_id)` to block duplicates, `chk_entity_link_types` CHECK whitelisting both type columns (mirrors `LINKABLE_TYPES` in `server/lib/enums.js`). Indexes for forward lookup (`idx_entity_links_from`), reverse lookup (`idx_entity_links_to`), and recency (`idx_entity_links_created`); shared `set_updated_at()` trigger on `updated_at`.
+- **Added `LINKABLE_TYPES`** to `server/lib/enums.js` (16 types) — single source of truth shared by the Zod schema, route validation, and the CHECK constraint.
+- **Added the Links API** — `server/models/links.model.js` (`createLink` idempotent upsert, `getLinksForEntity` bidirectional, `getLinkById`, `deleteLink`, `getLinkStats`) and `server/routes/links.js` mounted `app.use('/api/links', requireAuth, linksRouter)`. Endpoints: `GET /api/links?type=&id=&direction=from|to|both`, `POST /api/links`, `DELETE /api/links/:id`. **Ownership of *both* referenced entities is verified before a link is created** (via each module's `get*ById`); missing/non-owned entities return `404` (never `403`, to avoid existence disclosure). `LINK_CREATE`/`LINK_DELETE` audit events logged with `userId`+`reqId`.
+- **Added `<LinkedItems>` + `<LinkPickerModal>`** (`client/src/components/shared/`) — a reusable, four-state links section (uses `useApi`) embedded in the Research entry detail modal and the Engineering project detail Overview tab. The picker browses/searches five modules (research, finance, learning, engineering, todos) and adds an optional note per link.
+- **Added integration tests** (`server/test/integration/links.int.test.js`, 9 tests) covering create/upsert/bidirectional lookup/stats/cross-user isolation/delete; and **three OpenAPI paths** under a new `Links` tag.
+
 ## [Phase 13–15] — 2026-06-11
 
 ### Phase 13 — Observability & Metrics

@@ -239,6 +239,8 @@ The following events are logged at `info` level with `userId` and `reqId` as str
 | `EXPORT` | Research data exported (JSON/CSV) |
 | `SETTLE` | Receivable/payable settled |
 | `TRANSACTION_CREATE` | New financial transaction created |
+| `LINK_CREATE` | Cross-module link created between two entities |
+| `LINK_DELETE` | Cross-module link deleted |
 | `DELETE` | Any resource deleted (todos, finances, research, learning, engineer) |
 
 Audit events are structured JSON via pino and include `reqId` for cross-referencing with error logs and Sentry reports. Search by `reqId` across both to reconstruct any incident timeline.
