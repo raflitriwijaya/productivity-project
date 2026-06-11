@@ -13,6 +13,7 @@ import { MarkdownPreview } from '../engineer/MarkdownEditor';
 import { TopicBadge } from './TopicBadge';
 import { AttachmentList } from './AttachmentList';
 import { AttachmentUploader } from './AttachmentUploader';
+import { LinkedItems } from '../shared/LinkedItems';
 import {
   TYPE_VARIANT, TYPE_LABEL, STATUS_VARIANT, STATUS_LABEL, splitTags,
 } from './ResearchEntryRow';
@@ -108,6 +109,11 @@ export function EntryDetailModal({ isOpen, onClose, entry, onEdit }) {
           <AttachmentUploader entryId={entry.id} onUploaded={bump} />
         </div>
         <AttachmentList entryId={entry.id} refreshKey={attachVersion} onChanged={bump} />
+      </div>
+
+      {/* UNIVERSAL LINKS (Roadmap Wave 1) */}
+      <div className="border-t border-stone-200 dark:border-gray-700 pt-4">
+        <LinkedItems entityType="research_entry" entityId={entry.id} />
       </div>
     </Modal>
   );

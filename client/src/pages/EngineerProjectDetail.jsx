@@ -19,6 +19,7 @@ import { Badge } from '../components/ui/Badge';
 import { ListSkeleton } from '../components/ui/Skeleton';
 import { ErrorState } from '../components/ui/ErrorState';
 import { EmptyState } from '../components/ui/EmptyState';
+import { LinkedItems } from '../components/shared/LinkedItems';
 
 import {
   TYPE_VARIANT, TYPE_LABEL, STATUS_VARIANT, STATUS_LABEL, splitTags, RepoLink,
@@ -183,6 +184,14 @@ export default function EngineerProjectDetail() {
               </CardBody>
             </Card>
           </div>
+
+          {/* UNIVERSAL LINKS (Roadmap Wave 1) */}
+          <Card>
+            <CardHeader title="Linked Items" />
+            <CardBody className="pt-0">
+              <LinkedItems entityType="engineer_project" entityId={project.id} />
+            </CardBody>
+          </Card>
         </div>
       )}
 

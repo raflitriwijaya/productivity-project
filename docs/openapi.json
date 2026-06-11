@@ -43,6 +43,10 @@
     {
       "name": "Engineering",
       "description": "IoT/Embedded/Robotics project toolkit"
+    },
+    {
+      "name": "Links",
+      "description": "Universal cross-module entity linking"
     }
   ],
   "components": {
@@ -5396,6 +5400,231 @@
           "Engineering"
         ],
         "summary": "Delete a project",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/links": {
+      "get": {
+        "tags": [
+          "Links"
+        ],
+        "summary": "List links touching an entity (forward, reverse, or both)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "transaction",
+                "research_entry",
+                "learning_item",
+                "engineer_project",
+                "todo",
+                "receivable",
+                "payable",
+                "portfolio",
+                "budget",
+                "account",
+                "research_topic",
+                "engineer_snippet",
+                "engineer_document",
+                "engineer_issue",
+                "engineer_checkin",
+                "engineer_roadmap_skill"
+              ]
+            },
+            "description": "Anchor entity type"
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Anchor entity ID"
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "from",
+                "to",
+                "both"
+              ],
+              "default": "both"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Links"
+        ],
+        "summary": "Create a link between two entities (ownership of both is verified)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "from_type",
+                  "from_id",
+                  "to_type",
+                  "to_id"
+                ],
+                "properties": {
+                  "from_type": {
+                    "type": "string",
+                    "enum": [
+                      "transaction",
+                      "research_entry",
+                      "learning_item",
+                      "engineer_project",
+                      "todo",
+                      "receivable",
+                      "payable",
+                      "portfolio",
+                      "budget",
+                      "account",
+                      "research_topic",
+                      "engineer_snippet",
+                      "engineer_document",
+                      "engineer_issue",
+                      "engineer_checkin",
+                      "engineer_roadmap_skill"
+                    ]
+                  },
+                  "from_id": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "to_type": {
+                    "type": "string",
+                    "enum": [
+                      "transaction",
+                      "research_entry",
+                      "learning_item",
+                      "engineer_project",
+                      "todo",
+                      "receivable",
+                      "payable",
+                      "portfolio",
+                      "budget",
+                      "account",
+                      "research_topic",
+                      "engineer_snippet",
+                      "engineer_document",
+                      "engineer_issue",
+                      "engineer_checkin",
+                      "engineer_roadmap_skill"
+                    ]
+                  },
+                  "to_id": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "nullable": true
+                  }
+                },
+                "description": "A repeat (from,to) pair updates the note instead of erroring."
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/links/{id}": {
+      "delete": {
+        "tags": [
+          "Links"
+        ],
+        "summary": "Delete a link by ID",
         "security": [
           {
             "cookieAuth": []

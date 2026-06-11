@@ -31,6 +31,7 @@ const spec = {
     { name: 'Learning',    description: 'Learning tracker' },
     { name: 'Research',    description: 'Research journal with topics, tags, and attachments' },
     { name: 'Engineering', description: 'IoT/Embedded/Robotics project toolkit' },
+    { name: 'Links',       description: 'Universal cross-module entity linking' },
   ],
   components: {
     securitySchemes: {
@@ -1317,6 +1318,58 @@ addPath('patch', '/api/engineer/{id}', {
 addPath('delete', '/api/engineer/{id}', {
   tags: ['Engineering'],
   summary: 'Delete a project',
+  security: cookie,
+  parameters: idParam,
+  responses: { ...ok200, ...auth401, ...r404 },
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// LINKS (Universal cross-module linking — Roadmap Wave 1)
+// ═════════════════════════════════════════════════════════════════════════════
+
+const linkableTypeSchema = {
+  type: 'string',
+  enum: [
+    'transaction', 'research_entry', 'learning_item', 'engineer_project', 'todo',
+    'receivable', 'payable', 'portfolio', 'budget', 'account',
+    'research_topic', 'engineer_snippet', 'engineer_document', 'engineer_issue',
+    'engineer_checkin', 'engineer_roadmap_skill',
+  ],
+};
+
+addPath('get', '/api/links', {
+  tags: ['Links'],
+  summary: 'List links touching an entity (forward, reverse, or both)',
+  security: cookie,
+  parameters: [
+    { name: 'type',      in: 'query', required: true, schema: linkableTypeSchema, description: 'Anchor entity type' },
+    { name: 'id',        in: 'query', required: true, schema: { type: 'integer' }, description: 'Anchor entity ID' },
+    { name: 'direction', in: 'query', schema: { type: 'string', enum: ['from', 'to', 'both'], default: 'both' } },
+  ],
+  responses: { ...list200, ...r400, ...auth401, ...r404 },
+});
+
+addPath('post', '/api/links', {
+  tags: ['Links'],
+  summary: 'Create a link between two entities (ownership of both is verified)',
+  security: cookie,
+  requestBody: jsonBody({
+    type: 'object', required: ['from_type', 'from_id', 'to_type', 'to_id'],
+    properties: {
+      from_type: linkableTypeSchema,
+      from_id:   { type: 'integer', minimum: 1 },
+      to_type:   linkableTypeSchema,
+      to_id:     { type: 'integer', minimum: 1 },
+      note:      { type: 'string', maxLength: 500, nullable: true },
+    },
+    description: 'A repeat (from,to) pair updates the note instead of erroring.',
+  }),
+  responses: { '201': { description: 'Created' }, ...r400, ...auth401, ...r404 },
+});
+
+addPath('delete', '/api/links/{id}', {
+  tags: ['Links'],
+  summary: 'Delete a link by ID',
   security: cookie,
   parameters: idParam,
   responses: { ...ok200, ...auth401, ...r404 },

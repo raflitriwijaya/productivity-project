@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Polymath OS — Product Roadmap | Rafli's Productivity Suite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        moss: { 50:'#f2f7f3', 100:'#d4e5d8', 200:'#b0cfb7', 300:'#82b38e', 400:'#5c946b', 500:'#4A7C59', 600:'#3d6548', 700:'#32523b', 800:'#2a4331', 900:'#233828' },
+        terracotta: { 50:'#fdf6f2', 100:'#f9e5d8', 200:'#f2c8ad', 300:'#e9a277', 400:'#d9804b', 500:'#C67A4B', 600:'#b5653d', 700:'#955134', 800:'#7a442e', 900:'#653a28' },
+        ember: { 50:'#fefaf0', 100:'#fcf0d4', 200:'#f8dfa5', 300:'#f2c96b', 400:'#ebb538', 500:'#E8A838', 600:'#d49528', 700:'#b07b21', 800:'#8e6320', 900:'#75521d' },
+        stone: { 50:'#fafaf9', 100:'#f0efed', 200:'#e2e0dc', 300:'#c9c5be', 400:'#a8a299', 500:'#8c857a', 600:'#6b655d', 700:'#555049', 800:'#3d3934', 900:'#2b2723' },
+      },
+      fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+    }
+  }
+}
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+  body { font-family: 'Inter', system-ui, sans-serif; }
+  .gradient-hero { background: linear-gradient(135deg, #4A7C59 0%, #3d6548 40%, #2b2723 100%); }
+  .gradient-card-moss { background: linear-gradient(135deg, #f2f7f3 0%, #d4e5d8 100%); }
+  .gradient-card-terracotta { background: linear-gradient(135deg, #fdf6f2 0%, #f9e5d8 100%); }
+  .gradient-card-ember { background: linear-gradient(135deg, #fefaf0 0%, #fcf0d4 100%); }
+  .dark .gradient-card-moss { background: linear-gradient(135deg, #1a2a1e 0%, #233828 100%); }
+  .dark .gradient-card-terracotta { background: linear-gradient(135deg, #2b1a14 0%, #3a2018 100%); }
+  .dark .gradient-card-ember { background: linear-gradient(135deg, #2b2414 0%, #3a3018 100%); }
+  .wave-divider { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,30 C300,90 600,0 1200,30 L1200,120 L0,120 Z' fill='%234A7C59'/%3E%3C/svg%3E") no-repeat bottom; background-size: cover; height: 80px; }
+  .timeline-line { background: linear-gradient(180deg, #4A7C59 0%, #C67A4B 33%, #E8A838 66%, #8c857a 100%); }
+  @media print { body { font-size: 12px; } .no-print { display: none; } }
+</style>
+</head>
+<body class="bg-stone-50 dark:bg-stone-900 text-stone-900 dark:text-stone-100 min-h-screen">
+
+<!-- ====== HERO ====== -->
+<header class="gradient-hero text-white">
+  <div class="max-w-6xl mx-auto px-6 py-16 md:py-24">
+    <div class="flex items-center gap-3 mb-6">
+      <span class="text-ember-400 text-4xl">⬡</span>
+      <span class="text-stone-300 text-sm uppercase tracking-widest">Product Roadmap</span>
+    </div>
+    <h1 class="text-4xl md:text-6xl font-extrabold leading-tight mb-4">
+      Polymath OS
+    </h1>
+    <p class="text-xl md:text-2xl text-stone-200 max-w-2xl mb-8">
+      Dari enam aplikasi terpisah menjadi <span class="text-ember-400 font-semibold">satu sistem operasi</span> 
+      untuk researcher, engineer, startup founder, dan polymath.
+    </p>
+    <div class="flex flex-wrap gap-4 text-sm">
+      <span class="px-4 py-2 bg-white/10 backdrop-blur rounded-full border border-white/20">🎯 Visi: 1% lebih baik setiap hari</span>
+      <span class="px-4 py-2 bg-white/10 backdrop-blur rounded-full border border-white/20">📅 6–18 bulan</span>
+      <span class="px-4 py-2 bg-white/10 backdrop-blur rounded-full border border-white/20">🏗️ Fondasi → Refleksi</span>
+    </div>
+  </div>
+</header>
+
+<!-- ====== IDENTITAS PENGGUNA ====== -->
+<section class="max-w-6xl mx-auto px-6 py-16">
+  <h2 class="text-2xl font-bold mb-2">🧑‍💼 Satu Orang, Banyak Peran</h2>
+  <p class="text-stone-500 dark:text-stone-400 mb-8">Tools ini harus mencerminkan satu kehidupan — bukan enam aplikasi terpisah.</p>
+  
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="gradient-card-moss rounded-2xl p-6 border border-moss-200 dark:border-moss-800">
+      <div class="text-3xl mb-3">🔬</div>
+      <h3 class="font-bold text-lg mb-1">Researcher</h3>
+      <p class="text-sm text-stone-600 dark:text-stone-400">Menangkap ide, menghubungkan referensi, menulis, mengekspor</p>
+      <span class="inline-block mt-3 text-xs px-2 py-1 bg-moss-200 dark:bg-moss-800 text-moss-800 dark:text-moss-200 rounded">Research Journal</span>
+    </div>
+    <div class="gradient-card-terracotta rounded-2xl p-6 border border-terracotta-200 dark:border-terracotta-800">
+      <div class="text-3xl mb-3">⚙️</div>
+      <h3 class="font-bold text-lg mb-1">Engineer</h3>
+      <p class="text-sm text-stone-600 dark:text-stone-400">Proyek IoT/embedded, issue tracker, code snippets, roadmap</p>
+      <span class="inline-block mt-3 text-xs px-2 py-1 bg-terracotta-200 dark:bg-terracotta-800 text-terracotta-800 dark:text-terracotta-200">Engineering Toolkit</span>
+    </div>
+    <div class="gradient-card-ember rounded-2xl p-6 border border-ember-200 dark:border-ember-800">
+      <div class="text-3xl mb-3">🚀</div>
+      <h3 class="font-bold text-lg mb-1">Startup Founder</h3>
+      <p class="text-sm text-stone-600 dark:text-stone-400">Keuangan startup, piutang/hutang, budget, revenue tracking</p>
+      <span class="inline-block mt-3 text-xs px-2 py-1 bg-ember-200 dark:bg-ember-800 text-ember-800 dark:text-ember-200">Finance</span>
+    </div>
+    <div class="bg-white dark:bg-stone-800 rounded-2xl p-6 border border-stone-200 dark:border-stone-700">
+      <div class="text-3xl mb-3">🧠</div>
+      <h3 class="font-bold text-lg mb-1">Aspiring Polymath</h3>
+      <p class="text-sm text-stone-600 dark:text-stone-400">Belajar lintas disiplin, baca buku, menghubungkan pengetahuan</p>
+      <span class="inline-block mt-3 text-xs px-2 py-1 bg-stone-200 dark:bg-stone-700 text-stone-700 dark:text-stone-300">Learning + Reading</span>
+    </div>
+  </div>
+</section>
+
+<!-- ====== MASALAH INTI ====== -->
+<section class="bg-stone-100 dark:bg-stone-800 py-16">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="flex flex-col md:flex-row gap-8 items-center">
+      <div class="flex-1">
+        <h2 class="text-2xl font-bold mb-4">🔗 Akar Masalah: Enam Silo</h2>
+        <p class="text-stone-600 dark:text-stone-400 mb-4 leading-relaxed">
+          Audit V4 mengungkapkan: <strong class="text-terracotta-600 dark:text-terracotta-400">tidak ada satu pun foreign key antar modul</strong> 
+          di ~25 tabel database. Setiap modul berkualitas tinggi secara individu, tapi tidak saling terhubung.
+        </p>
+        <p class="text-stone-600 dark:text-stone-400 leading-relaxed">
+          Seorang researcher yang membeli buku untuk riset tidak bisa menghubungkan transaksi Finance 
+          ke Research entry. Seorang engineer tidak bisa menghubungkan Learning course ke Engineering project. 
+          Dashboard menunjukkan statistik seumur hidup, bukan "apa yang harus saya lakukan hari ini."
+        </p>
+      </div>
+      <div class="flex-1 bg-white dark:bg-stone-900 rounded-2xl p-6 border border-stone-200 dark:border-stone-700 font-mono text-sm">
+        <div class="text-stone-400 mb-2"># Database Schema — current state</div>
+        <div class="grid grid-cols-2 gap-2">
+          <div class="p-2 bg-moss-100 dark:bg-moss-900/30 rounded border border-moss-300 dark:border-moss-700 text-center">📋 Todo</div>
+          <div class="p-2 bg-terracotta-100 dark:bg-terracotta-900/30 rounded border border-terracotta-300 dark:border-terracotta-700 text-center">💰 Finance</div>
+          <div class="p-2 bg-ember-100 dark:bg-ember-900/30 rounded border border-ember-300 dark:border-ember-700 text-center">📚 Learning</div>
+          <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded border border-blue-300 dark:border-blue-700 text-center">🔬 Research</div>
+          <div class="p-2 bg-purple-100 dark:bg-purple-900/30 rounded border border-purple-300 dark:border-purple-700 text-center">⚙️ Engineering</div>
+          <div class="p-2 bg-red-100 dark:bg-red-900/30 rounded border border-red-300 dark:border-red-700 text-center">👤 Users</div>
+        </div>
+        <div class="text-center text-stone-400 mt-4 text-xs">Semua tabel hanya terhubung ke <code>users(id)</code>.<br>Tidak ada koneksi antar modul.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== ROADMAP GELOMBANG ====== -->
+<section class="max-w-6xl mx-auto px-6 py-16">
+  <h2 class="text-3xl font-bold mb-2">🗺️ Marathon Roadmap</h2>
+  <p class="text-stone-500 dark:text-stone-400 mb-12">Enam gelombang. Setiap gelombang membangun fondasi untuk gelombang berikutnya. Tidak perlu buru-buru.</p>
+
+  <!-- Timeline visual -->
+  <div class="relative mb-16">
+    <div class="hidden md:block absolute left-1/2 transform -translate-x-1/2 w-1 h-full timeline-line rounded opacity-50"></div>
+    
+    <!-- Wave 1 -->
+    <div class="relative mb-12 md:mb-16">
+      <div class="md:flex items-center gap-8">
+        <div class="md:w-1/2 md:text-right md:pr-12 mb-4 md:mb-0">
+          <span class="inline-block px-3 py-1 bg-moss-100 dark:bg-moss-900 text-moss-700 dark:text-moss-300 rounded-full text-xs font-semibold mb-2">Gelombang 1 • 1–2 bulan</span>
+          <h3 class="text-xl font-bold">🏗️ Fondasi: Bikin Semuanya Terhubung</h3>
+          <p class="text-stone-500 dark:text-stone-400 text-sm mt-1">Universal Links, LinkedItems component, Universal Export</p>
+        </div>
+        <div class="hidden md:flex items-center justify-center w-10 h-10 bg-moss-500 rounded-full shadow-lg shadow-moss-500/30 z-10 flex-shrink-0">
+          <span class="text-white font-bold text-sm">1</span>
+        </div>
+        <div class="md:w-1/2 md:pl-12">
+          <div class="bg-white dark:bg-stone-800 rounded-xl p-5 border border-stone-200 dark:border-stone-700 shadow-sm">
+            <ul class="space-y-2 text-sm">
+              <li class="flex gap-2"><span class="text-moss-500 font-bold">1.1</span> Universal Links table + API</li>
+              <li class="flex gap-2"><span class="text-moss-500 font-bold">1.2</span> LinkedItems React component</li>
+              <li class="flex gap-2"><span class="text-moss-500 font-bold">1.3</span> Links di Research Detail</li>
+              <li class="flex gap-2"><span class="text-moss-500 font-bold">1.4</span> Links di Engineering Detail</li>
+              <li class="flex gap-2"><span class="text-moss-500 font-bold">1.5</span> Universal Export (ZIP semua modul)</li>
+            </ul>
+            <div class="mt-3 pt-3 border-t border-stone-200 dark:border-stone-700">
+              <span class="text-xs px-2 py-1 bg-moss-100 dark:bg-moss-900/50 text-moss-700 dark:text-moss-300 rounded">🎯 Milestone: Setiap entitas bisa saling terhubung</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wave 2 -->
+    <div class="relative mb-12 md:mb-16">
+      <div class="md:flex items-center gap-8">
+        <div class="md:w-1/2 md:text-right md:pr-12 mb-4 md:mb-0 order-2 md:order-1">
+          <span class="inline-block px-3 py-1 bg-ember-100 dark:bg-ember-900 text-ember-700 dark:text-ember-300 rounded-full text-xs font-semibold mb-2">Gelombang 2 • 2–3 bulan</span>
+          <h3 class="text-xl font-bold">☀️ Kebiasaan Harian: "Apa yang Harus Saya Lakukan Hari Ini?"</h3>
+          <p class="text-stone-500 dark:text-stone-400 text-sm mt-1">Today Dashboard, Engineer di Dashboard, Quick Capture</p>
+        </div>
+        <div class="hidden md:flex items-center justify-center w-10 h-10 bg-ember-500 rounded-full shadow-lg shadow-ember-500/30 z-10 flex-shrink-0 order-2">
+          <span class="text-white font-bold text-sm">2</span>
+        </div>
+        <div class="md:w-1/2 md:pl-12 order-1 md:order-3">
+          <div class="bg-white dark:bg-stone-800 rounded-xl p-5 border border-stone-200 dark:border-stone-700 shadow-sm">
+            <ul class="space-y-2 text-sm">
+              <li class="flex gap-2"><span class="text-ember-500 font-bold">2.1</span> Today Dashboard (date-scoped briefing)</li>
+              <li class="flex gap-2"><span class="text-ember-500 font-bold">2.2</span> Engineer module di Dashboard</li>
+              <li class="flex gap-2"><span class="text-ember-500 font-bold">2.3</span> Quick Capture (CMD+K → ide → entry/task)</li>
+            </ul>
+            <div class="mt-3 pt-3 border-t border-stone-200 dark:border-stone-700">
+              <span class="text-xs px-2 py-1 bg-ember-100 dark:bg-ember-900/50 text-ember-700 dark:text-ember-300 rounded">🎯 Milestone: Buka Dashboard → langsung tahu prioritas hari ini</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wave 3 -->
+    <div class="relative mb-12 md:mb-16">
+      <div class="md:flex items-center gap-8">
+        <div class="md:w-1/2 md:text-right md:pr-12 mb-4 md:mb-0">
+          <span class="inline-block px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full text-xs font-semibold mb-2">Gelombang 3 • 3–5 bulan</span>
+          <h3 class="text-xl font-bold">🧠 Polymath Toolkit: Belajar & Membaca Lintas Disiplin</h3>
+          <p class="text-stone-500 dark:text-stone-400 text-sm mt-1">Reading Tracker, Unified Search, Knowledge Graph</p>
+        </div>
+        <div class="hidden md:flex items-center justify-center w-10 h-10 bg-blue-500 rounded-full shadow-lg shadow-blue-500/30 z-10 flex-shrink-0">
+          <span class="text-white font-bold text-sm">3</span>
+        </div>
+        <div class="md:w-1/2 md:pl-12">
+          <div class="bg-white dark:bg-stone-800 rounded-xl p-5 border border-stone-200 dark:border-stone-700 shadow-sm">
+            <ul class="space-y-2 text-sm">
+              <li class="flex gap-2"><span class="text-blue-500 font-bold">3.1</span> Reading Tracker (shelf, progress, rating, stats)</li>
+              <li class="flex gap-2"><span class="text-blue-500 font-bold">3.2</span> Reading → Research Links (catatan per buku)</li>
+              <li class="flex gap-2"><span class="text-blue-500 font-bold">3.3</span> Unified Search (CMD+K cross-module)</li>
+              <li class="flex gap-2"><span class="text-blue-500 font-bold">3.4</span> Knowledge Graph lite (visualisasi koneksi pengetahuan)</li>
+            </ul>
+            <div class="mt-3 pt-3 border-t border-stone-200 dark:border-stone-700">
+              <span class="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded">🎯 Milestone: Lihat bagaimana pengetahuanmu saling terhubung</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wave 4 -->
+    <div class="relative mb-12 md:mb-16">
+      <div class="md:flex items-center gap-8">
+        <div class="md:w-1/2 md:text-right md:pr-12 mb-4 md:mb-0 order-2 md:order-1">
+          <span class="inline-block px-3 py-1 bg-terracotta-100 dark:bg-terracotta-900 text-terracotta-700 dark:text-terracotta-300 rounded-full text-xs font-semibold mb-2">Gelombang 4 • 4–7 bulan</span>
+          <h3 class="text-xl font-bold">🚀 Startup Founder: Menjalankan Startup dari Satu Dashboard</h3>
+          <p class="text-stone-500 dark:text-stone-400 text-sm mt-1">Project Budget, Revenue Tracking, CRM lite, Reminder</p>
+        </div>
+        <div class="hidden md:flex items-center justify-center w-10 h-10 bg-terracotta-500 rounded-full shadow-lg shadow-terracotta-500/30 z-10 flex-shrink-0 order-2">
+          <span class="text-white font-bold text-sm">4</span>
+        </div>
+        <div class="md:w-1/2 md:pl-12 order-1 md:order-3">
+          <div class="bg-white dark:bg-stone-800 rounded-xl p-5 border border-stone-200 dark:border-stone-700 shadow-sm">
+            <ul class="space-y-2 text-sm">
+              <li class="flex gap-2"><span class="text-terracotta-500 font-bold">4.1</span> Project Budget vs Actual (link project → budget)</li>
+              <li class="flex gap-2"><span class="text-terracotta-500 font-bold">4.2</span> Revenue Tracking (tipe "revenue" di Finance)</li>
+              <li class="flex gap-2"><span class="text-terracotta-500 font-bold">4.3</span> Client/Stakeholder CRM lite (contacts table)</li>
+              <li class="flex gap-2"><span class="text-terracotta-500 font-bold">4.4</span> Automated Invoice/Receivable Reminder</li>
+            </ul>
+            <div class="mt-3 pt-3 border-t border-stone-200 dark:border-stone-700">
+              <span class="text-xs px-2 py-1 bg-terracotta-100 dark:bg-terracotta-900/50 text-terracotta-700 dark:text-terracotta-300 rounded">🎯 Milestone: Dashboard = pusat kendali operasional startup</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wave 5 -->
+    <div class="relative mb-12 md:mb-16">
+      <div class="md:flex items-center gap-8">
+        <div class="md:w-1/2 md:text-right md:pr-12 mb-4 md:mb-0">
+          <span class="inline-block px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-full text-xs font-semibold mb-2">Gelombang 5 • 5–10 bulan</span>
+          <h3 class="text-xl font-bold">📊 Refleksi & Pertumbuhan: "Apa yang Sudah Saya Capai?"</h3>
+          <p class="text-stone-500 dark:text-stone-400 text-sm mt-1">Time Tracking, Weekly Review, Goals/OKRs, Annual Report</p>
+        </div>
+        <div class="hidden md:flex items-center justify-center w-10 h-10 bg-purple-500 rounded-full shadow-lg shadow-purple-500/30 z-10 flex-shrink-0">
+          <span class="text-white font-bold text-sm">5</span>
+        </div>
+        <div class="md:w-1/2 md:pl-12">
+          <div class="bg-white dark:bg-stone-800 rounded-xl p-5 border border-stone-200 dark:border-stone-700 shadow-sm">
+            <ul class="space-y-2 text-sm">
+              <li class="flex gap-2"><span class="text-purple-500 font-bold">5.1</span> Time Tracking (timer di Todo, Learning, Research)</li>
+              <li class="flex gap-2"><span class="text-purple-500 font-bold">5.2</span> Weekly Review Generator (auto-summary)</li>
+              <li class="flex gap-2"><span class="text-purple-500 font-bold">5.3</span> Goals/OKRs System (cross-module progress)</li>
+              <li class="flex gap-2"><span class="text-purple-500 font-bold">5.4</span> Annual Report ("2026: 47 buku, 128 papers, 12 projects...")</li>
+            </ul>
+            <div class="mt-3 pt-3 border-t border-stone-200 dark:border-stone-700">
+              <span class="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded">🎯 Milestone: Weekly review + annual report = trajectory sebagai polymath</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wave 6 -->
+    <div class="relative">
+      <div class="md:flex items-center gap-8">
+        <div class="md:w-1/2 md:text-right md:pr-12 mb-4 md:mb-0 order-2 md:order-1">
+          <span class="inline-block px-3 py-1 bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300 rounded-full text-xs font-semibold mb-2">Gelombang 6 • 9–18 bulan</span>
+          <h3 class="text-xl font-bold">🌙 Moonshots: Yang Membuat Sistem Ini World-Class</h3>
+          <p class="text-stone-500 dark:text-stone-400 text-sm mt-1">Local AI, Semantic Search, PWA, Polymath Dashboard</p>
+        </div>
+        <div class="hidden md:flex items-center justify-center w-10 h-10 bg-stone-500 rounded-full shadow-lg shadow-stone-500/30 z-10 flex-shrink-0 order-2">
+          <span class="text-white font-bold text-sm">6</span>
+        </div>
+        <div class="md:w-1/2 md:pl-12 order-1 md:order-3">
+          <div class="bg-white dark:bg-stone-800 rounded-xl p-5 border border-stone-200 dark:border-stone-700 shadow-sm">
+            <ul class="space-y-2 text-sm">
+              <li class="flex gap-2"><span class="text-stone-500 font-bold">6.1</span> Local AI: Auto-tagging & clustering</li>
+              <li class="flex gap-2"><span class="text-stone-500 font-bold">6.2</span> Local AI: Daily Summary ("hari ini kamu...")</li>
+              <li class="flex gap-2"><span class="text-stone-500 font-bold">6.3</span> Semantic Search (pgvector + embeddings)</li>
+              <li class="flex gap-2"><span class="text-stone-500 font-bold">6.4</span> PWA + Offline + Push Notifications</li>
+              <li class="flex gap-2"><span class="text-stone-500 font-bold">6.5</span> Polymath Dashboard (expertise graph 5 tahun)</li>
+            </ul>
+            <div class="mt-3 pt-3 border-t border-stone-200 dark:border-stone-700">
+              <span class="text-xs px-2 py-1 bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300 rounded">🎯 Milestone: Sistem ini menjadi "daily operating system" kamu</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== DEPENDENCY GRAPH ====== -->
+<section class="bg-stone-100 dark:bg-stone-800 py-16">
+  <div class="max-w-6xl mx-auto px-6">
+    <h2 class="text-2xl font-bold mb-8">🔗 Dependency Graph: Apa Membangun Apa</h2>
+    
+    <div class="bg-white dark:bg-stone-900 rounded-2xl p-6 md:p-10 border border-stone-200 dark:border-stone-700 overflow-x-auto">
+      <pre class="text-xs md:text-sm leading-relaxed font-mono text-stone-700 dark:text-stone-300">
+
+  <span class="text-moss-500 font-bold">┌─────────────────────┐</span>
+  <span class="text-moss-500 font-bold">│  Universal Links     │ ◄── Fondasi untuk SEMUA fitur berikutnya</span>
+  <span class="text-moss-500 font-bold">│  (entity_links table) │</span>
+  <span class="text-moss-500 font-bold">└────────┬────────────┘</span>
+           │
+     ┌─────┴──────────────┬──────────────────┐
+     ▼                    ▼                  ▼
+  <span class="text-ember-500">┌──────────────┐  ┌──────────────┐  ┌──────────────┐</span>
+  <span class="text-ember-500">│ Today        │  │ Universal    │  │ Unified      │</span>
+  <span class="text-ember-500">│ Dashboard    │  │ Export (ZIP) │  │ Search       │</span>
+  <span class="text-ember-500">└──────┬───────┘  └──────────────┘  └──────┬───────┘</span>
+         │                                    │
+         ▼                                    ▼
+  <span class="text-blue-500">┌──────────────┐                    ┌──────────────┐</span>
+  <span class="text-blue-500">│ Reading      │◄── Links ────────►│ Knowledge    │</span>
+  <span class="text-blue-500">│ Tracker      │                    │ Graph (lite) │</span>
+  <span class="text-blue-500">└──────┬───────┘                    └──────────────┘</span>
+         │
+         ▼
+  <span class="text-terracotta-500">┌──────────────┐     ┌──────────────┐</span>
+  <span class="text-terracotta-500">│ Project      │────►│ Revenue      │</span>
+  <span class="text-terracotta-500">│ Budget vs    │     │ Tracking     │</span>
+  <span class="text-terracotta-500">│ Actual       │     └──────┬───────┘</span>
+  <span class="text-terracotta-500">└──────┬───────┘            │</span>
+         │                    ▼
+         │             <span class="text-terracotta-500">┌──────────────┐</span>
+         └───────────►<span class="text-terracotta-500">│ CRM (lite)   │</span>
+                       <span class="text-terracotta-500">└──────┬───────┘</span>
+                              │
+                              ▼
+                       <span class="text-purple-500">┌──────────────┐</span>
+                       <span class="text-purple-500">│ Time Tracking│◄── prerequisite untuk ──┐</span>
+                       <span class="text-purple-500">└──────┬───────┘                        │</span>
+                              │                                  │
+                              ▼                                  ▼
+                       <span class="text-purple-500">┌──────────────┐               ┌──────────────┐</span>
+                       <span class="text-purple-500">│ Weekly Review│               │ Goals/OKRs   │</span>
+                       <span class="text-purple-500">│ Generator    │               │ System       │</span>
+                       <span class="text-purple-500">└──────┬───────┘               └──────┬───────┘</span>
+                              │                                  │
+                              └────────────┬─────────────────────┘
+                                           ▼
+                                    <span class="text-stone-500">┌──────────────┐</span>
+                                    <span class="text-stone-500">│ Annual Report│</span>
+                                    <span class="text-stone-500">└──────┬───────┘</span>
+                                           │
+                                           ▼
+                                    <span class="text-stone-400">┌──────────────────────────────┐</span>
+                                    <span class="text-stone-400">│     🌙 MOONSHOTS              │</span>
+                                    <span class="text-stone-400">│  • Local AI (auto-tag/summary)│</span>
+                                    <span class="text-stone-400">│  • Semantic Search (pgvector) │</span>
+                                    <span class="text-stone-400">│  • PWA + Offline + Push       │</span>
+                                    <span class="text-stone-400">│  • Polymath Dashboard (5yr)   │</span>
+                                    <span class="text-stone-400">└──────────────────────────────┘</span>
+      </pre>
+    </div>
+    <p class="text-center text-stone-400 text-sm mt-4">Setiap fitur bersifat <strong>additive</strong> — tidak merusak yang sudah ada. Urutan dari atas ke bawah.</p>
+  </div>
+</section>
+
+<!-- ====== PRINSIP ====== -->
+<section class="max-w-6xl mx-auto px-6 py-16">
+  <h2 class="text-2xl font-bold mb-8">🧭 Prinsip Pemandu</h2>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="bg-white dark:bg-stone-800 rounded-2xl p-6 border border-stone-200 dark:border-stone-700 text-center">
+      <div class="text-4xl mb-4">📈</div>
+      <h3 class="font-bold text-lg mb-2">1% Better Every Day</h3>
+      <p class="text-stone-500 dark:text-stone-400 text-sm">Tidak perlu sempurna. Tidak perlu selesai cepat. Satu perbaikan kecil setiap hari — dalam 1 tahun, 37× lebih baik.</p>
+    </div>
+    <div class="bg-white dark:bg-stone-800 rounded-2xl p-6 border border-stone-200 dark:border-stone-700 text-center">
+      <div class="text-4xl mb-4">🏗️</div>
+      <h3 class="font-bold text-lg mb-2">Additive, Not Destructive</h3>
+      <p class="text-stone-500 dark:text-stone-400 text-sm">Setiap fitur baru adalah table/route/component baru — tidak merusak yang sudah berfungsi. Backward-compatible selalu.</p>
+    </div>
+    <div class="bg-white dark:bg-stone-800 rounded-2xl p-6 border border-stone-200 dark:border-stone-700 text-center">
+      <div class="text-4xl mb-4">🔗</div>
+      <h3 class="font-bold text-lg mb-2">Connect, Not Collect</h3>
+      <p class="text-stone-500 dark:text-stone-400 text-sm">Nilai bukan dari berapa banyak data, tapi dari berapa banyak koneksi antar data. Satu link > seratus entri terisolasi.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ====== NEXT STEP ====== -->
+<section class="bg-moss-500 text-white py-16">
+  <div class="max-w-6xl mx-auto px-6 text-center">
+    <h2 class="text-3xl font-bold mb-4">🚀 Mulai Sekarang: Gelombang 1</h2>
+    <p class="text-moss-100 text-lg mb-2 max-w-2xl mx-auto">
+      <strong>Universal Links</strong> — fondasi yang menghubungkan semua modul.
+    </p>
+    <p class="text-moss-200 mb-8 max-w-xl mx-auto">
+      Satu table. Satu API. Satu komponen React. Impact: <strong>Transformative.</strong>
+    </p>
+    <div class="flex flex-wrap justify-center gap-4">
+      <a href="https://github.com/raflitriwijaya/productivity-project" class="px-6 py-3 bg-white text-moss-700 rounded-full font-semibold hover:bg-moss-50 transition shadow-lg">Lihat Repository</a>
+      <a href="./audit/AUDIT_REPORT_V4.md" class="px-6 py-3 bg-moss-600 text-white rounded-full font-semibold hover:bg-moss-700 transition border border-moss-400">Baca Audit V4</a>
+    </div>
+  </div>
+</section>
+
+<!-- ====== FOOTER ====== -->
+<footer class="bg-stone-900 text-stone-400 py-8 text-center text-sm">
+  <p>Rafli's Productivity Suite — Polymath OS Roadmap • Generated 2026-06-11</p>
+  <p class="mt-1">Dibangun dengan 🧠 untuk researcher, engineer, startup founder, dan polymath.</p>
+</footer>
+
+</body>
+</html>

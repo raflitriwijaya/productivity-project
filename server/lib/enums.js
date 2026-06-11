@@ -32,3 +32,13 @@ export const PROJECT_TYPES    = ['iot', 'embedded', 'robotics', 'other'];
 export const PROJECT_STATUSES = ['idea', 'planning', 'development', 'testing', 'deployed', 'archived'];
 export const ISSUE_SEVERITIES = ['P0-Critical', 'P1-High', 'P2-Medium', 'P3-Low'];
 export const ISSUE_STATUSES   = ['open', 'in_progress', 'resolved'];
+
+// --- Universal Links (Roadmap Wave 1) ---
+// Whitelist of entity types that can participate in a cross-module link. MUST stay
+// in sync with the chk_entity_link_types CHECK in migration 007_entity_links.sql.
+export const LINKABLE_TYPES = [
+  'transaction', 'research_entry', 'learning_item', 'engineer_project', 'todo',
+  'receivable', 'payable', 'portfolio', 'budget', 'account',
+  'research_topic', 'engineer_snippet', 'engineer_document', 'engineer_issue',
+  'engineer_checkin', 'engineer_roadmap_skill',
+];
