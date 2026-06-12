@@ -4,6 +4,7 @@
 // can render without a ToastProvider.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, act, cleanup } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { QuickCapture } from '../components/shared/QuickCapture';
 
 vi.mock('../hooks/useToast', () => ({
@@ -12,15 +13,19 @@ vi.mock('../hooks/useToast', () => ({
 
 afterEach(() => cleanup());
 
+// QuickCapture now uses useNavigate (Wave 3 unified search), so it must render
+// inside a Router. Wrap every render in a MemoryRouter.
+const renderPalette = () => render(<QuickCapture />, { wrapper: MemoryRouter });
+
 describe('QuickCapture', () => {
   it('renders nothing when closed', () => {
-    const { container } = render(<QuickCapture />);
+    const { container } = renderPalette();
     expect(container.firstChild).toBeNull();
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('opens on the "open-quick-capture" window event', async () => {
-    render(<QuickCapture />);
+    renderPalette();
     await act(async () => {
       window.dispatchEvent(new Event('open-quick-capture'));
     });
@@ -28,7 +33,7 @@ describe('QuickCapture', () => {
   });
 
   it('opens on Cmd/Ctrl+K and closes on a second press', async () => {
-    render(<QuickCapture />);
+    renderPalette();
 
     await act(async () => {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }));

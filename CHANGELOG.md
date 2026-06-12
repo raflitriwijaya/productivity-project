@@ -7,6 +7,24 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Roadmap Wave 3 — Polymath Toolkit (2026-06-12)
+
+#### Reading Tracker
+- **New `books` table** (migration `008_reading_tracker.sql`) — tracks books across three shelves (`want_to_read` / `reading` / `finished`) with `current_page`/`total_pages`, `rating` (1–5), `notes`, `genre`, and auto-stamped `started_at`/`finished_at`. CHECK-constrained enums, `user_id` FK ON DELETE CASCADE, the shared `set_updated_at()` trigger, and indexes for per-user lists, shelf filter, recency, and a partial index for "finished this year". The same migration extends `entity_links.chk_entity_link_types` to whitelist `'book'`.
+- **New Reading API** — `server/models/reading.model.js` (`listBooks`, `getBookById`, `createBook`, `updateBook`, `deleteBook`, `getReadingStats`; all `user_id`-scoped, stats coerced to numbers) and `server/routes/reading.js` mounted `app.use('/api/reading', requireAuth, readingRouter)`. Endpoints: `GET /api/reading` (shelf/search/sort/paginate), `GET /api/reading/stats`, `POST`, `GET/PATCH/DELETE /api/reading/:id`. Moving a book to `reading` stamps `started_at`; moving to `finished` stamps `finished_at` and back-fills `current_page` to `total_pages` (guarded so an explicit field never double-assigns).
+- **New Reading page `/reading`** (`client/src/pages/Reading.jsx`) — four stat cards, shelf tabs, debounced search, a responsive book grid (`BookCard`), create/edit modal (`CreateBookModal`), and a detail modal (`BookDetailModal`) with progress, star rating, and notes. Added to the sidebar **Knowledge** section. Handles all four data states.
+
+#### Reading → Research links (Wave 1 extension)
+- **`'book'` registered in `LINKABLE_TYPES`** (`server/lib/enums.js`) and given an ownership validator in `server/routes/links.js` (adapts `getBookById(userId, id)` to the `(id, userId)` validator signature). `BookDetailModal` embeds `<LinkedItems entityType="book">`, and `LinkPickerModal` + `LinkedItems` learned the `book` type, so any book can link to Research entries (chapter notes, highlights).
+
+#### Unified Search
+- **New `GET /api/search?q=`** — `server/models/search.model.js` (`searchAll`) unions ILIKE matches across todos, research entries, learning items, transactions, engineering projects, and books (≤5 per module, capped at 30, recency-ranked, `user_id`-scoped) and `server/routes/search.js` mounted `app.use('/api/search', requireAuth, searchRouter)`.
+- **QuickCapture gained a third "Search" mode** (`client/src/components/shared/QuickCapture.jsx`) — Tab now cycles Task → Research → Search. In search mode the palette queries `/api/search` (debounced 300 ms) and navigates to the chosen result (`useNavigate`); Enter opens the first result. Task/Research capture is unchanged.
+
+#### API & Docs
+- **OpenAPI** (`generate-openapi.js`) — added the `Reading` and `Search` tags, six `/api/reading*` paths, `/api/search`, and `'book'` in the linkable-type enum.
+- **Tests** — `server/test/reading.test.js` (stat coercion, list shape + sort-injection guard, shelf-transition auto-stamping incl. the duplicate-assignment guard; DB-mocked). `client/src/test/QuickCapture.test.jsx` now wraps renders in `MemoryRouter` (the palette uses `useNavigate`).
+
 ### Roadmap Wave 2 — Today Dashboard & Quick Capture (2026-06-11)
 
 #### Today Dashboard

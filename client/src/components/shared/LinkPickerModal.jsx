@@ -21,6 +21,7 @@ const MODULES = [
   { type: 'engineer_project', label: 'Engineering Projects', endpoint: '/api/engineer',  searchParam: null },
   { type: 'todo',             label: 'Todos',                endpoint: '/api/todos',     searchParam: null },
   { type: 'transaction',      label: 'Finance Transactions', endpoint: '/api/finances',  searchParam: 'search' },
+  { type: 'book',             label: 'Books',                endpoint: '/api/reading',   searchParam: 'search' },
 ];
 
 export function LinkPickerModal({ isOpen, onClose, entityType, entityId, onLinked }) {

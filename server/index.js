@@ -36,6 +36,8 @@ import { researchRouter, uploadsDir } from './routes/research.js';
 import { engineerRouter } from './routes/engineer.js';
 import { linksRouter } from './routes/links.js';
 import { dashboardRouter } from './routes/dashboard.js'; // Roadmap Wave 2: Today Dashboard briefing
+import { readingRouter } from './routes/reading.js'; // Roadmap Wave 3: Reading Tracker
+import { searchRouter } from './routes/search.js';   // Roadmap Wave 3: Unified Search
 
 // ─── Env validation ───────────────────────────────────────────────────────────
 const {
@@ -218,6 +220,8 @@ app.use('/api/research', requireAuth, researchRouter);
 app.use('/api/engineer', requireAuth, engineerRouter);
 app.use('/api/links',    requireAuth, linksRouter); // Roadmap Wave 1: cross-module links
 app.use('/api/dashboard', requireAuth, dashboardRouter); // Roadmap Wave 2: Today briefing
+app.use('/api/reading',  requireAuth, readingRouter); // Roadmap Wave 3: Reading Tracker
+app.use('/api/search',   requireAuth, searchRouter);  // Roadmap Wave 3: Unified Search
 
 // ─── 404 for unmatched API routes ────────────────────────────────────────────
 app.use('/api', (_req, res) => {

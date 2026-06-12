@@ -33,6 +33,8 @@ const spec = {
     { name: 'Engineering', description: 'IoT/Embedded/Robotics project toolkit' },
     { name: 'Links',       description: 'Universal cross-module entity linking' },
     { name: 'Dashboard',   description: 'Dashboard and daily briefing' },
+    { name: 'Reading',     description: 'Reading tracker and library' },
+    { name: 'Search',      description: 'Unified cross-module search' },
   ],
   components: {
     securitySchemes: {
@@ -1346,7 +1348,7 @@ const linkableTypeSchema = {
     'transaction', 'research_entry', 'learning_item', 'engineer_project', 'todo',
     'receivable', 'payable', 'portfolio', 'budget', 'account',
     'research_topic', 'engineer_snippet', 'engineer_document', 'engineer_issue',
-    'engineer_checkin', 'engineer_roadmap_skill',
+    'engineer_checkin', 'engineer_roadmap_skill', 'book',
   ],
 };
 
@@ -1400,6 +1402,102 @@ addPath('get', '/api/dashboard/today', {
     '200': { description: 'Today briefing data' },
     ...auth401,
   },
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// READING (Reading Tracker — Roadmap Wave 3)
+// ═════════════════════════════════════════════════════════════════════════════
+
+addPath('get', '/api/reading/stats', {
+  tags: ['Reading'],
+  summary: 'Reading statistics (shelf counts, finished-this-year, avg rating, pages)',
+  security: cookie,
+  responses: { ...ok200, ...auth401 },
+});
+
+addPath('get', '/api/reading', {
+  tags: ['Reading'],
+  summary: 'List books (paginated, filterable by shelf, searchable)',
+  security: cookie,
+  parameters: [
+    ...pageParams,
+    { name: 'shelf',  in: 'query', schema: { type: 'string', enum: ['want_to_read', 'reading', 'finished'] } },
+    { name: 'search', in: 'query', schema: { type: 'string' }, description: 'Match title / author / notes' },
+  ],
+  responses: { ...list200, ...auth401 },
+});
+
+addPath('post', '/api/reading', {
+  tags: ['Reading'],
+  summary: 'Add a book',
+  security: cookie,
+  requestBody: jsonBody({
+    type: 'object', required: ['title'],
+    properties: {
+      title:       { type: 'string', minLength: 1, maxLength: 500 },
+      author:      { type: 'string', maxLength: 300, nullable: true },
+      shelf:       { type: 'string', enum: ['want_to_read', 'reading', 'finished'], default: 'want_to_read' },
+      total_pages: { type: 'integer', exclusiveMinimum: 0, nullable: true },
+      notes:       { type: 'string', nullable: true },
+      cover_url:   { type: 'string', maxLength: 1000, nullable: true },
+      genre:       { type: 'string', maxLength: 100, nullable: true },
+    },
+  }),
+  responses: { '201': { description: 'Created' }, ...r400, ...auth401 },
+});
+
+addPath('get', '/api/reading/{id}', {
+  tags: ['Reading'],
+  summary: 'Get a book by ID',
+  security: cookie,
+  parameters: idParam,
+  responses: { ...ok200, ...auth401, ...r404 },
+});
+
+addPath('patch', '/api/reading/{id}', {
+  tags: ['Reading'],
+  summary: 'Update a book (partial). Shelf transitions auto-stamp started_at/finished_at.',
+  security: cookie,
+  parameters: idParam,
+  requestBody: jsonBody({
+    type: 'object',
+    properties: {
+      title:        { type: 'string', minLength: 1, maxLength: 500 },
+      author:       { type: 'string', maxLength: 300, nullable: true },
+      shelf:        { type: 'string', enum: ['want_to_read', 'reading', 'finished'] },
+      total_pages:  { type: 'integer', exclusiveMinimum: 0, nullable: true },
+      current_page: { type: 'integer', minimum: 0 },
+      rating:       { type: 'integer', minimum: 1, maximum: 5, nullable: true },
+      notes:        { type: 'string', nullable: true },
+      started_at:   { type: 'string', format: 'date-time', nullable: true },
+      finished_at:  { type: 'string', format: 'date-time', nullable: true },
+      cover_url:    { type: 'string', maxLength: 1000, nullable: true },
+      genre:        { type: 'string', maxLength: 100, nullable: true },
+    },
+  }),
+  responses: { ...ok200, ...r400, ...auth401, ...r404 },
+});
+
+addPath('delete', '/api/reading/{id}', {
+  tags: ['Reading'],
+  summary: 'Delete a book',
+  security: cookie,
+  parameters: idParam,
+  responses: { ...ok200, ...auth401, ...r404 },
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// SEARCH (Unified cross-module search — Roadmap Wave 3)
+// ═════════════════════════════════════════════════════════════════════════════
+
+addPath('get', '/api/search', {
+  tags: ['Search'],
+  summary: 'Search across all modules (≤5 per module, ranked by recency)',
+  security: cookie,
+  parameters: [
+    { name: 'q', in: 'query', required: true, schema: { type: 'string', minLength: 1, maxLength: 200 } },
+  ],
+  responses: { ...ok200, ...r400, ...auth401 },
 });
 
 // ─── Write output ─────────────────────────────────────────────────────────────

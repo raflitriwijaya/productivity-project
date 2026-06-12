@@ -8,6 +8,9 @@ export const TODO_STATUSES = ['pending', 'in_progress', 'done', 'overdue'];
 export const LEARNING_TYPES    = ['course', 'book', 'video', 'article', 'other'];
 export const LEARNING_STATUSES = ['not_started', 'in_progress', 'completed', 'on_hold'];
 
+// --- Reading Tracker (Roadmap Wave 3) ---
+export const BOOK_SHELVES = ['want_to_read', 'reading', 'finished'];
+
 // --- Research entries ---
 export const ENTRY_TYPES    = ['journal', 'citation', 'note'];
 export const ENTRY_STATUSES = ['draft', 'active', 'archived'];
@@ -41,4 +44,5 @@ export const LINKABLE_TYPES = [
   'receivable', 'payable', 'portfolio', 'budget', 'account',
   'research_topic', 'engineer_snippet', 'engineer_document', 'engineer_issue',
   'engineer_checkin', 'engineer_roadmap_skill',
+  'book', // Roadmap Wave 3 — Reading Tracker (mirrors 008_reading_tracker.sql)
 ];

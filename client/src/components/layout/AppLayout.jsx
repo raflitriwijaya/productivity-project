@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import {
   Menu, Sun, Moon, LogOut, Command,
-  LayoutDashboard, CheckSquare, BookOpen, GraduationCap,
+  LayoutDashboard, CheckSquare, BookOpen, BookMarked, GraduationCap,
   LineChart, Receipt, Wallet, ArrowDownLeft, ArrowUpRight, PieChart, Target,
   Wrench, Code, FileText, ClipboardCheck, Bug, Map,
 } from 'lucide-react';
@@ -39,6 +39,7 @@ const NAV_SECTIONS = [
     items: [
       { to: '/research', label: 'Research', icon: BookOpen },
       { to: '/learning', label: 'Learning', icon: GraduationCap },
+      { to: '/reading',  label: 'Reading',  icon: BookMarked },
     ],
   },
   {

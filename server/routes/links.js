@@ -26,6 +26,7 @@ import { getTransactionById } from '../models/finance.model.js';
 import { getLearningItemById } from '../models/learning.model.js';
 import { getResearchEntryById } from '../models/research.model.js';
 import { getProjectById } from '../models/engineer.model.js';
+import { getBookById } from '../models/reading.model.js';
 
 const router = Router();
 
@@ -40,6 +41,9 @@ const OWNERSHIP_VALIDATORS = {
   research_entry:   getResearchEntryById,
   learning_item:    getLearningItemById,
   engineer_project: getProjectById,
+  // reading.model.getBookById takes (userId, id); validators are called as
+  // (id, userId), so adapt the argument order here.
+  book:             (id, userId) => getBookById(userId, id),
 };
 
 /**
