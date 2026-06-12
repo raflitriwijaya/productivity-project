@@ -22,6 +22,7 @@ import WeeklyReview from './pages/WeeklyReview';
 import Goals from './pages/Goals';
 import AnnualReport from './pages/AnnualReport';
 import PolymathDashboard from './pages/PolymathDashboard';
+import AIChat from './pages/AIChat';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
@@ -95,6 +96,7 @@ export default function App() {
             <Route path="/" element={<TodayDashboard />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/todo" element={<Todo />} />
+            <Route path="/ai-chat" element={<AIChat />} />
             <Route path="/finance" element={<Finance />} />
             <Route path="/finance/dashboard" element={<FinanceDashboard />} />
             <Route path="/finance/accounts" element={<Accounts />} />

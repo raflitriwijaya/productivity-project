@@ -147,6 +147,22 @@ The original flat `transactions` table was **replaced** by a multi-account gener
 
 ---
 
+## Wave 7 — AI Assistant (Roadmap Wave 7, final)
+
+### AI Chat (backend)
+- `server/models/chat.model.js` — `listConversations` (paginated, `jsonb_array_length` message count), `getConversationById`, `createConversation`, `updateConversation` (dynamic SET, serialises `messages` to JSONB), `deleteConversation`, `getContextForConversation` (compact `user_id`-scoped entity snapshot for system-prompt injection across research_entry/engineer_project/book/learning_item/goal/idea). All `user_id`-scoped; pg returns JSONB pre-parsed.
+- `server/routes/chat.js` — mounted `app.use('/api/chat', requireAuth, chatRouter)`. `GET /models`, `GET /conversations`, `GET /conversations/:id`, `DELETE /conversations/:id`, and `POST /send`. `/send` persists the user message, streams the reply over SSE (events `conversation_id`/`token`/`done`/`error`), then persists the assistant reply. Dual backend: cloud DeepSeek (`DEEPSEEK_API_KEY`/`DEEPSEEK_BASE_URL`, OpenAI-compatible, shared with Wave 6 embeddings) or local Ollama (`OLLAMA_BASE_URL`, `deepseek-r1:7b`). **AppError is message-first + named-imported** (`new AppError(msg, status, code, field)`); the outer catch guards `res.headersSent` so the error handler never throws mid-stream.
+- `enums.js` `'chat'` added to `LINKABLE_TYPES`; `links.js` ownership validator `chat: (id, userId) => getConversationById(userId, id)`.
+
+### Frontend
+- `client/src/pages/AIChat.jsx` — `/ai-chat` (sidebar top group). Conversation-list sidebar (new/select/delete), streaming message view (token-by-token, live cursor, system messages filtered out), model selector + temperature/top-p sliders, input (Enter send / Shift+Enter newline / ⌘J focus), per-message Copy + Save to Research (content capped to 10k). Streaming via raw `fetch(${API_BASE}/api/chat/send, {credentials:'include'})` reading the SSE `ReadableStream`; everything else via the axios client. Reads `?context=&id=` for "Ask AI" deep links. All four states. `useDocumentTitle('AI Chat')`.
+- "Ask AI" buttons in `EntryDetailModal`, `BookDetailModal`, `IdeaDetailModal` (footer) and `EngineerProjectDetail` (header) → `navigate('/ai-chat?context=<type>&id=<id>')`.
+
+### Infra
+- `client/nginx.docker.conf` — dedicated `location /api/chat/send` with `proxy_buffering off` (+ `proxy_cache off`, `proxy_read_timeout 3600s`, cleared `Connection`) for true SSE streaming; longer prefix wins over generic `/api`.
+
+---
+
 ## Existing DB Migrations
 
 Migrations live under `server/db/migrations/` (not `server/migrations/`). All follow §6.5: SERIAL PK, `user_id` FK `ON DELETE CASCADE` (except `users`), VARCHAR status/type columns (no ENUM types), `TIMESTAMPTZ` timestamps, a shared `set_updated_at()` trigger, and `idx_{table}_user_id` / `idx_{table}_status` indexes.
@@ -166,6 +182,7 @@ Migrations live under `server/db/migrations/` (not `server/migrations/`). All fo
 - `012_time_entries.sql` — Roadmap Wave 5: creates `time_entries` (see Time Tracking module above) and re-extends `chk_entity_link_types` to whitelist `'time_entry'` and `'goal'`. Re-runnable: `DROP TABLE IF EXISTS … CASCADE`; the constraint is dropped IF EXISTS before re-adding.
 - `013_goals.sql` — Roadmap Wave 5: creates the `goals` table (see Goals/OKRs module above). Re-runnable: `DROP TABLE IF EXISTS … CASCADE`.
 - `014_pgvector.sql` — Roadmap Wave 6 (Moonshots): enables the `vector` extension and creates `research_embeddings` (`vector(1536)` per entry, `UNIQUE(entry_id)`, FK CASCADE, `ivfflat` cosine index). **Guarded:** the whole migration is a `DO` block that only runs the DDL (via `EXECUTE`, so the `vector` type is never parsed) when `pg_available_extensions` lists `vector`; otherwise it `RAISE NOTICE`s and records as applied with no objects. Keeps CI's stock `postgres:16-alpine` and non-pgvector dev DBs migrating cleanly — production runs the `pgvector/pgvector:pg16` image (`docker-compose.yml`). Caveat: if a DB started without pgvector and later gains it, delete the `014_pgvector.sql` row from `schema_migrations` to re-run.
+- `015_chat_history.sql` — Roadmap Wave 7 (final): creates `chat_conversations` (AI chat history; messages as `JSONB`, `model`, optional `context_entity_type`/`context_entity_id`, `temperature`/`top_p`) with per-user/recency/context indexes and the shared `set_updated_at()` trigger. Re-extends `chk_entity_link_types` to whitelist `'chat'`. Re-runnable: `DROP TABLE IF EXISTS … CASCADE`; trigger function `CREATE OR REPLACE`; constraint dropped IF EXISTS before re-add.
 
 **Migration runner** — `server/db/migrate.js` (`npm run migrate`). Tracks applied files in a `schema_migrations` table; applies each pending `*.sql` in its own transaction. Handles two cases: a pre-existing DB where the v1 tables were created out-of-band (a CREATE that fails with "already exists" is recorded as applied), and dependency ordering on a fresh DB (a file referencing a not-yet-created table is deferred and retried in a later pass). Date-prefixed v1 files sort before the `NNN_` v2+ series so `002_finance_upgrade.sql` runs after the base tables. **Phase 2:** the runner now acquires a Postgres advisory lock (`pg_advisory_lock(7391842)`) for the lifetime of each run, released in a `finally` block, so concurrent replicas on rolling deploys cannot race and double-apply migrations.
 

@@ -60,6 +60,7 @@ export const LINKABLE_TYPES = [
   'idea',       // Roadmap Wave 4 — Ideas Tracker (mirrors 011_ideas.sql)
   'time_entry', // Roadmap Wave 5 — Time Tracking (mirrors 012_time_entries.sql)
   'goal',       // Roadmap Wave 5 — Goals/OKRs (mirrors 013_goals.sql)
+  'chat',       // Roadmap Wave 7 — AI Chat (mirrors 015_chat_history.sql)
 ];
 
 // --- Time Tracking (Roadmap Wave 5) ---

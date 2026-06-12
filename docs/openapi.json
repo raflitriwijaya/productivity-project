@@ -71,6 +71,10 @@
     {
       "name": "Polymath",
       "description": "Polymath Dashboard — multi-year cross-module growth"
+    },
+    {
+      "name": "AI Chat",
+      "description": "DeepSeek-powered AI assistant chatbox"
     }
   ],
   "components": {
@@ -5684,7 +5688,10 @@
                 "engineer_roadmap_skill",
                 "book",
                 "contact",
-                "idea"
+                "idea",
+                "time_entry",
+                "goal",
+                "chat"
               ]
             },
             "description": "Anchor entity type"
@@ -5778,7 +5785,10 @@
                       "engineer_roadmap_skill",
                       "book",
                       "contact",
-                      "idea"
+                      "idea",
+                      "time_entry",
+                      "goal",
+                      "chat"
                     ]
                   },
                   "from_id": {
@@ -5806,7 +5816,10 @@
                       "engineer_roadmap_skill",
                       "book",
                       "contact",
-                      "idea"
+                      "idea",
+                      "time_entry",
+                      "goal",
+                      "chat"
                     ]
                   },
                   "to_id": {
@@ -7968,6 +7981,257 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/chat/models": {
+      "get": {
+        "tags": [
+          "AI Chat"
+        ],
+        "summary": "List available chat models and whether each is currently usable",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/chat/conversations": {
+      "get": {
+        "tags": [
+          "AI Chat"
+        ],
+        "summary": "List the user's chat conversations (paginated, newest first)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/chat/conversations/{id}": {
+      "get": {
+        "tags": [
+          "AI Chat"
+        ],
+        "summary": "Get one conversation (including its full message log)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "AI Chat"
+        ],
+        "summary": "Delete a conversation",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/chat/send": {
+      "post": {
+        "tags": [
+          "AI Chat"
+        ],
+        "summary": "Send a message and stream the assistant reply over SSE",
+        "description": "Persists the user message, then streams the model reply token-by-token as Server-Sent Events (`text/event-stream`). Events: `{type:\"conversation_id\",id}`, `{type:\"token\",content}`, `{type:\"done\"}`, `{type:\"error\",message}`. Creates a new conversation when `conversation_id` is omitted.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "message"
+                ],
+                "properties": {
+                  "conversation_id": {
+                    "type": "integer",
+                    "nullable": true,
+                    "description": "Omit/null to start a new conversation"
+                  },
+                  "message": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 10000
+                  },
+                  "model": {
+                    "type": "string",
+                    "enum": [
+                      "deepseek-chat",
+                      "deepseek-chat-max",
+                      "deepseek-r1-local"
+                    ],
+                    "default": "deepseek-chat"
+                  },
+                  "temperature": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 2,
+                    "default": 0.7
+                  },
+                  "top_p": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "default": 0.9
+                  },
+                  "context_entity_type": {
+                    "type": "string",
+                    "maxLength": 40,
+                    "nullable": true
+                  },
+                  "context_entity_id": {
+                    "type": "integer",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "SSE stream of the assistant reply",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }

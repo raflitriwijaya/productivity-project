@@ -6,7 +6,7 @@ import {
   LayoutDashboard, CheckSquare, BookOpen, BookMarked, GraduationCap,
   LineChart, Receipt, Wallet, ArrowDownLeft, ArrowUpRight, PieChart, Target,
   Wrench, Code, FileText, ClipboardCheck, Bug, Map, Users, Lightbulb,
-  CalendarCheck, Trophy, Sparkles,
+  CalendarCheck, Trophy, Sparkles, MessageSquare,
 } from 'lucide-react';
 import api from '../../lib/api';
 import { useTheme } from '../../hooks/useTheme';
@@ -19,8 +19,9 @@ import { QuickCapture } from '../shared/QuickCapture';
 const NAV_SECTIONS = [
   {
     items: [
-      { to: '/',     label: 'Dashboard', icon: LayoutDashboard, end: true },
-      { to: '/todo', label: 'To-Do',     icon: CheckSquare },
+      { to: '/',        label: 'Dashboard', icon: LayoutDashboard, end: true },
+      { to: '/todo',    label: 'To-Do',     icon: CheckSquare },
+      { to: '/ai-chat', label: 'AI Chat',   icon: MessageSquare },
     ],
   },
   {

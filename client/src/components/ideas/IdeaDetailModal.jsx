@@ -4,7 +4,8 @@
 // action that spawns the target entity, links it back, and marks the idea converted.
 
 import { useState } from 'react';
-import { Calendar, ArrowRight, Sparkles, ChevronDown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Calendar, ArrowRight, Sparkles, ChevronDown, Bot } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
@@ -33,6 +34,7 @@ const CONVERT_TARGETS = [
  */
 export function IdeaDetailModal({ isOpen, onClose, idea, onEdit, onConverted }) {
   const { addToast } = useToast();
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [converting, setConverting] = useState(false);
 
@@ -80,6 +82,10 @@ export function IdeaDetailModal({ isOpen, onClose, idea, onEdit, onConverted }) 
       footer={
         <>
           <Button variant="secondary" size="md" onClick={onClose}>Close</Button>
+          <Button variant="secondary" size="md" onClick={() => navigate(`/ai-chat?context=idea&id=${idea.id}`)}>
+            <Bot size={14} />
+            Ask AI
+          </Button>
           <div className="relative">
             <Button
               variant="secondary"

@@ -38,6 +38,7 @@ const spec = {
     { name: 'Contacts',    description: 'Startup founder CRM — clients, partners, and stakeholders' },
     { name: 'Ideas',       description: 'Ideas Tracker — capture ideas before they evaporate' },
     { name: 'Polymath',    description: 'Polymath Dashboard — multi-year cross-module growth' },
+    { name: 'AI Chat',     description: 'DeepSeek-powered AI assistant chatbox' },
   ],
   components: {
     securitySchemes: {
@@ -1389,6 +1390,7 @@ const linkableTypeSchema = {
     'receivable', 'payable', 'portfolio', 'budget', 'account',
     'research_topic', 'engineer_snippet', 'engineer_document', 'engineer_issue',
     'engineer_checkin', 'engineer_roadmap_skill', 'book', 'contact', 'idea',
+    'time_entry', 'goal', 'chat',
   ],
 };
 
@@ -1886,6 +1888,69 @@ addPath('get', '/api/polymath', {
   description: 'Returns books/research/learning/projects/time aggregated by year, plus the top knowledge tags, for a long-term view of the user\'s polymath journey.',
   security: cookie,
   responses: { ...ok200, ...auth401 },
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// AI CHAT (Roadmap Wave 7 — DeepSeek-powered assistant)
+// ═════════════════════════════════════════════════════════════════════════════
+
+const chatModelEnum = ['deepseek-chat', 'deepseek-chat-max', 'deepseek-r1-local'];
+
+addPath('get', '/api/chat/models', {
+  tags: ['AI Chat'],
+  summary: 'List available chat models and whether each is currently usable',
+  security: cookie,
+  responses: { ...ok200, ...auth401 },
+});
+
+addPath('get', '/api/chat/conversations', {
+  tags: ['AI Chat'],
+  summary: 'List the user\'s chat conversations (paginated, newest first)',
+  security: cookie,
+  parameters: [
+    { name: 'page',     in: 'query', schema: { type: 'integer', default: 1 } },
+    { name: 'per_page', in: 'query', schema: { type: 'integer', default: 20, maximum: 50 } },
+  ],
+  responses: { ...list200, ...auth401 },
+});
+
+addPath('get', '/api/chat/conversations/{id}', {
+  tags: ['AI Chat'],
+  summary: 'Get one conversation (including its full message log)',
+  security: cookie,
+  parameters: idParam,
+  responses: { ...ok200, ...r400, ...auth401, ...r404 },
+});
+
+addPath('delete', '/api/chat/conversations/{id}', {
+  tags: ['AI Chat'],
+  summary: 'Delete a conversation',
+  security: cookie,
+  parameters: idParam,
+  responses: { ...ok200, ...r400, ...auth401, ...r404 },
+});
+
+addPath('post', '/api/chat/send', {
+  tags: ['AI Chat'],
+  summary: 'Send a message and stream the assistant reply over SSE',
+  description: 'Persists the user message, then streams the model reply token-by-token as Server-Sent Events (`text/event-stream`). Events: `{type:"conversation_id",id}`, `{type:"token",content}`, `{type:"done"}`, `{type:"error",message}`. Creates a new conversation when `conversation_id` is omitted.',
+  security: cookie,
+  requestBody: jsonBody({
+    type: 'object', required: ['message'],
+    properties: {
+      conversation_id:     { type: 'integer', nullable: true, description: 'Omit/null to start a new conversation' },
+      message:             { type: 'string', minLength: 1, maxLength: 10000 },
+      model:               { type: 'string', enum: chatModelEnum, default: 'deepseek-chat' },
+      temperature:         { type: 'number', minimum: 0, maximum: 2, default: 0.7 },
+      top_p:               { type: 'number', minimum: 0, maximum: 1, default: 0.9 },
+      context_entity_type: { type: 'string', maxLength: 40, nullable: true },
+      context_entity_id:   { type: 'integer', nullable: true },
+    },
+  }),
+  responses: {
+    '200': { description: 'SSE stream of the assistant reply', content: { 'text/event-stream': { schema: { type: 'string' } } } },
+    ...r400, ...auth401, ...r404,
+  },
 });
 
 // ─── Write output ─────────────────────────────────────────────────────────────

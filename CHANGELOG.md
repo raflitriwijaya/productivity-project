@@ -7,6 +7,24 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Roadmap Wave 7 — AI Assistant (2026-06-12)
+
+> The finishing touch. After six waves, Polymath OS gets its brain: an integrated DeepSeek-powered chatbox for brainstorming, research, and capturing insights without leaving the system.
+
+#### AI Chat (DeepSeek)
+- **New `chat_conversations` table** (migration `015_chat_history.sql`) — stores conversations with the full message log as `JSONB`, the `model` used, an optional `context_entity_type`/`context_entity_id` (the module item a chat was opened from), and `temperature`/`top_p`. `user_id` FK ON DELETE CASCADE, the shared `set_updated_at()` trigger, and indexes for per-user lists, recency, and context lookups. The same migration extends `entity_links.chk_entity_link_types` to whitelist `'chat'`.
+- **New chat API** — `server/models/chat.model.js` (`listConversations`, `getConversationById`, `createConversation`, `updateConversation`, `deleteConversation`, `getContextForConversation`; all `user_id`-scoped) and `server/routes/chat.js` mounted `app.use('/api/chat', requireAuth, chatRouter)`. Endpoints: `GET /api/chat/models`, `GET /api/chat/conversations` (paginated), `GET /api/chat/conversations/:id`, `DELETE /api/chat/conversations/:id`, and `POST /api/chat/send`. Audit events `CHAT_MESSAGE`/`CHAT_DELETE`.
+- **Streaming via SSE** — `POST /api/chat/send` persists the user message, then streams the assistant reply token-by-token as Server-Sent Events (`{type:"conversation_id"|"token"|"done"|"error"}`), and persists the assistant reply on completion. Dual backend: the cloud **DeepSeek** API (OpenAI-compatible, reusing the Wave 6 `DEEPSEEK_API_KEY` auth pattern) or a local **Ollama** instance for the on-device R1 model. Once the SSE headers are sent, the outer error path guards on `res.headersSent` so the global error handler never throws on an in-flight stream.
+- **Context injection** — when a chat is opened from a module item, the first message injects a compact, `user_id`-scoped snapshot of that entity (research entry / engineer project / book / learning item / goal / idea) as a system prompt so the model has relevant context.
+- **New AI Chat page `/ai-chat`** (`client/src/pages/AIChat.jsx`) — a conversation-list sidebar (new/select/delete), a streaming message view (token-by-token with a live cursor), a model selector + temperature/top-p sliders, and an input with Enter-to-send / Shift+Enter-newline / ⌘J-to-focus. Per-message **Copy** and **Save to Research** (caps content to the 10k research limit). Streaming uses a raw `fetch` against the API base so the SSE `ReadableStream` can be read directly; all other calls use the axios client. All four data states. Added to the sidebar top group.
+- **"Ask AI" deep links** — `EntryDetailModal`, `BookDetailModal`, `IdeaDetailModal`, and `EngineerProjectDetail` each gained an **Ask AI** button that navigates to `/ai-chat?context=<type>&id=<id>`; the chat page reads those params and injects the entity as context on the first message.
+- **`'chat'` registered in `LINKABLE_TYPES`** (`enums.js`) with an ownership validator in `links.js` (adapting `getConversationById(userId, id)`), so a saved conversation can participate in Universal Links.
+
+#### Infra & Docs
+- **nginx SSE** (`client/nginx.docker.conf`) — a dedicated `location /api/chat/send` block with `proxy_buffering off` (+ `proxy_cache off`, long `proxy_read_timeout`, cleared `Connection` header) so token streaming isn't held back by proxy buffering. The longer prefix wins over the generic `/api` block.
+- **OpenAPI** (`generate-openapi.js`) — added the `AI Chat` tag, the 5 chat paths, and `'chat'`/`'time_entry'`/`'goal'` to the links type enum.
+- **`.env.docker.example` + `docker-compose.yml`** — documented and wired `DEEPSEEK_API_KEY` (shared with embeddings), `DEEPSEEK_BASE_URL`, and `OLLAMA_BASE_URL` into the `api` service.
+
 ### Roadmap Wave 6 — Moonshots (2026-06-12)
 
 > The most technically ambitious wave: a vector database for meaning-based search, an installable offline-capable PWA, local AI auto-tagging, and a long-horizon Polymath Dashboard.

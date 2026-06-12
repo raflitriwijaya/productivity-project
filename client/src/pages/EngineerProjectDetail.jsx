@@ -6,7 +6,7 @@
 import { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
-  ArrowLeft, FileText, ClipboardCheck, Bug, ExternalLink, Layers, Cpu, Wallet, Plus,
+  ArrowLeft, FileText, ClipboardCheck, Bug, ExternalLink, Layers, Cpu, Wallet, Plus, Bot,
 } from 'lucide-react';
 
 import api from '../lib/api';
@@ -148,6 +148,16 @@ export default function EngineerProjectDetail() {
               </span>
             </div>
           </div>
+          {/* Wave 7: open the AI assistant pre-loaded with this project as context. */}
+          <Link
+            to={`/ai-chat?context=engineer_project&id=${project.id}`}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium flex-shrink-0
+              border border-stone-200 dark:border-gray-700 text-stone-600 dark:text-gray-300
+              hover:bg-moss-50 dark:hover:bg-moss-950/30 hover:text-moss-700 dark:hover:text-moss-400 transition-colors duration-150"
+          >
+            <Bot size={15} />
+            Ask AI
+          </Link>
         </div>
       </div>
 

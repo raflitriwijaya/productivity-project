@@ -2,7 +2,8 @@
 // Read-only book detail (Roadmap Wave 3): meta, progress/rating, dates, notes, and
 // the LinkedItems section so a book can link to Research entries (Wave 1).
 
-import { Star, Clock, Calendar } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Star, Clock, Calendar, Bot } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
@@ -25,6 +26,7 @@ const SHELF_VARIANTS = {
  * @param {{ isOpen: boolean, onClose: () => void, book: object, onEdit: () => void }} props
  */
 export function BookDetailModal({ isOpen, onClose, book, onEdit }) {
+  const navigate = useNavigate();
   if (!book) return null;
 
   const progress = book.total_pages > 0
@@ -40,6 +42,10 @@ export function BookDetailModal({ isOpen, onClose, book, onEdit }) {
       footer={
         <>
           <Button variant="secondary" size="md" onClick={onClose}>Close</Button>
+          <Button variant="secondary" size="md" onClick={() => navigate(`/ai-chat?context=book&id=${book.id}`)}>
+            <Bot size={14} />
+            Ask AI
+          </Button>
           <Button variant="primary" size="md" onClick={onEdit}>Edit</Button>
         </>
       }

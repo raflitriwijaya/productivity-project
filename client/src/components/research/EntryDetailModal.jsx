@@ -4,7 +4,8 @@
 // View action). An "Edit" footer button hands off to the create/edit modal.
 
 import { useState } from 'react';
-import { Pencil, ExternalLink } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Pencil, ExternalLink, Bot } from 'lucide-react';
 
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
@@ -31,6 +32,7 @@ export function EntryDetailModal({ isOpen, onClose, entry, onEdit }) {
   // Bumped after each upload/delete so AttachmentList re-fetches.
   const [attachVersion, setAttachVersion] = useState(0);
   const bump = () => setAttachVersion(v => v + 1);
+  const navigate = useNavigate();
 
   if (!entry) return null;
 
@@ -46,6 +48,10 @@ export function EntryDetailModal({ isOpen, onClose, entry, onEdit }) {
       footer={
         <>
           <Button variant="secondary" size="md" onClick={onClose}>Close</Button>
+          <Button variant="secondary" size="md" onClick={() => navigate(`/ai-chat?context=research_entry&id=${entry.id}`)}>
+            <Bot size={14} />
+            Ask AI
+          </Button>
           {onEdit && (
             <Button variant="primary" size="md" onClick={() => onEdit(entry)}>
               <Pencil size={14} />

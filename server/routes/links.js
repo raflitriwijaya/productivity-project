@@ -31,6 +31,7 @@ import { getContactById } from '../models/contacts.model.js';
 import { getIdeaById } from '../models/ideas.model.js';
 import { getTimeEntryById } from '../models/time.model.js';
 import { getGoalById } from '../models/goals.model.js';
+import { getConversationById } from '../models/chat.model.js';
 
 const router = Router();
 
@@ -55,6 +56,8 @@ const OWNERSHIP_VALIDATORS = {
   // Wave 5 models are also (userId, id) — same adaptation.
   time_entry:       (id, userId) => getTimeEntryById(userId, id),
   goal:             (id, userId) => getGoalById(userId, id),
+  // Wave 7 chat.model.getConversationById is (userId, id) — same adaptation.
+  chat:             (id, userId) => getConversationById(userId, id),
 };
 
 /**
