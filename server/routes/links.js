@@ -29,6 +29,8 @@ import { getProjectById } from '../models/engineer.model.js';
 import { getBookById } from '../models/reading.model.js';
 import { getContactById } from '../models/contacts.model.js';
 import { getIdeaById } from '../models/ideas.model.js';
+import { getTimeEntryById } from '../models/time.model.js';
+import { getGoalById } from '../models/goals.model.js';
 
 const router = Router();
 
@@ -50,6 +52,9 @@ const OWNERSHIP_VALIDATORS = {
   contact:          (id, userId) => getContactById(userId, id),
   // ideas.model.getIdeaById is also (userId, id) — same adaptation.
   idea:             (id, userId) => getIdeaById(userId, id),
+  // Wave 5 models are also (userId, id) — same adaptation.
+  time_entry:       (id, userId) => getTimeEntryById(userId, id),
+  goal:             (id, userId) => getGoalById(userId, id),
 };
 
 /**

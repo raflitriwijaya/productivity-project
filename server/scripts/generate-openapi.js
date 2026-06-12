@@ -1679,6 +1679,179 @@ addPath('delete', '/api/ideas/{id}', {
   responses: { ...ok200, ...auth401, ...r404 },
 });
 
+// ═════════════════════════════════════════════════════════════════════════════
+// TIME TRACKING (Roadmap Wave 5)
+// ═════════════════════════════════════════════════════════════════════════════
+
+const timeEntityTypes = ['todo', 'research_entry', 'learning_item', 'engineer_project', 'book'];
+
+addPath('get', '/api/time/running', {
+  tags: ['Time'],
+  summary: 'Get the currently running timer (null when none)',
+  security: cookie,
+  responses: { ...ok200, ...auth401 },
+});
+
+addPath('get', '/api/time/summary', {
+  tags: ['Time'],
+  summary: 'Time totals grouped by entity type for a date range',
+  security: cookie,
+  parameters: [
+    { name: 'from', in: 'query', schema: { type: 'string', format: 'date' } },
+    { name: 'to',   in: 'query', schema: { type: 'string', format: 'date' } },
+  ],
+  responses: { ...ok200, ...auth401 },
+});
+
+addPath('get', '/api/time', {
+  tags: ['Time'],
+  summary: 'List time entries (paginated, filterable)',
+  security: cookie,
+  parameters: [
+    ...pageParams,
+    { name: 'entity_type', in: 'query', schema: { type: 'string', enum: timeEntityTypes } },
+    { name: 'entity_id',   in: 'query', schema: { type: 'integer' } },
+    { name: 'from',        in: 'query', schema: { type: 'string', format: 'date' } },
+    { name: 'to',          in: 'query', schema: { type: 'string', format: 'date' } },
+  ],
+  responses: { ...list200, ...auth401 },
+});
+
+addPath('post', '/api/time/start', {
+  tags: ['Time'],
+  summary: 'Start a timer (stops any running timer first)',
+  security: cookie,
+  requestBody: jsonBody({
+    type: 'object', required: ['entity_type', 'entity_id'],
+    properties: {
+      entity_type: { type: 'string', enum: timeEntityTypes },
+      entity_id:   { type: 'integer' },
+      note:        { type: 'string', maxLength: 500, nullable: true },
+    },
+  }),
+  responses: { '201': { description: 'Created', content: { 'application/json': { schema: { $ref: '#/components/schemas/Success' } } } }, ...auth401, ...r400 },
+});
+
+addPath('post', '/api/time/stop', {
+  tags: ['Time'],
+  summary: 'Stop the running timer',
+  security: cookie,
+  responses: { ...ok200, ...auth401, ...r404 },
+});
+
+addPath('delete', '/api/time/{id}', {
+  tags: ['Time'],
+  summary: 'Delete a time entry',
+  security: cookie,
+  parameters: idParam,
+  responses: { ...ok200, ...auth401, ...r404 },
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// REVIEW (Roadmap Wave 5)
+// ═════════════════════════════════════════════════════════════════════════════
+
+addPath('get', '/api/review/weekly', {
+  tags: ['Review'],
+  summary: 'Weekly accomplishments across all modules',
+  security: cookie,
+  parameters: [
+    { name: 'from', in: 'query', schema: { type: 'string', format: 'date' } },
+    { name: 'to',   in: 'query', schema: { type: 'string', format: 'date' } },
+  ],
+  responses: { ...ok200, ...auth401 },
+});
+
+addPath('get', '/api/review/annual', {
+  tags: ['Review'],
+  summary: 'Yearly "Polymath Report" across all modules',
+  security: cookie,
+  parameters: [{ name: 'year', in: 'query', schema: { type: 'integer' } }],
+  responses: { ...ok200, ...auth401 },
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// GOALS / OKRs (Roadmap Wave 5)
+// ═════════════════════════════════════════════════════════════════════════════
+
+const goalTypes      = ['target', 'milestone', 'habit', 'learning'];
+const goalStatuses   = ['active', 'completed', 'abandoned', 'paused'];
+const goalPriorities = ['low', 'medium', 'high', 'critical'];
+
+const goalWriteProps = {
+  title:        { type: 'string', maxLength: 500 },
+  description:  { type: 'string', nullable: true },
+  goal_type:    { type: 'string', enum: goalTypes },
+  target_value: { type: 'number', nullable: true },
+  current_value:{ type: 'number', nullable: true },
+  unit:         { type: 'string', maxLength: 100, nullable: true },
+  category:     { type: 'string', maxLength: 100, nullable: true },
+  status:       { type: 'string', enum: goalStatuses },
+  priority:     { type: 'string', enum: goalPriorities },
+  start_date:   { type: 'string', format: 'date', nullable: true },
+  target_date:  { type: 'string', format: 'date', nullable: true },
+};
+
+addPath('get', '/api/goals/stats', {
+  tags: ['Goals'],
+  summary: 'Goal statistics (active, completed, critical, on-track)',
+  security: cookie,
+  responses: { ...ok200, ...auth401 },
+});
+
+addPath('get', '/api/goals', {
+  tags: ['Goals'],
+  summary: 'List goals (paginated, filterable)',
+  security: cookie,
+  parameters: [
+    ...pageParams,
+    { name: 'status',   in: 'query', schema: { type: 'string', enum: goalStatuses } },
+    { name: 'priority', in: 'query', schema: { type: 'string', enum: goalPriorities } },
+  ],
+  responses: { ...list200, ...auth401 },
+});
+
+addPath('post', '/api/goals', {
+  tags: ['Goals'],
+  summary: 'Create a goal',
+  security: cookie,
+  requestBody: jsonBody({ type: 'object', required: ['title'], properties: goalWriteProps }),
+  responses: { '201': { description: 'Created', content: { 'application/json': { schema: { $ref: '#/components/schemas/Success' } } } }, ...auth401, ...r400 },
+});
+
+addPath('get', '/api/goals/{id}', {
+  tags: ['Goals'],
+  summary: 'Get a goal by ID',
+  security: cookie,
+  parameters: idParam,
+  responses: { ...ok200, ...auth401, ...r404 },
+});
+
+addPath('post', '/api/goals/{id}/recalc', {
+  tags: ['Goals'],
+  summary: 'Recalculate current_value from linked entities',
+  security: cookie,
+  parameters: idParam,
+  responses: { ...ok200, ...auth401, ...r404 },
+});
+
+addPath('patch', '/api/goals/{id}', {
+  tags: ['Goals'],
+  summary: 'Update a goal (partial)',
+  security: cookie,
+  parameters: idParam,
+  requestBody: jsonBody({ type: 'object', properties: goalWriteProps }),
+  responses: { ...ok200, ...auth401, ...r404, ...r400 },
+});
+
+addPath('delete', '/api/goals/{id}', {
+  tags: ['Goals'],
+  summary: 'Delete a goal',
+  security: cookie,
+  parameters: idParam,
+  responses: { ...ok200, ...auth401, ...r404 },
+});
+
 // ─── Write output ─────────────────────────────────────────────────────────────
 
 mkdirSync(outDir, { recursive: true });

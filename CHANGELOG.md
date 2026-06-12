@@ -7,6 +7,32 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Roadmap Wave 5 — Refleksi & Pertumbuhan (2026-06-12)
+
+> "Tools for becoming." Time tracking, a weekly review, cross-module goals/OKRs, and a yearly Polymath Report close the reflection loop.
+
+#### Time Tracking
+- **New `time_entries` table** (migration `012_time_entries.sql`) — tracks time spent on any of `todo`/`research_entry`/`learning_item`/`engineer_project`/`book` via its own `entity_type`/`entity_id` columns (NOT `entity_links` — time entries are tightly coupled to one entity). `started_at`/`ended_at`/`duration_seconds`, CHECK constraints (`ended_at > started_at`, `duration_seconds > 0`, entity-type whitelist), `user_id` FK ON DELETE CASCADE, the shared `set_updated_at()` trigger, and indexes for per-user lists, per-entity lookups, recency, plus a partial index on the running timer. The same migration extends `entity_links.chk_entity_link_types` to whitelist `'time_entry'` and `'goal'`.
+- **New Time API** — `server/models/time.model.js` (`startTimer`, `stopRunningTimer`, `getRunningTimer`, `getTimeEntryById`, `listTimeEntries`, `deleteTimeEntry`, `getTimeSummary`, `getTodayHours`; all `user_id`-scoped). Only one timer runs at a time — `startTimer` stops any running timer first; `duration_seconds` is computed server-side on stop (client clock never trusted). `server/routes/time.js` mounted `app.use('/api/time', requireAuth, timeRouter)`. Endpoints: `GET /api/time` (filter/paginate), `GET /api/time/running`, `GET /api/time/summary` (grouped by entity type + `today_hours`), `POST /api/time/start`, `POST /api/time/stop`, `DELETE /api/time/:id`. Audit events `TIMER_START`/`TIMER_STOP`/`TIME_DELETE`.
+- **New `Timer` component** (`client/src/components/shared/Timer.jsx`) — a reusable start/stop timer with a live-ticking elapsed display. Embedded in `BookDetailModal`, `EntryDetailModal`, and the `EngineerProjectDetail` Overview tab. When a timer is running elsewhere, Start is disabled with a hint (only one timer at a time).
+
+#### Weekly Review
+- **New `GET /api/review/weekly?from=&to=`** (`server/routes/review.js`) — a parallel fan-out of COUNT/SUM queries across todos (status `done`), finance (`Income`+`Revenue` vs `Expense`), research, learning hours, books finished, time logged, and resolved issues. Defaults to the last 7 days.
+- **New Weekly Review page `/review`** (`client/src/pages/WeeklyReview.jsx`) — Monday→Sunday week navigation (prev/next/Today), seven summary stat cards, a time-breakdown bar chart by entity type (from `/api/time/summary`), and all four data states. Added to a new sidebar **Reflect** section.
+
+#### Goals / OKRs
+- **New `goals` table** (migration `013_goals.sql`) — cross-module goals with CHECK-constrained `goal_type` (`target`/`milestone`/`habit`/`learning`), `status` (`active`/`completed`/`abandoned`/`paused`), `priority` (`low`/`medium`/`high`/`critical`), `target_value`/`current_value`/`unit`/`category`, and `start_date`/`target_date`/`completed_at`. `user_id` FK ON DELETE CASCADE, shared trigger, indexes for per-user lists, status/priority filters, and target-date sort.
+- **New Goals API** — `server/models/goals.model.js` (`listGoals`, `getGoalById`, `createGoal`, `updateGoal`, `deleteGoal`, `getGoalStats`, `recalcGoalProgress`) and `server/routes/goals.js` mounted `app.use('/api/goals', requireAuth, goalsRouter)`. `updateGoal` auto-stamps/clears `completed_at` on status transitions. `recalcGoalProgress` (exposed as `POST /api/goals/:id/recalc`) re-derives `current_value` from entities linked to the goal (Wave 1 links): counts finished books / deployed projects / done todos / completed learning items / created research entries, plus summed hours from linked time entries. `getGoalStats` computes an "on track" count (progress pace ≥ elapsed-time pace). Endpoints: `GET /api/goals`, `GET /api/goals/stats`, `POST`, `GET/PATCH/DELETE /api/goals/:id`, `POST /api/goals/:id/recalc`. Audit events `GOAL_CREATE`/`GOAL_UPDATE`/`GOAL_DELETE`/`GOAL_RECALC`.
+- **New Goals page `/goals`** (`client/src/pages/Goals.jsx`) — four stat cards (Active/Completed/Critical/On Track), status + priority filter pills, a responsive grid of `GoalCard`s with progress bars and overdue flags, a create/edit modal (`CreateGoalModal`), and a detail modal (`GoalDetailModal`) with a "Recalculate from links" action and embedded `LinkedItems`. In the sidebar **Reflect** section.
+
+#### Annual Report
+- **New `GET /api/review/annual?year=`** (`server/routes/review.js`) — yearly aggregates across reading (books/pages/avg rating), research (entries/journals/citations), learning (completed/hours), engineering (projects/deployed), tasks, time, finance (income/expense/net), and goals achieved.
+- **New Annual Report page `/report`** (`client/src/pages/AnnualReport.jsx`) — a year selector, a gradient hero band of headline numbers, and per-module breakdown sections. In the sidebar **Reflect** section.
+
+#### Links & Docs
+- **`'time_entry'` and `'goal'` registered in `LINKABLE_TYPES`** (+ `TIME_ENTITY_TYPES`, `GOAL_TYPES`/`GOAL_STATUSES`/`GOAL_PRIORITIES`) in `enums.js`, with ownership validators in `links.js` (adapting `getTimeEntryById`/`getGoalById` to the `(id, userId)` signature). `LinkedItems` learned the `time_entry` (gray) / `goal` (ember) labels+variants and `LinkPickerModal` gained a **Goals** module, so any goal can link to the entities that feed its progress.
+- **OpenAPI** (`generate-openapi.js`) — added the `Time`, `Review`, and `Goals` tags with 6 time paths, 2 review paths, and 6 goal paths (84 paths total).
+
 ### Roadmap Wave 4 — Startup Founder OS (2026-06-12)
 
 #### Contacts CRM (lite)

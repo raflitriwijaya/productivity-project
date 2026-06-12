@@ -7,6 +7,7 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { LinkedItems } from '../shared/LinkedItems';
+import { Timer } from '../shared/Timer';
 
 const SHELF_LABELS = {
   want_to_read: 'Want to Read',
@@ -102,6 +103,9 @@ export function BookDetailModal({ isOpen, onClose, book, onEdit }) {
           <p className="text-sm text-stone-600 dark:text-gray-400 whitespace-pre-wrap">{book.notes}</p>
         </div>
       )}
+
+      {/* Time tracking (Wave 5) */}
+      <Timer entityType="book" entityId={book.id} />
 
       {/* Linked Research entries (Universal Links, Wave 1) */}
       <div className="border-t border-stone-200 dark:border-gray-700 pt-4">

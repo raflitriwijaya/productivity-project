@@ -14,6 +14,7 @@ import { TopicBadge } from './TopicBadge';
 import { AttachmentList } from './AttachmentList';
 import { AttachmentUploader } from './AttachmentUploader';
 import { LinkedItems } from '../shared/LinkedItems';
+import { Timer } from '../shared/Timer';
 import {
   TYPE_VARIANT, TYPE_LABEL, STATUS_VARIANT, STATUS_LABEL, splitTags,
 } from './ResearchEntryRow';
@@ -110,6 +111,9 @@ export function EntryDetailModal({ isOpen, onClose, entry, onEdit }) {
         </div>
         <AttachmentList entryId={entry.id} refreshKey={attachVersion} onChanged={bump} />
       </div>
+
+      {/* TIME TRACKING (Roadmap Wave 5) */}
+      <Timer entityType="research_entry" entityId={entry.id} />
 
       {/* UNIVERSAL LINKS (Roadmap Wave 1) */}
       <div className="border-t border-stone-200 dark:border-gray-700 pt-4">

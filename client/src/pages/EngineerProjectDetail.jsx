@@ -22,6 +22,7 @@ import { ErrorState } from '../components/ui/ErrorState';
 import { EmptyState } from '../components/ui/EmptyState';
 import { LinkedItems } from '../components/shared/LinkedItems';
 import { LinkPickerModal } from '../components/shared/LinkPickerModal';
+import { Timer } from '../components/shared/Timer';
 
 import {
   TYPE_VARIANT, TYPE_LABEL, STATUS_VARIANT, STATUS_LABEL, splitTags, RepoLink,
@@ -200,6 +201,14 @@ export default function EngineerProjectDetail() {
               </CardBody>
             </Card>
           </div>
+
+          {/* TIME TRACKING (Roadmap Wave 5) */}
+          <Card>
+            <CardHeader title="Time Tracking" />
+            <CardBody className="pt-0">
+              <Timer entityType="engineer_project" entityId={project.id} />
+            </CardBody>
+          </Card>
 
           {/* UNIVERSAL LINKS (Roadmap Wave 1) */}
           <Card>

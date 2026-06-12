@@ -41,6 +41,8 @@ const TYPE_LABELS = {
   book: 'Book',
   contact: 'Contact',
   idea: 'Idea',
+  time_entry: 'Time Entry',
+  goal: 'Goal',
 };
 
 // Map each type to a Badge variant (the canonical "Stoic Garden" accents).
@@ -64,6 +66,8 @@ const TYPE_VARIANTS = {
   book: 'ember',
   contact: 'moss',
   idea: 'ember',
+  time_entry: 'gray',
+  goal: 'ember',
 };
 
 /**

@@ -40,6 +40,9 @@ import { readingRouter } from './routes/reading.js'; // Roadmap Wave 3: Reading 
 import { searchRouter } from './routes/search.js';   // Roadmap Wave 3: Unified Search
 import { contactsRouter } from './routes/contacts.js'; // Roadmap Wave 4: Contacts CRM
 import { ideasRouter } from './routes/ideas.js'; // Roadmap Wave 4: Ideas Tracker
+import { timeRouter } from './routes/time.js'; // Roadmap Wave 5: Time Tracking
+import { reviewRouter } from './routes/review.js'; // Roadmap Wave 5: Weekly Review + Annual Report
+import { goalsRouter } from './routes/goals.js'; // Roadmap Wave 5: Goals/OKRs
 
 // ─── Env validation ───────────────────────────────────────────────────────────
 const {
@@ -226,6 +229,9 @@ app.use('/api/reading',  requireAuth, readingRouter); // Roadmap Wave 3: Reading
 app.use('/api/search',   requireAuth, searchRouter);  // Roadmap Wave 3: Unified Search
 app.use('/api/contacts', requireAuth, contactsRouter); // Roadmap Wave 4: Contacts CRM
 app.use('/api/ideas',    requireAuth, ideasRouter); // Roadmap Wave 4: Ideas Tracker
+app.use('/api/time',     requireAuth, timeRouter); // Roadmap Wave 5: Time Tracking
+app.use('/api/review',   requireAuth, reviewRouter); // Roadmap Wave 5: Weekly Review + Annual Report
+app.use('/api/goals',    requireAuth, goalsRouter); // Roadmap Wave 5: Goals/OKRs
 
 // ─── 404 for unmatched API routes ────────────────────────────────────────────
 app.use('/api', (_req, res) => {

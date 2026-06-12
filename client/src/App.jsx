@@ -18,6 +18,9 @@ import Learning from './pages/Learning';
 import Reading from './pages/Reading';
 import Contacts from './pages/Contacts';
 import Ideas from './pages/Ideas';
+import WeeklyReview from './pages/WeeklyReview';
+import Goals from './pages/Goals';
+import AnnualReport from './pages/AnnualReport';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
@@ -103,6 +106,11 @@ export default function App() {
             <Route path="/reading" element={<Reading />} />
             <Route path="/contacts" element={<Contacts />} />
             <Route path="/ideas" element={<Ideas />} />
+
+            {/* Reflect & Grow (Roadmap Wave 5) */}
+            <Route path="/review" element={<WeeklyReview />} />
+            <Route path="/goals" element={<Goals />} />
+            <Route path="/report" element={<AnnualReport />} />
 
             {/* Engineering Toolkit — lazy-loaded. Literal sub-routes precede the
                 dynamic /engineer/:id detail route so static segments match first.

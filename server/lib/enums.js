@@ -55,7 +55,17 @@ export const LINKABLE_TYPES = [
   'receivable', 'payable', 'portfolio', 'budget', 'account',
   'research_topic', 'engineer_snippet', 'engineer_document', 'engineer_issue',
   'engineer_checkin', 'engineer_roadmap_skill',
-  'book',    // Roadmap Wave 3 — Reading Tracker (mirrors 008_reading_tracker.sql)
-  'contact', // Roadmap Wave 4 — Contacts CRM (mirrors 009_contacts.sql)
-  'idea',    // Roadmap Wave 4 — Ideas Tracker (mirrors 011_ideas.sql)
+  'book',       // Roadmap Wave 3 — Reading Tracker (mirrors 008_reading_tracker.sql)
+  'contact',    // Roadmap Wave 4 — Contacts CRM (mirrors 009_contacts.sql)
+  'idea',       // Roadmap Wave 4 — Ideas Tracker (mirrors 011_ideas.sql)
+  'time_entry', // Roadmap Wave 5 — Time Tracking (mirrors 012_time_entries.sql)
+  'goal',       // Roadmap Wave 5 — Goals/OKRs (mirrors 013_goals.sql)
 ];
+
+// --- Time Tracking (Roadmap Wave 5) ---
+export const TIME_ENTITY_TYPES = ['todo', 'research_entry', 'learning_item', 'engineer_project', 'book'];
+
+// --- Goals/OKRs (Roadmap Wave 5) ---
+export const GOAL_TYPES      = ['target', 'milestone', 'habit', 'learning'];
+export const GOAL_STATUSES   = ['active', 'completed', 'abandoned', 'paused'];
+export const GOAL_PRIORITIES = ['low', 'medium', 'high', 'critical'];
