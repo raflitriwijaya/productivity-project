@@ -9,7 +9,7 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import useDocumentTitle from '../hooks/useDocumentTitle';
-import { Plus, BookOpen, Search, X, Download, ChevronDown, Archive, Trash2 } from 'lucide-react';
+import { Plus, BookOpen, Search, X, Download, ChevronDown, Archive, Trash2, Sparkles } from 'lucide-react';
 
 import api from '../lib/api';
 import { useApi } from '../hooks/useApi';
@@ -80,6 +80,7 @@ export default function Research() {
 
   const [searchQuery,     setSearchQuery]     = useState('');     // raw input
   const [debouncedQuery,  setDebouncedQuery]  = useState('');     // 300ms-debounced, drives the fetch
+  const [searchMode,      setSearchMode]      = useState('keyword'); // 'keyword' | 'semantic' (Wave 6)
   const [activeTagFilters, setActiveTagFilters] = useState([]);   // clicked tag chips → server ?tags=
   const [dateFrom,        setDateFrom]        = useState('');     // ?date_from=
   const [dateTo,          setDateTo]          = useState('');     // ?date_to=
@@ -117,15 +118,24 @@ export default function Research() {
   // The entries list switches endpoint based on the selected topic and carries the
   // debounced search + tag filters as server-side query params (both endpoints
   // support q/tags). Re-runs when topic, query, or tag filters change.
+  //
+  // Wave 6: in "semantic" mode with a non-empty query, the fetch hits the
+  // embedding-ranked /semantic-search endpoint instead — meaning-based, so it
+  // ignores topic/tag/date filters (those don't apply to a vector search).
+  const semanticActive = searchMode === 'semantic' && debouncedQuery.length > 0;
+
   const { data: entries, loading, error, refetch } = useApi(
     () => {
+      if (semanticActive) {
+        return api.get(`/api/research/semantic-search?q=${encodeURIComponent(debouncedQuery)}`);
+      }
       const qs = buildQuery({ q: debouncedQuery, tags: activeTagFilters, dateFrom, dateTo });
       const base = selectedTopicId
         ? `/api/research/topics/${selectedTopicId}/entries`
         : '/api/research';
       return api.get(`${base}${qs}`);
     },
-    [selectedTopicId, debouncedQuery, tagKey, dateFrom, dateTo]
+    [selectedTopicId, debouncedQuery, tagKey, dateFrom, dateTo, searchMode]
   );
 
   const { data: stats, loading: statsLoading, refetch: refetchStats } = useApi(
@@ -358,6 +368,16 @@ export default function Research() {
         </button>
       ),
     },
+    // Wave 6: similarity score, only meaningful for semantic-search results.
+    ...(semanticActive ? [{
+      key: 'similarity',
+      header: 'Match',
+      render: (row) => (
+        row.similarity != null
+          ? <Badge variant="moss">{Math.round(row.similarity * 100)}%</Badge>
+          : <span className="text-stone-300 dark:text-gray-600">—</span>
+      ),
+    }] : []),
     { key: 'type',   header: 'Type',   render: TypeCell },
     { key: 'status', header: 'Status', render: StatusCell },
     { key: 'topics', header: 'Topics', render: TopicsCell },
@@ -400,6 +420,35 @@ export default function Research() {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* SEARCH MODE TOGGLE (Wave 6): keyword vs semantic */}
+          <div className="flex items-center rounded-lg border border-stone-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-0.5 flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => setSearchMode('keyword')}
+              aria-pressed={searchMode === 'keyword'}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors duration-150 ${
+                searchMode === 'keyword'
+                  ? 'bg-moss-50 dark:bg-moss-950/50 text-moss-700 dark:text-moss-400'
+                  : 'text-stone-500 dark:text-gray-400 hover:text-stone-700 dark:hover:text-gray-200'
+              }`}
+            >
+              Keyword
+            </button>
+            <button
+              type="button"
+              onClick={() => setSearchMode('semantic')}
+              aria-pressed={searchMode === 'semantic'}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium inline-flex items-center gap-1 transition-colors duration-150 ${
+                searchMode === 'semantic'
+                  ? 'bg-moss-50 dark:bg-moss-950/50 text-moss-700 dark:text-moss-400'
+                  : 'text-stone-500 dark:text-gray-400 hover:text-stone-700 dark:hover:text-gray-200'
+              }`}
+            >
+              <Sparkles size={12} />
+              Semantic
+            </button>
+          </div>
+
           {/* SEARCH */}
           <div className="relative w-full sm:w-64">
             <Search
@@ -410,7 +459,7 @@ export default function Research() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search entries…"
+              placeholder={searchMode === 'semantic' ? 'Search by meaning…' : 'Search entries…'}
               aria-label="Search research entries"
               className="w-full pl-9 pr-9 py-2 rounded-lg text-sm
                 bg-white dark:bg-gray-700

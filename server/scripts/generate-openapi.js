@@ -37,6 +37,7 @@ const spec = {
     { name: 'Search',      description: 'Unified cross-module search' },
     { name: 'Contacts',    description: 'Startup founder CRM — clients, partners, and stakeholders' },
     { name: 'Ideas',       description: 'Ideas Tracker — capture ideas before they evaporate' },
+    { name: 'Polymath',    description: 'Polymath Dashboard — multi-year cross-module growth' },
   ],
   components: {
     securitySchemes: {
@@ -750,6 +751,29 @@ addPath('get', '/api/research/tags', {
   tags: ['Research'],
   summary: 'All distinct tags used by this user',
   security: cookie,
+  responses: { ...ok200, ...auth401 },
+});
+
+addPath('get', '/api/research/semantic-search', {
+  tags: ['Research'],
+  summary: 'Semantic search over entries by meaning (pgvector embeddings, Wave 6)',
+  description: 'Embeds the query and ranks the user\'s research entries by cosine similarity. Each result carries a `similarity` score (0..1). Returns an empty list when no entries are indexed; requires an embedding API key to be configured server-side.',
+  security: cookie,
+  parameters: [
+    { name: 'q', in: 'query', required: true, schema: { type: 'string', minLength: 1 }, description: 'Natural-language query' },
+  ],
+  responses: { ...ok200, ...r400, ...auth401 },
+});
+
+addPath('get', '/api/research/suggest-tags', {
+  tags: ['Research'],
+  summary: 'Auto-suggest tags from semantically similar entries (Wave 6)',
+  description: 'Best-effort: always returns a 200 with an array (possibly empty) of suggested tags drawn from the nearest neighbours of the supplied title/content.',
+  security: cookie,
+  parameters: [
+    { name: 'title',   in: 'query', schema: { type: 'string' } },
+    { name: 'content', in: 'query', schema: { type: 'string' } },
+  ],
   responses: { ...ok200, ...auth401 },
 });
 
@@ -1850,6 +1874,18 @@ addPath('delete', '/api/goals/{id}', {
   security: cookie,
   parameters: idParam,
   responses: { ...ok200, ...auth401, ...r404 },
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// POLYMATH DASHBOARD (Roadmap Wave 6 — Moonshots)
+// ═════════════════════════════════════════════════════════════════════════════
+
+addPath('get', '/api/polymath', {
+  tags: ['Polymath'],
+  summary: 'Multi-year growth data across all modules for the Polymath Dashboard',
+  description: 'Returns books/research/learning/projects/time aggregated by year, plus the top knowledge tags, for a long-term view of the user\'s polymath journey.',
+  security: cookie,
+  responses: { ...ok200, ...auth401 },
 });
 
 // ─── Write output ─────────────────────────────────────────────────────────────

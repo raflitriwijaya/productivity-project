@@ -7,6 +7,34 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Roadmap Wave 6 — Moonshots (2026-06-12)
+
+> The most technically ambitious wave: a vector database for meaning-based search, an installable offline-capable PWA, local AI auto-tagging, and a long-horizon Polymath Dashboard.
+
+#### Semantic Search (pgvector)
+- **New `research_embeddings` table** (migration `014_pgvector.sql`) — one OpenAI-compatible `vector(1536)` embedding per research entry (`UNIQUE (entry_id)`, FK ON DELETE CASCADE), with an `ivfflat` cosine index. The migration enables the `vector` extension and is **guarded**: it only creates the extension/table when `pg_available_extensions` lists `vector`, otherwise it `RAISE NOTICE`s and skips — so CI's stock `postgres:16-alpine` and any non-pgvector dev DB still migrate cleanly (semantic search + auto-tag then degrade gracefully). Production uses the **`pgvector/pgvector:pg16`** image (`docker-compose.yml`).
+- **New embeddings layer** — `server/lib/embeddings.js` (`generateEmbedding`, `generateEmbeddingForEntry`, `embeddingsConfigured`, `embeddingModel`) calls an OpenAI-compatible `/embeddings` endpoint (DeepSeek by default), configured entirely via env (`EMBEDDING_API_URL`/`EMBEDDING_API_KEY`/`DEEPSEEK_API_KEY`/`EMBEDDING_MODEL`/`EMBEDDING_DIMENSIONS`). `server/models/embeddings.model.js` (`storeEmbedding` upsert, `getEmbedding`, `semanticSearch` cosine ranking, `deleteEmbedding`) tolerates the table being absent (Postgres `42P01`) by no-op/empty so nothing 500s without pgvector.
+- **New `GET /api/research/semantic-search?q=`** (`server/routes/research.js`, registered before `/:id`) — embeds the query and returns entries ranked by cosine similarity, each with a `similarity` (0..1) score.
+- **Background indexing** — `POST /api/research` and `PATCH /api/research/:id` now fire-and-forget an embedding generation (`setTimeout(…, 0)`, never blocks the response; skipped silently when no key is configured, logs a warning on failure).
+- **Research page semantic toggle** (`client/src/pages/Research.jsx`) — a Keyword/Semantic segmented control by the search box. In Semantic mode a non-empty query hits `/semantic-search` (ignoring topic/tag/date filters, which don't apply to a vector search) and a **Match %** column shows each result's similarity.
+
+#### Local AI Auto-Tag
+- **New `server/lib/autoTagger.js`** (`suggestTags`) — embeds an entry, finds its nearest semantic neighbours (`semanticSearch`, threshold 0.5), and returns up to 10 frequency-ranked tags those neighbours carry. Best-effort: any failure yields `[]`.
+- **New `GET /api/research/suggest-tags?title=&content=`** — always 200 with a (possibly empty) tag array.
+- **"✨ Suggest" button** in `CreateResearchModal` — merges suggested tags into the existing tag string (de-duplicated) and toasts the result.
+
+#### PWA + Offline Support
+- **`vite-plugin-pwa`** added (`client/vite.config.js`) — `registerType: 'autoUpdate'`, `injectRegister: 'auto'` (no manual SW code in `main.jsx`), a full web manifest (name/short_name/theme/icons), precaching of build assets, an SPA `navigateFallback` to `index.html`, and a `NetworkFirst` runtime cache for `/api/*` GETs so the app still renders last-known data offline (stale by design). New `pwa-192x192.png` / `pwa-512x512.png` icons and `client/public/offline.html` fallback.
+- **nginx PWA caching** (`client/nginx.docker.conf`) — `no-cache` location blocks for `/sw.js`, `/registerSW.js`, `/manifest.webmanifest` (served as `application/manifest+json`), and `/offline.html`, ahead of the immutable hashed-asset rule so the service worker and manifest are always re-validated.
+
+#### Polymath Dashboard
+- **New `GET /api/polymath`** (`server/routes/polymath.js`, mounted `app.use('/api/polymath', requireAuth, polymathRouter)`) — a parallel fan-out returning books/research/learning/projects/time aggregated **by year**, plus the top 20 knowledge tags. Read-only, all `user_id`-scoped.
+- **New Polymath page `/polymath`** (`client/src/pages/PolymathDashboard.jsx`) — a moss→ember hero band (years tracked + lifetime headline numbers), year-over-year stat cards with trend deltas, dependency-free year-by-year growth bar charts, a lifetime activity-allocation donut (reusing the Finance `DonutChart`), a frequency-scaled knowledge-tag cloud, and achievement highlights (most productive year / top topic / lifetime focus). All four data states incl. a "your polymath journey starts now" empty state. Added to the sidebar **Reflect** section.
+
+#### Docs
+- **OpenAPI** (`generate-openapi.js`) — added the `Polymath` tag and paths for `GET /api/research/semantic-search`, `GET /api/research/suggest-tags`, and `GET /api/polymath`.
+- **`.env.docker.example`** — documented the five embedding env vars (all optional; blank disables semantic search/auto-tag); wired into the `api` service in `docker-compose.yml`.
+
 ### Roadmap Wave 5 — Refleksi & Pertumbuhan (2026-06-12)
 
 > "Tools for becoming." Time tracking, a weekly review, cross-module goals/OKRs, and a yearly Polymath Report close the reflection loop.

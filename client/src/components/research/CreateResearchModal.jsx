@@ -4,6 +4,9 @@
 //   object → edit mode (pre-fills form fields)
 
 import { useState, useEffect } from 'react';
+import { Sparkles } from 'lucide-react';
+import api from '../../lib/api';
+import { useToast } from '../../hooks/useToast';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input, Select } from '../ui/Input';
@@ -35,6 +38,8 @@ export function CreateResearchModal({ isOpen, onClose, onSubmit, entry = null })
   const [form, setForm]       = useState(EMPTY_FORM);
   const [errors, setErrors]   = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [suggesting, setSuggesting] = useState(false); // Wave 6: auto-tag in flight
+  const { addToast } = useToast();
 
   // Sync form state when entry changes (edit mode) or modal opens fresh (create mode)
   useEffect(() => {
@@ -70,6 +75,34 @@ export function CreateResearchModal({ isOpen, onClose, onSubmit, entry = null })
     if (!['draft', 'active', 'archived'].includes(form.status))
       errs.status = 'Select a valid status.';
     return errs;
+  };
+
+  // Wave 6: ask the server for tags from semantically similar entries, then merge
+  // them into the existing tag string. Best-effort — failures just toast.
+  const handleSuggestTags = async () => {
+    if (!form.title.trim() && !form.content.trim()) {
+      addToast({ type: 'info', title: 'Add a title or content first' });
+      return;
+    }
+    setSuggesting(true);
+    try {
+      const result = await api.get(
+        `/api/research/suggest-tags?title=${encodeURIComponent(form.title)}&content=${encodeURIComponent(form.content)}`
+      );
+      const suggested = result.data || [];
+      if (suggested.length > 0) {
+        const existing = form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+        const merged = [...new Set([...existing, ...suggested])];
+        setForm(f => ({ ...f, tags: merged.join(', ') }));
+        addToast({ type: 'success', title: `${suggested.length} tag${suggested.length === 1 ? '' : 's'} suggested` });
+      } else {
+        addToast({ type: 'info', title: 'No tags found for similar entries' });
+      }
+    } catch {
+      addToast({ type: 'error', title: 'Tag suggestion unavailable' });
+    } finally {
+      setSuggesting(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -164,10 +197,25 @@ export function CreateResearchModal({ isOpen, onClose, onSubmit, entry = null })
         helperText="Paste a DOI/URL or write a citation string."
       />
 
-      <TagInput
-        value={form.tags}
-        onChange={(tags) => setForm(f => ({ ...f, tags }))}
-      />
+      <div className="relative">
+        {/* Wave 6: auto-suggest tags from semantically similar entries. Positioned
+            over TagInput's own "Tags" label row. */}
+        <button
+          type="button"
+          onClick={handleSuggestTags}
+          disabled={suggesting}
+          className="absolute right-0 top-0 inline-flex items-center gap-1 text-xs font-medium
+            text-moss-600 dark:text-moss-400 hover:text-moss-800 dark:hover:text-moss-300
+            disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 z-10"
+        >
+          <Sparkles size={12} />
+          {suggesting ? 'Suggesting…' : 'Suggest'}
+        </button>
+        <TagInput
+          value={form.tags}
+          onChange={(tags) => setForm(f => ({ ...f, tags }))}
+        />
+      </div>
 
       <TopicSelector
         selectedIds={form.topic_ids}

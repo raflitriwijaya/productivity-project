@@ -117,6 +117,34 @@ The original flat `transactions` table was **replaced** by a multi-account gener
 
 - `goals` — id, user_id, `title`, `description`, `goal_type` (CHECK `target`/`milestone`/`habit`/`learning`), `target_value`/`current_value` (NUMERIC), `unit`, `category`, `status` (CHECK `active`/`completed`/`abandoned`/`paused`), `priority` (CHECK `low`/`medium`/`high`/`critical`), `start_date`/`target_date` (DATE), `completed_at` (TIMESTAMPTZ), created/updated. Indexes on `user_id`, `(user_id, status)`, `(user_id, priority)`, `(user_id, target_date)`. `current_value` is recomputed on demand from linked entities (`POST /api/goals/:id/recalc`) — never via DB trigger. Shared `set_updated_at()` trigger.
 
+### Semantic Search / Embeddings (migration `014_pgvector.sql` — Roadmap Wave 6)
+
+1 table (pgvector-backed), created only where the `vector` extension is available:
+
+- `research_embeddings` — id, `entry_id` FK → `research_entries(id)` ON DELETE CASCADE (`UNIQUE(entry_id)` — one embedding per entry), `embedding vector(1536)`, `model` (VARCHAR, default `text-embedding-3-small`), `created_at`. Two indexes: `idx_research_embeddings_entry` and an `ivfflat (embedding vector_cosine_ops) WITH (lists = 100)` cosine index. Populated by a fire-and-forget hook on research create/update; queried by `semanticSearch` (`<=>` cosine distance). All access tolerates the table being absent (no pgvector) by no-op/empty.
+
+---
+
+## Wave 6 — Moonshots (Roadmap Wave 6)
+
+### Semantic Search + Auto-Tag (backend)
+- `server/lib/embeddings.js` — `generateEmbedding`, `generateEmbeddingForEntry`, `embeddingsConfigured`, `embeddingModel`, `EMBEDDING_DIMENSIONS`. Calls an OpenAI-compatible `/embeddings` endpoint (DeepSeek default) using `EMBEDDING_API_URL`/`EMBEDDING_API_KEY`/`DEEPSEEK_API_KEY`/`EMBEDDING_MODEL`/`EMBEDDING_DIMENSIONS`. Throws (caught by callers) when no key is configured — semantic search/auto-tag then return empty, keyword search unaffected.
+- `server/models/embeddings.model.js` — `storeEmbedding` (upsert via `ON CONFLICT (entry_id)`), `getEmbedding`, `semanticSearch(userId, queryEmbedding, limit=10, threshold=0.3)` (cosine ranking, `1 - (embedding <=> $vec)` similarity), `deleteEmbedding`. Every function swallows Postgres `42P01` (table missing) → no-op/empty for graceful degradation without pgvector.
+- `server/lib/autoTagger.js` — `suggestTags(userId, entry)`: embeds the entry, finds nearest neighbours (`semanticSearch`, threshold 0.5), returns up to 10 frequency-ranked neighbour tags. Best-effort → `[]` on any failure.
+- `server/routes/research.js` — added (before `/:id`) `GET /semantic-search?q=` and `GET /suggest-tags?title=&content=`; `POST /` and `PATCH /:id` schedule a fire-and-forget `indexEntryEmbedding` (`setTimeout(…,0)`) so saves never wait on embedding generation.
+
+### Polymath Dashboard (backend)
+- `server/routes/polymath.js` — mounted `app.use('/api/polymath', requireAuth, polymathRouter)`. One read-only `GET /` runs a `Promise.all` fan-out: books finished / research entries / learning completed / engineering projects / time logged grouped **by year**, plus the top 20 research tags (`UNNEST(STRING_TO_ARRAY(tags, ','))`). No model file — queries live inline (mirrors `review.js`).
+
+### Frontend
+- `client/src/pages/PolymathDashboard.jsx` — `/polymath` (sidebar **Reflect**). Hero band + YoY stat cards (trend deltas) + dependency-free year-by-year `GrowthBars` + lifetime activity `DonutChart` + frequency-scaled tag cloud + achievement highlights. All four data states; `useDocumentTitle('Polymath')`. Eager-loaded (no md-editor/prism deps).
+- `client/src/pages/Research.jsx` — Keyword/Semantic search toggle; Semantic mode routes the query to `/semantic-search` and shows a **Match %** similarity column.
+- `client/src/components/research/CreateResearchModal.jsx` — "✨ Suggest" button calling `/suggest-tags`, merging results into the tag string.
+
+### PWA + Offline
+- `client/vite.config.js` — `vite-plugin-pwa` (`autoUpdate`, `injectRegister: 'auto'`, web manifest, asset precaching, SPA `navigateFallback`, `NetworkFirst` `/api/*` runtime cache). Icons `client/public/pwa-192x192.png` / `pwa-512x512.png`; `client/public/offline.html` fallback.
+- `client/nginx.docker.conf` — `no-cache` blocks for `/sw.js`, `/registerSW.js`, `/manifest.webmanifest` (served `application/manifest+json`), `/offline.html`, ahead of the immutable-asset rule.
+
 ---
 
 ## Existing DB Migrations
@@ -137,6 +165,7 @@ Migrations live under `server/db/migrations/` (not `server/migrations/`). All fo
 - `008_reading_tracker.sql` … `011_ideas.sql` — Roadmap Waves 3–4 (books, contacts, the Revenue tx-type CHECK, ideas); each re-extends `chk_entity_link_types` to whitelist its new type.
 - `012_time_entries.sql` — Roadmap Wave 5: creates `time_entries` (see Time Tracking module above) and re-extends `chk_entity_link_types` to whitelist `'time_entry'` and `'goal'`. Re-runnable: `DROP TABLE IF EXISTS … CASCADE`; the constraint is dropped IF EXISTS before re-adding.
 - `013_goals.sql` — Roadmap Wave 5: creates the `goals` table (see Goals/OKRs module above). Re-runnable: `DROP TABLE IF EXISTS … CASCADE`.
+- `014_pgvector.sql` — Roadmap Wave 6 (Moonshots): enables the `vector` extension and creates `research_embeddings` (`vector(1536)` per entry, `UNIQUE(entry_id)`, FK CASCADE, `ivfflat` cosine index). **Guarded:** the whole migration is a `DO` block that only runs the DDL (via `EXECUTE`, so the `vector` type is never parsed) when `pg_available_extensions` lists `vector`; otherwise it `RAISE NOTICE`s and records as applied with no objects. Keeps CI's stock `postgres:16-alpine` and non-pgvector dev DBs migrating cleanly — production runs the `pgvector/pgvector:pg16` image (`docker-compose.yml`). Caveat: if a DB started without pgvector and later gains it, delete the `014_pgvector.sql` row from `schema_migrations` to re-run.
 
 **Migration runner** — `server/db/migrate.js` (`npm run migrate`). Tracks applied files in a `schema_migrations` table; applies each pending `*.sql` in its own transaction. Handles two cases: a pre-existing DB where the v1 tables were created out-of-band (a CREATE that fails with "already exists" is recorded as applied), and dependency ordering on a fresh DB (a file referencing a not-yet-created table is deferred and retried in a later pass). Date-prefixed v1 files sort before the `NNN_` v2+ series so `002_finance_upgrade.sql` runs after the base tables. **Phase 2:** the runner now acquires a Postgres advisory lock (`pg_advisory_lock(7391842)`) for the lifetime of each run, released in a `finally` block, so concurrent replicas on rolling deploys cannot race and double-apply migrations.
 

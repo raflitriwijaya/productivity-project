@@ -6,7 +6,7 @@ import {
   LayoutDashboard, CheckSquare, BookOpen, BookMarked, GraduationCap,
   LineChart, Receipt, Wallet, ArrowDownLeft, ArrowUpRight, PieChart, Target,
   Wrench, Code, FileText, ClipboardCheck, Bug, Map, Users, Lightbulb,
-  CalendarCheck, Trophy,
+  CalendarCheck, Trophy, Sparkles,
 } from 'lucide-react';
 import api from '../../lib/api';
 import { useTheme } from '../../hooks/useTheme';
@@ -64,9 +64,10 @@ const NAV_SECTIONS = [
   {
     label: 'Reflect',
     items: [
-      { to: '/review', label: 'Weekly Review',  icon: CalendarCheck },
-      { to: '/goals',  label: 'Goals',          icon: Target },
-      { to: '/report', label: 'Annual Report',  icon: Trophy },
+      { to: '/review',   label: 'Weekly Review',  icon: CalendarCheck },
+      { to: '/goals',    label: 'Goals',          icon: Target },
+      { to: '/polymath', label: 'Polymath',       icon: Sparkles },
+      { to: '/report',   label: 'Annual Report',  icon: Trophy },
     ],
   },
 ];

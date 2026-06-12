@@ -21,6 +21,7 @@ import Ideas from './pages/Ideas';
 import WeeklyReview from './pages/WeeklyReview';
 import Goals from './pages/Goals';
 import AnnualReport from './pages/AnnualReport';
+import PolymathDashboard from './pages/PolymathDashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
@@ -111,6 +112,7 @@ export default function App() {
             <Route path="/review" element={<WeeklyReview />} />
             <Route path="/goals" element={<Goals />} />
             <Route path="/report" element={<AnnualReport />} />
+            <Route path="/polymath" element={<PolymathDashboard />} />
 
             {/* Engineering Toolkit — lazy-loaded. Literal sub-routes precede the
                 dynamic /engineer/:id detail route so static segments match first.

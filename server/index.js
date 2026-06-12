@@ -43,6 +43,7 @@ import { ideasRouter } from './routes/ideas.js'; // Roadmap Wave 4: Ideas Tracke
 import { timeRouter } from './routes/time.js'; // Roadmap Wave 5: Time Tracking
 import { reviewRouter } from './routes/review.js'; // Roadmap Wave 5: Weekly Review + Annual Report
 import { goalsRouter } from './routes/goals.js'; // Roadmap Wave 5: Goals/OKRs
+import { polymathRouter } from './routes/polymath.js'; // Roadmap Wave 6: Polymath Dashboard
 
 // ─── Env validation ───────────────────────────────────────────────────────────
 const {
@@ -232,6 +233,7 @@ app.use('/api/ideas',    requireAuth, ideasRouter); // Roadmap Wave 4: Ideas Tra
 app.use('/api/time',     requireAuth, timeRouter); // Roadmap Wave 5: Time Tracking
 app.use('/api/review',   requireAuth, reviewRouter); // Roadmap Wave 5: Weekly Review + Annual Report
 app.use('/api/goals',    requireAuth, goalsRouter); // Roadmap Wave 5: Goals/OKRs
+app.use('/api/polymath', requireAuth, polymathRouter); // Roadmap Wave 6: Polymath Dashboard
 
 // ─── 404 for unmatched API routes ────────────────────────────────────────────
 app.use('/api', (_req, res) => {

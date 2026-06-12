@@ -54,7 +54,7 @@ tailwind.config = {
     </p>
     <div class="flex flex-wrap gap-4 text-sm">
       <span class="px-4 py-2 bg-white/10 backdrop-blur rounded-full border border-white/20">🎯 Visi: 1% lebih baik setiap hari</span>
-      <span class="px-4 py-2 bg-white/10 backdrop-blur rounded-full border border-white/20">📅 6–18 bulan</span>
+      <span class="px-4 py-2 bg-white/10 backdrop-blur rounded-full border border-white/20">📅 6–24 bulan</span>
       <span class="px-4 py-2 bg-white/10 backdrop-blur rounded-full border border-white/20">🏗️ Fondasi → Refleksi</span>
     </div>
   </div>
@@ -128,7 +128,7 @@ tailwind.config = {
 <!-- ====== ROADMAP GELOMBANG ====== -->
 <section class="max-w-6xl mx-auto px-6 py-16">
   <h2 class="text-3xl font-bold mb-2">🗺️ Marathon Roadmap</h2>
-  <p class="text-stone-500 dark:text-stone-400 mb-12">Enam gelombang. Setiap gelombang membangun fondasi untuk gelombang berikutnya. Tidak perlu buru-buru.</p>
+  <p class="text-stone-500 dark:text-stone-400 mb-12">Tujuh gelombang. Setiap gelombang membangun fondasi untuk gelombang berikutnya. Tidak perlu buru-buru.</p>
 
   <!-- Timeline visual -->
   <div class="relative mb-16">
@@ -270,7 +270,7 @@ tailwind.config = {
     </div>
 
     <!-- Wave 6 -->
-    <div class="relative">
+    <div class="relative mb-12 md:mb-16">
       <div class="md:flex items-center gap-8">
         <div class="md:w-1/2 md:text-right md:pr-12 mb-4 md:mb-0 order-2 md:order-1">
           <span class="inline-block px-3 py-1 bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300 rounded-full text-xs font-semibold mb-2">Gelombang 6 • 9–18 bulan</span>
@@ -291,6 +291,35 @@ tailwind.config = {
             </ul>
             <div class="mt-3 pt-3 border-t border-stone-200 dark:border-stone-700">
               <span class="text-xs px-2 py-1 bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300 rounded">🎯 Milestone: Sistem ini menjadi "daily operating system" kamu</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wave 7 -->
+    <div class="relative">
+      <div class="md:flex items-center gap-8">
+        <div class="md:w-1/2 md:text-right md:pr-12 mb-4 md:mb-0">
+          <span class="inline-block px-3 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-full text-xs font-semibold mb-2">Gelombang 7 • 18–24 bulan</span>
+          <h3 class="text-xl font-bold">🧠 AI Assistant: DeepSeek-Powered Chatbox</h3>
+          <p class="text-stone-500 dark:text-stone-400 text-sm mt-1">Local R1 + Cloud V4 Pro API, chat history, save to Research, context injection</p>
+        </div>
+        <div class="hidden md:flex items-center justify-center w-10 h-10 bg-indigo-500 rounded-full shadow-lg shadow-indigo-500/30 z-10 flex-shrink-0">
+          <span class="text-white font-bold text-sm">7</span>
+        </div>
+        <div class="md:w-1/2 md:pl-12">
+          <div class="bg-white dark:bg-stone-800 rounded-xl p-5 border border-stone-200 dark:border-stone-700 shadow-sm">
+            <ul class="space-y-2 text-sm">
+              <li class="flex gap-2"><span class="text-indigo-500 font-bold">7.1</span> Chatbox UI (<code>/ai-chat</code>) — streaming responses, model selector (R1 / V4 Pro / V4 Pro Max)</li>
+              <li class="flex gap-2"><span class="text-indigo-500 font-bold">7.2</span> Dual Backend — DeepSeek R1 via Ollama (lokal, privat) + V4 Pro API (cloud, reasoning kuat)</li>
+              <li class="flex gap-2"><span class="text-indigo-500 font-bold">7.3</span> Chat History — <code>chat_history</code> table, JSONB messages, searchable</li>
+              <li class="flex gap-2"><span class="text-indigo-500 font-bold">7.4</span> Save to Research — klik "Save" → otomatis jadi Research entry</li>
+              <li class="flex gap-2"><span class="text-indigo-500 font-bold">7.5</span> Context Injection — kirim data modul sebagai system prompt</li>
+              <li class="flex gap-2"><span class="text-indigo-500 font-bold">7.6</span> Link to Modules — chat terhubung ke Project, Research, Learning via Universal Links</li>
+            </ul>
+            <div class="mt-3 pt-3 border-t border-stone-200 dark:border-stone-700">
+              <span class="text-xs px-2 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded">🎯 Milestone: AI menjadi partner berpikir — brainstorming, riset, dan insight tersimpan dalam satu sistem</span>
             </div>
           </div>
         </div>
@@ -360,7 +389,19 @@ tailwind.config = {
                                     <span class="text-stone-400">│  • Semantic Search (pgvector) │</span>
                                     <span class="text-stone-400">│  • PWA + Offline + Push       │</span>
                                     <span class="text-stone-400">│  • Polymath Dashboard (5yr)   │</span>
-                                    <span class="text-stone-400">└──────────────────────────────┘</span>
+                                    <span class="text-stone-400">└──────────────┬───────────────┘</span>
+                                                   │
+                     ┌─────────────────────────────┘
+                     │ (Wave 1 Links + Wave 6 Semantic Search)
+                     ▼
+                                    <span class="text-indigo-400">┌──────────────────────────────┐</span>
+                                    <span class="text-indigo-400">│     🧠 WAVE 7: AI ASSISTANT   │</span>
+                                    <span class="text-indigo-400">│  • DeepSeek Chatbox UI        │</span>
+                                    <span class="text-indigo-400">│  • R1 (lokal) + V4 Pro (cloud)│</span>
+                                    <span class="text-indigo-400">│  • Chat history + Save to     │</span>
+                                    <span class="text-indigo-400">│    Research + Context Inject  │</span>
+                                    <span class="text-indigo-400">│  • Link chat to any module    │</span>
+                                    <span class="text-indigo-400">└──────────────────────────────┘</span>
       </pre>
     </div>
     <p class="text-center text-stone-400 text-sm mt-4">Setiap fitur bersifat <strong>additive</strong> — tidak merusak yang sudah ada. Urutan dari atas ke bawah.</p>
@@ -392,12 +433,12 @@ tailwind.config = {
 <!-- ====== NEXT STEP ====== -->
 <section class="bg-moss-500 text-white py-16">
   <div class="max-w-6xl mx-auto px-6 text-center">
-    <h2 class="text-3xl font-bold mb-4">🚀 Mulai Sekarang: Gelombang 1</h2>
+    <h2 class="text-3xl font-bold mb-4">🚀 Lima Gelombang Selesai. Dua Lagi Menuju Puncak.</h2>
     <p class="text-moss-100 text-lg mb-2 max-w-2xl mx-auto">
-      <strong>Universal Links</strong> — fondasi yang menghubungkan semua modul.
+      Wave 1-5 complete. Wave 6 (Moonshots) &amp; Wave 7 (AI Assistant) ahead.
     </p>
     <p class="text-moss-200 mb-8 max-w-xl mx-auto">
-      Satu table. Satu API. Satu komponen React. Impact: <strong>Transformative.</strong>
+      Sistem ini hampir menjadi <strong>Polymath OS</strong> yang sesungguhnya.
     </p>
     <div class="flex flex-wrap justify-center gap-4">
       <a href="https://github.com/raflitriwijaya/productivity-project" class="px-6 py-3 bg-white text-moss-700 rounded-full font-semibold hover:bg-moss-50 transition shadow-lg">Lihat Repository</a>
@@ -408,7 +449,7 @@ tailwind.config = {
 
 <!-- ====== FOOTER ====== -->
 <footer class="bg-stone-900 text-stone-400 py-8 text-center text-sm">
-  <p>Rafli's Productivity Suite — Polymath OS Roadmap • Generated 2026-06-11</p>
+  <p>Rafli's Productivity Suite — Polymath OS Roadmap • Generated 2026-06-12 — Updated with Wave 7</p>
   <p class="mt-1">Dibangun dengan 🧠 untuk researcher, engineer, startup founder, dan polymath.</p>
 </footer>
 

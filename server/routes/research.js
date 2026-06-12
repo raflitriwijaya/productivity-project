@@ -180,6 +180,28 @@ function parseListOpts(query) {
   };
 }
 
+// ─── Fire-and-forget embedding indexer (Wave 6) ──────────────────────────────
+// Best-effort background indexing for semantic search. Scheduled with setTimeout
+// so the API response is never delayed and a failure (no key, no pgvector, API
+// error) only logs a warning — keyword search and everything else keep working.
+function indexEntryEmbedding(entry, log) {
+  setTimeout(async () => {
+    try {
+      const { generateEmbeddingForEntry, embeddingsConfigured, embeddingModel } =
+        await import('../lib/embeddings.js');
+      if (!embeddingsConfigured()) return; // no key — silently skip
+      const { storeEmbedding } = await import('../models/embeddings.model.js');
+      const embedding = await generateEmbeddingForEntry(entry);
+      await storeEmbedding(entry.id, embedding, embeddingModel());
+    } catch (err) {
+      (log ?? logger).warn(
+        { err: err.message, entryId: entry.id },
+        `Failed to generate embedding for research entry ${entry.id}`
+      );
+    }
+  }, 0);
+}
+
 // ═════════════════════════════════════════════════════════════════════════════
 // LITERAL SUB-PATHS (must precede /:id)
 // ═════════════════════════════════════════════════════════════════════════════
@@ -200,6 +222,47 @@ router.get('/stats', async (req, res, next) => {
 router.get('/tags', async (req, res, next) => {
   try {
     const tags = await getDistinctTags(req.user.id);
+    res.json({ success: true, data: tags });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── GET /api/research/semantic-search ───────────────────────────────────────
+// Wave 6: find entries by meaning. Embeds the query, then ranks the user's
+// entries by cosine similarity. Returns [] gracefully when no entries are indexed.
+router.get('/semantic-search', async (req, res, next) => {
+  try {
+    const q = req.query.q;
+    if (!q || !q.trim()) {
+      throw new AppError('Query parameter q is required.', 400, 'VALIDATION_ERROR', 'q');
+    }
+
+    const { generateEmbedding } = await import('../lib/embeddings.js');
+    const { semanticSearch } = await import('../models/embeddings.model.js');
+
+    const embedding = await generateEmbedding(q.trim());
+    const results = await semanticSearch(req.user.id, embedding);
+
+    res.json({ success: true, data: results });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── GET /api/research/suggest-tags ──────────────────────────────────────────
+// Wave 6: auto-suggest tags for an entry from its semantic neighbours. Always
+// returns a 200 with an array (possibly empty) — best-effort, never blocks.
+router.get('/suggest-tags', async (req, res, next) => {
+  try {
+    const { title, content } = req.query;
+    if (!title && !content) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const { suggestTags } = await import('../lib/autoTagger.js');
+    const tags = await suggestTags(req.user.id, { title, content, tags: '', source: '' });
+
     res.json({ success: true, data: tags });
   } catch (err) {
     next(err);
@@ -453,6 +516,7 @@ router.get('/', async (req, res, next) => {
 router.post('/', validate(createSchema), async (req, res, next) => {
   try {
     const entry = await createResearchEntry(req.user.id, req.body);
+    indexEntryEmbedding(entry, req.log); // Wave 6: background semantic index
     res.status(201).json({ success: true, data: entry });
   } catch (err) {
     next(err);
@@ -480,6 +544,7 @@ router.patch('/:id', validate(patchSchema), async (req, res, next) => {
     if (!existing) return next(new AppError('Research entry not found.', 404, 'NOT_FOUND'));
 
     const updated = await patchResearchEntry(id, req.user.id, req.body);
+    indexEntryEmbedding(updated, req.log); // Wave 6: re-index on edit
     res.json({ success: true, data: updated });
   } catch (err) {
     next(err);
