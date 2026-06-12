@@ -39,6 +39,8 @@ const TYPE_LABELS = {
   engineer_checkin: 'Check-in',
   engineer_roadmap_skill: 'Roadmap Skill',
   book: 'Book',
+  contact: 'Contact',
+  idea: 'Idea',
 };
 
 // Map each type to a Badge variant (the canonical "Stoic Garden" accents).
@@ -60,6 +62,8 @@ const TYPE_VARIANTS = {
   budget: 'amber',
   account: 'gray',
   book: 'ember',
+  contact: 'moss',
+  idea: 'ember',
 };
 
 /**

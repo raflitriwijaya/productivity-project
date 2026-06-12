@@ -59,6 +59,14 @@
     {
       "name": "Search",
       "description": "Unified cross-module search"
+    },
+    {
+      "name": "Contacts",
+      "description": "Startup founder CRM — clients, partners, and stakeholders"
+    },
+    {
+      "name": "Ideas",
+      "description": "Ideas Tracker — capture ideas before they evaporate"
     }
   ],
   "components": {
@@ -1919,7 +1927,8 @@
                 "Expense",
                 "Transfer",
                 "Balance Adjustment",
-                "Market Adjustment"
+                "Market Adjustment",
+                "Revenue"
               ]
             }
           },
@@ -2010,7 +2019,8 @@
                       "Expense",
                       "Transfer",
                       "Balance Adjustment",
-                      "Market Adjustment"
+                      "Market Adjustment",
+                      "Revenue"
                     ]
                   },
                   "amount": {
@@ -2134,7 +2144,8 @@
                       "Expense",
                       "Transfer",
                       "Balance Adjustment",
-                      "Market Adjustment"
+                      "Market Adjustment",
+                      "Revenue"
                     ]
                   },
                   "amount": {
@@ -5152,6 +5163,48 @@
         }
       }
     },
+    "/api/engineer/projects/{id}/budget": {
+      "get": {
+        "tags": [
+          "Engineering"
+        ],
+        "summary": "Project Budget vs Actual — sums current-month spend for each linked budget (Roadmap Wave 4)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Project ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Budgets linked to the project with budget/spent/remaining, plus totals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
     "/api/engineer": {
       "get": {
         "tags": [
@@ -5536,7 +5589,9 @@
                 "engineer_issue",
                 "engineer_checkin",
                 "engineer_roadmap_skill",
-                "book"
+                "book",
+                "contact",
+                "idea"
               ]
             },
             "description": "Anchor entity type"
@@ -5628,7 +5683,9 @@
                       "engineer_issue",
                       "engineer_checkin",
                       "engineer_roadmap_skill",
-                      "book"
+                      "book",
+                      "contact",
+                      "idea"
                     ]
                   },
                   "from_id": {
@@ -5654,7 +5711,9 @@
                       "engineer_issue",
                       "engineer_checkin",
                       "engineer_roadmap_skill",
-                      "book"
+                      "book",
+                      "contact",
+                      "idea"
                     ]
                   },
                   "to_id": {
@@ -6168,6 +6227,765 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/contacts/stats": {
+      "get": {
+        "tags": [
+          "Contacts"
+        ],
+        "summary": "Aggregate contact counts (total, clients, partners, active, leads)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/contacts": {
+      "get": {
+        "tags": [
+          "Contacts"
+        ],
+        "summary": "List contacts (paginated, filterable, searchable)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "client",
+                "partner",
+                "supplier",
+                "investor",
+                "mentor",
+                "other"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "inactive",
+                "lead"
+              ]
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Match name / company / email"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Contacts"
+        ],
+        "summary": "Create a contact",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "maxLength": 300,
+                    "nullable": true
+                  },
+                  "phone": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "nullable": true
+                  },
+                  "company": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "nullable": true
+                  },
+                  "role": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "nullable": true
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "client",
+                      "partner",
+                      "supplier",
+                      "investor",
+                      "mentor",
+                      "other"
+                    ],
+                    "default": "client"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "active",
+                      "inactive",
+                      "lead"
+                    ],
+                    "default": "active"
+                  },
+                  "notes": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/contacts/{id}": {
+      "get": {
+        "tags": [
+          "Contacts"
+        ],
+        "summary": "Get contact by ID",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Contacts"
+        ],
+        "summary": "Update a contact (partial)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "maxLength": 300,
+                    "nullable": true
+                  },
+                  "phone": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "nullable": true
+                  },
+                  "company": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "nullable": true
+                  },
+                  "role": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "nullable": true
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "client",
+                      "partner",
+                      "supplier",
+                      "investor",
+                      "mentor",
+                      "other"
+                    ]
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "active",
+                      "inactive",
+                      "lead"
+                    ]
+                  },
+                  "notes": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "last_contacted": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Contacts"
+        ],
+        "summary": "Delete a contact",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/ideas/stats": {
+      "get": {
+        "tags": [
+          "Ideas"
+        ],
+        "summary": "Aggregate idea counts by status (total, new, developing, validated, archived, converted)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/ideas": {
+      "get": {
+        "tags": [
+          "Ideas"
+        ],
+        "summary": "List ideas (paginated, filterable by status, searchable)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "new",
+                "developing",
+                "validated",
+                "archived",
+                "converted"
+              ]
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Match title / description / tags"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Ideas"
+        ],
+        "summary": "Capture an idea",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "new",
+                      "developing",
+                      "validated",
+                      "archived",
+                      "converted"
+                    ],
+                    "default": "new"
+                  },
+                  "tags": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "nullable": true
+                  },
+                  "source": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/ideas/{id}": {
+      "get": {
+        "tags": [
+          "Ideas"
+        ],
+        "summary": "Get idea by ID",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Ideas"
+        ],
+        "summary": "Update an idea (partial). Convert-to flows set status/converted_to/converted_id.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "new",
+                      "developing",
+                      "validated",
+                      "archived",
+                      "converted"
+                    ]
+                  },
+                  "tags": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "nullable": true
+                  },
+                  "source": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "nullable": true
+                  },
+                  "converted_to": {
+                    "type": "string",
+                    "maxLength": 40,
+                    "nullable": true
+                  },
+                  "converted_id": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Ideas"
+        ],
+        "summary": "Delete an idea",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }

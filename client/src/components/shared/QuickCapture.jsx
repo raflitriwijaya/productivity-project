@@ -3,7 +3,7 @@
 // once in AppLayout so a single Cmd/Ctrl+K listener owns the shortcut app-wide
 // (mounting twice would double-toggle and cancel out).
 //
-// Three modes (Tab cycles): 'todo' and 'research' capture an idea without leaving
+// Four modes (Tab cycles): 'todo', 'research', and 'idea' capture without leaving
 // the page; 'search' queries GET /api/search across every module and navigates to
 // the chosen result. Capture still dispatches 'quick-capture-created' on success.
 //
@@ -12,11 +12,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Search, CheckSquare, BookOpen, Plus } from 'lucide-react';
+import { Search, CheckSquare, BookOpen, Lightbulb, Plus } from 'lucide-react';
 import api from '../../lib/api';
 import { useToast } from '../../hooks/useToast';
 
-const MODE_ORDER = ['todo', 'research', 'search'];
+const MODE_ORDER = ['todo', 'research', 'idea', 'search'];
 
 // Where each searchable entity type lives. Most modules don't deep-link to a single
 // item yet, so we route to the module's list page; engineer projects have a detail
@@ -129,6 +129,9 @@ export function QuickCapture() {
       if (mode === 'todo') {
         await api.post('/api/todos', { title });
         addToast({ type: 'success', title: 'Task created' });
+      } else if (mode === 'idea') {
+        await api.post('/api/ideas', { title });
+        addToast({ type: 'success', title: 'Idea captured' });
       } else {
         await api.post('/api/research', { title, type: 'note' });
         addToast({ type: 'success', title: 'Research note created' });
@@ -167,6 +170,7 @@ export function QuickCapture() {
   const placeholder =
     mode === 'todo' ? 'Capture a task…' :
     mode === 'research' ? 'Capture a research idea…' :
+    mode === 'idea' ? 'Capture an idea before it evaporates…' :
     'Search across everything…';
 
   const modeBtn = (value, Icon, label) => (
@@ -254,6 +258,7 @@ export function QuickCapture() {
           <div className="flex items-center gap-2">
             {modeBtn('todo', CheckSquare, 'Task')}
             {modeBtn('research', BookOpen, 'Research')}
+            {modeBtn('idea', Lightbulb, 'Idea')}
             {modeBtn('search', Search, 'Search')}
           </div>
           <div className="flex items-center gap-2">

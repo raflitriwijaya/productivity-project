@@ -11,6 +11,7 @@ import { formatIdr } from '../../lib/formatIdr';
 // ─── Type → badge variant & short label (§5.8 canonical variants) ───────────────
 export const TYPE_VARIANT = {
   'Income':             'moss',
+  'Revenue':            'ember',
   'Expense':            'red',
   'Transfer':           'blue',
   'Balance Adjustment': 'gray',
@@ -19,6 +20,7 @@ export const TYPE_VARIANT = {
 
 export const TYPE_LABEL = {
   'Income':             'Income',
+  'Revenue':            'Revenue',
   'Expense':            'Expense',
   'Transfer':           'Transfer',
   'Balance Adjustment': 'Balance Adj.',
@@ -30,6 +32,7 @@ function amountTone(row) {
   const amt = parseFloat(row.amount) || 0;
   switch (row.type) {
     case 'Income':   return { sign: '+', color: 'text-moss-600 dark:text-moss-400', value: amt };
+    case 'Revenue':  return { sign: '+', color: 'text-ember-600 dark:text-ember-400', value: amt };
     case 'Expense':  return { sign: '-', color: 'text-red-600 dark:text-red-400', value: amt };
     case 'Transfer': return { sign: '',  color: 'text-stone-600 dark:text-gray-300', value: amt };
     default: // Balance / Market Adjustment — sign follows the stored amount

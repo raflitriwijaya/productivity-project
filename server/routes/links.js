@@ -27,6 +27,8 @@ import { getLearningItemById } from '../models/learning.model.js';
 import { getResearchEntryById } from '../models/research.model.js';
 import { getProjectById } from '../models/engineer.model.js';
 import { getBookById } from '../models/reading.model.js';
+import { getContactById } from '../models/contacts.model.js';
+import { getIdeaById } from '../models/ideas.model.js';
 
 const router = Router();
 
@@ -44,6 +46,10 @@ const OWNERSHIP_VALIDATORS = {
   // reading.model.getBookById takes (userId, id); validators are called as
   // (id, userId), so adapt the argument order here.
   book:             (id, userId) => getBookById(userId, id),
+  // contacts.model.getContactById is also (userId, id) — same adaptation.
+  contact:          (id, userId) => getContactById(userId, id),
+  // ideas.model.getIdeaById is also (userId, id) — same adaptation.
+  idea:             (id, userId) => getIdeaById(userId, id),
 };
 
 /**

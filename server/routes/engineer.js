@@ -12,6 +12,9 @@ import { PROJECT_TYPES, PROJECT_STATUSES, ISSUE_SEVERITIES, ISSUE_STATUSES } fro
 import { validate } from '../middleware/validate.js';
 import { AppError } from '../lib/AppError.js';
 import { logger } from '../lib/logger.js';
+import pool from '../lib/db.js';
+import { getLinksForEntity } from '../models/links.model.js';
+import { getBudgetById } from '../models/finance.model.js';
 import {
   // projects
   listProjects, getProjectById, createProject, patchProject, deleteProject,
@@ -352,6 +355,57 @@ router.post('/projects/:id/issues', validate(createIssueSchema), async (req, res
     await requireOwnedProject(projectId, req.user.id);
     const issue = await createIssue(req.user.id, projectId, req.body);
     res.status(201).json({ success: true, data: issue });
+  } catch (err) { next(err); }
+});
+
+// ─── GET /api/engineer/projects/:id/budget — Budget vs Actual (Wave 4) ────────
+// Sums current-month Expense transactions in each linked budget's category and
+// reports budget/spent/remaining. Budgets are connected to the project via
+// Universal Links (Wave 1), so no new table is needed.
+router.get('/projects/:id/budget', async (req, res, next) => {
+  try {
+    const projectId = parseId(req.params.id);
+    await requireOwnedProject(projectId, req.user.id);
+
+    const links = await getLinksForEntity(req.user.id, 'engineer_project', projectId, 'both');
+    const budgetLinks = links.filter(l => l.linked_type === 'budget');
+
+    if (budgetLinks.length === 0) {
+      return res.json({ success: true, data: { budgets: [], total_budget: 0, total_spent: 0 } });
+    }
+
+    const budgets = (await Promise.all(budgetLinks.map(async (link) => {
+      const budget = await getBudgetById(req.user.id, link.linked_id);
+      if (!budget) return null; // link dangling (budget deleted) — skip
+
+      const { rows } = await pool.query(
+        `SELECT COALESCE(SUM(amount), 0) AS spent
+         FROM transactions
+         WHERE user_id = $1 AND category_id = $2 AND type = 'Expense'
+           AND date >= DATE_TRUNC('month', CURRENT_DATE)`,
+        [req.user.id, budget.category_id]
+      );
+
+      const budgetAmount = parseFloat(budget.amount);
+      const spent = parseFloat(rows[0].spent);
+      return {
+        budget_id:     budget.id,
+        category_id:   budget.category_id,
+        category_name: budget.category_name,
+        budget_amount: budgetAmount,
+        spent,
+        remaining:     budgetAmount - spent,
+      };
+    }))).filter(Boolean);
+
+    res.json({
+      success: true,
+      data: {
+        budgets,
+        total_budget: budgets.reduce((s, b) => s + b.budget_amount, 0),
+        total_spent:  budgets.reduce((s, b) => s + b.spent, 0),
+      },
+    });
   } catch (err) { next(err); }
 });
 

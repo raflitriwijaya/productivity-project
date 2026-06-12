@@ -15,7 +15,7 @@ import { Button } from '../ui/Button';
 import { Input, Textarea, Select } from '../ui/Input';
 import { parseIdrInput, formatIdrInput } from '../../lib/formatIdr';
 
-const TYPE_OPTIONS = ['Income', 'Expense', 'Transfer', 'Balance Adjustment', 'Market Adjustment'];
+const TYPE_OPTIONS = ['Income', 'Revenue', 'Expense', 'Transfer', 'Balance Adjustment', 'Market Adjustment'];
 const ADJUSTMENTS = ['Balance Adjustment', 'Market Adjustment'];
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
@@ -32,11 +32,12 @@ const EMPTY_FORM = {
 };
 
 function fieldsForType(type) {
+  // Revenue (Wave 4) shares Income's shape: destination-only, income categories.
   return {
     showSource:   ['Expense', 'Transfer'].includes(type),
-    showDest:     ['Income', 'Transfer', 'Balance Adjustment', 'Market Adjustment'].includes(type),
-    showCategory: ['Income', 'Expense'].includes(type),
-    categoryKind: type === 'Income' ? 'INCOME' : 'EXPENSE',
+    showDest:     ['Income', 'Revenue', 'Transfer', 'Balance Adjustment', 'Market Adjustment'].includes(type),
+    showCategory: ['Income', 'Revenue', 'Expense'].includes(type),
+    categoryKind: ['Income', 'Revenue'].includes(type) ? 'INCOME' : 'EXPENSE',
     allowNegative: ADJUSTMENTS.includes(type),
   };
 }

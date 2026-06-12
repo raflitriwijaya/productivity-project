@@ -16,6 +16,8 @@ import Portfolio from './pages/Portfolio';
 import Budget from './pages/Budget';
 import Learning from './pages/Learning';
 import Reading from './pages/Reading';
+import Contacts from './pages/Contacts';
+import Ideas from './pages/Ideas';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
@@ -99,6 +101,8 @@ export default function App() {
             <Route path="/research" element={<Suspense fallback={<PageFallback />}><Research /></Suspense>} />
             <Route path="/learning" element={<Learning />} />
             <Route path="/reading" element={<Reading />} />
+            <Route path="/contacts" element={<Contacts />} />
+            <Route path="/ideas" element={<Ideas />} />
 
             {/* Engineering Toolkit — lazy-loaded. Literal sub-routes precede the
                 dynamic /engineer/:id detail route so static segments match first.

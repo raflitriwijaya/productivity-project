@@ -33,6 +33,7 @@ function fmtDate(dateStr) {
 const FILTER_TABS = [
   { value: 'all',      label: 'All',      match: () => true },
   { value: 'Income',   label: 'Income',   match: (t) => t.type === 'Income' },
+  { value: 'Revenue',  label: 'Revenue',  match: (t) => t.type === 'Revenue' },
   { value: 'Expense',  label: 'Expense',  match: (t) => t.type === 'Expense' },
   { value: 'Transfer', label: 'Transfer', match: (t) => t.type === 'Transfer' },
   { value: 'adjust',   label: 'Adjustments', match: (t) => t.type === 'Balance Adjustment' || t.type === 'Market Adjustment' },

@@ -15,6 +15,11 @@ import { useToast } from '../../hooks/useToast';
 
 // `searchParam` is the query key each list endpoint accepts for text search, or
 // null when the module only supports browsing the most-recent items.
+//
+// `idKey` / `labelKey` / `filter` are optional overrides for endpoints whose list
+// rows don't follow the default { id, title|name|description } shape. The Budgets
+// endpoint returns one row per expense category with a nullable `budget_id`, so it
+// keys on budget_id, labels by category_name, and hides categories with no budget set.
 const MODULES = [
   { type: 'research_entry',   label: 'Research Entries',     endpoint: '/api/research',  searchParam: 'q' },
   { type: 'learning_item',    label: 'Learning Items',       endpoint: '/api/learning',  searchParam: null },
@@ -22,9 +27,15 @@ const MODULES = [
   { type: 'todo',             label: 'Todos',                endpoint: '/api/todos',     searchParam: null },
   { type: 'transaction',      label: 'Finance Transactions', endpoint: '/api/finances',  searchParam: 'search' },
   { type: 'book',             label: 'Books',                endpoint: '/api/reading',   searchParam: 'search' },
+  { type: 'contact',          label: 'Contacts',             endpoint: '/api/contacts',  searchParam: 'search' },
+  { type: 'idea',             label: 'Ideas',                endpoint: '/api/ideas',     searchParam: 'search' },
+  {
+    type: 'budget', label: 'Budgets', endpoint: '/api/finances/budgets', searchParam: null,
+    idKey: 'budget_id', labelKey: 'category_name', filter: (item) => item.budget_id != null,
+  },
 ];
 
-export function LinkPickerModal({ isOpen, onClose, entityType, entityId, onLinked }) {
+export function LinkPickerModal({ isOpen, onClose, entityType, entityId, onLinked, lockedType = null }) {
   const [selectedModule, setSelectedModule] = useState(null);
   const [search, setSearch] = useState('');
   const [items, setItems] = useState([]);
@@ -34,6 +45,21 @@ export function LinkPickerModal({ isOpen, onClose, entityType, entityId, onLinke
   const [note, setNote] = useState('');
   const [selectedItemId, setSelectedItemId] = useState(null);
   const { addToast } = useToast();
+
+  // When constrained to a single module (e.g. the project Budget tab's "Link
+  // Budget"), pre-select it on open and hide the module picker.
+  useEffect(() => {
+    if (!isOpen || !lockedType) return;
+    const mod = MODULES.find((m) => m.type === lockedType);
+    if (mod) {
+      /* eslint-disable react-hooks/set-state-in-effect */
+      setSelectedModule(mod);
+      setSelectedItemId(null);
+      setSearch('');
+      setItems([]);
+      /* eslint-enable react-hooks/set-state-in-effect */
+    }
+  }, [isOpen, lockedType]);
 
   // Fetch items when the module or search term changes (debounced).
   useEffect(() => {
@@ -116,31 +142,33 @@ export function LinkPickerModal({ isOpen, onClose, entityType, entityId, onLinke
         </>
       }
     >
-      {/* Step 1: module */}
-      <div>
-        <p className="text-xs font-medium text-stone-700 dark:text-gray-300 tracking-wide uppercase mb-2">
-          Select module
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {MODULES.map((mod) => {
-            const active = selectedModule?.type === mod.type;
-            return (
-              <button
-                key={mod.type}
-                type="button"
-                onClick={() => handleSelectModule(mod)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors duration-150 ${
-                  active
-                    ? 'bg-moss-50 dark:bg-moss-950/40 border-moss-500 text-moss-700 dark:text-moss-300'
-                    : 'bg-white dark:bg-gray-800 border-stone-200 dark:border-gray-600 text-stone-600 dark:text-gray-400 hover:border-stone-400 dark:hover:border-gray-500'
-                }`}
-              >
-                {mod.label}
-              </button>
-            );
-          })}
+      {/* Step 1: module (hidden when constrained to a single locked type) */}
+      {!lockedType && (
+        <div>
+          <p className="text-xs font-medium text-stone-700 dark:text-gray-300 tracking-wide uppercase mb-2">
+            Select module
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {MODULES.map((mod) => {
+              const active = selectedModule?.type === mod.type;
+              return (
+                <button
+                  key={mod.type}
+                  type="button"
+                  onClick={() => handleSelectModule(mod)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors duration-150 ${
+                    active
+                      ? 'bg-moss-50 dark:bg-moss-950/40 border-moss-500 text-moss-700 dark:text-moss-300'
+                      : 'bg-white dark:bg-gray-800 border-stone-200 dark:border-gray-600 text-stone-600 dark:text-gray-400 hover:border-stone-400 dark:hover:border-gray-500'
+                  }`}
+                >
+                  {mod.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Step 2: browse / search */}
       {selectedModule && (
@@ -162,17 +190,25 @@ export function LinkPickerModal({ isOpen, onClose, entityType, entityId, onLinke
             {!loading && error && (
               <div className="p-4 text-center text-sm text-red-500">{error}</div>
             )}
-            {!loading && !error && items.length === 0 && (
+            {(() => {
+              const visibleItems = selectedModule.filter ? items.filter(selectedModule.filter) : items;
+              const itemId = (item) => (selectedModule.idKey ? item[selectedModule.idKey] : item.id);
+              const itemLabel = (item) =>
+                (selectedModule.labelKey ? item[selectedModule.labelKey] : null) ||
+                item.title || item.name || item.description || `#${itemId(item)}`;
+              return (<>
+            {!loading && !error && visibleItems.length === 0 && (
               <div className="p-4 text-center text-sm text-stone-400 dark:text-gray-500">No items found</div>
             )}
-            {!loading && !error && items.map((item) => {
-              const selected = selectedItemId === item.id;
-              const label = item.title || item.name || item.description || `#${item.id}`;
+            {!loading && !error && visibleItems.map((item) => {
+              const id = itemId(item);
+              const selected = selectedItemId === id;
+              const label = itemLabel(item);
               return (
                 <button
-                  key={item.id}
+                  key={id}
                   type="button"
-                  onClick={() => setSelectedItemId(item.id)}
+                  onClick={() => setSelectedItemId(id)}
                   className={`w-full text-left px-4 py-3 border-b border-stone-100 dark:border-gray-800 last:border-b-0 transition-colors duration-100 ${
                     selected
                       ? 'bg-moss-50 dark:bg-moss-950/30'
@@ -185,6 +221,8 @@ export function LinkPickerModal({ isOpen, onClose, entityType, entityId, onLinke
                 </button>
               );
             })}
+              </>);
+            })()}
           </div>
 
           {/* Step 3: optional note */}

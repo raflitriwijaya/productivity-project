@@ -5,7 +5,7 @@ import {
   Menu, Sun, Moon, LogOut, Command,
   LayoutDashboard, CheckSquare, BookOpen, BookMarked, GraduationCap,
   LineChart, Receipt, Wallet, ArrowDownLeft, ArrowUpRight, PieChart, Target,
-  Wrench, Code, FileText, ClipboardCheck, Bug, Map,
+  Wrench, Code, FileText, ClipboardCheck, Bug, Map, Users, Lightbulb,
 } from 'lucide-react';
 import api from '../../lib/api';
 import { useTheme } from '../../hooks/useTheme';
@@ -32,6 +32,13 @@ const NAV_SECTIONS = [
       { to: '/finance/payables',    label: 'Payables',     icon: ArrowUpRight },
       { to: '/finance/portfolio',   label: 'Portfolio',    icon: PieChart },
       { to: '/finance/budget',      label: 'Budget',       icon: Target },
+    ],
+  },
+  {
+    label: 'Business',
+    items: [
+      { to: '/contacts', label: 'Contacts', icon: Users },
+      { to: '/ideas',    label: 'Ideas',    icon: Lightbulb },
     ],
   },
   {

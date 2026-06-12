@@ -57,7 +57,8 @@ const DEFAULT_CATEGORIES = [
 ];
 
 // Which transaction types credit dest / debit source.
-const CREDITS_DEST   = ['Income', 'Transfer', 'Balance Adjustment', 'Market Adjustment'];
+// Revenue (Wave 4) credits the destination account exactly like Income.
+const CREDITS_DEST   = ['Income', 'Revenue', 'Transfer', 'Balance Adjustment', 'Market Adjustment'];
 const DEBITS_SOURCE  = ['Expense', 'Transfer'];
 
 // ─── Default provisioning ──────────────────────────────────────────────────────
@@ -186,7 +187,8 @@ export async function listCategories(userId, { kind } = {}) {
  * Throws AppError(400) on violation.
  */
 function validateTransactionShape({ type, source_account_id, dest_account_id }) {
-  const needsDest   = ['Income', 'Balance Adjustment', 'Market Adjustment', 'Transfer'].includes(type);
+  // Revenue (Wave 4) shares Income's shape: destination-only, no source.
+  const needsDest   = ['Income', 'Revenue', 'Balance Adjustment', 'Market Adjustment', 'Transfer'].includes(type);
   const needsSource = ['Expense', 'Transfer'].includes(type);
 
   if (needsSource && !source_account_id) {
@@ -198,7 +200,7 @@ function validateTransactionShape({ type, source_account_id, dest_account_id }) 
   if (type === 'Transfer' && source_account_id === dest_account_id) {
     throw new AppError('Transfer source and destination must differ.', 400, 'VALIDATION_ERROR', 'dest_account_id');
   }
-  if (['Income', 'Balance Adjustment', 'Market Adjustment'].includes(type) && source_account_id) {
+  if (['Income', 'Revenue', 'Balance Adjustment', 'Market Adjustment'].includes(type) && source_account_id) {
     throw new AppError(`${type} must not have a source account.`, 400, 'VALIDATION_ERROR', 'source_account_id');
   }
   if (type === 'Expense' && dest_account_id) {
@@ -401,15 +403,15 @@ export async function getSummary(userId, { month, year } = {}) {
   const [flow, worth, recv, pay] = await Promise.all([
     pool.query(
       `SELECT
-         COALESCE(SUM(amount) FILTER (WHERE type = 'Income'),  0) AS total_income,
-         COALESCE(SUM(amount) FILTER (WHERE type = 'Expense'), 0) AS total_expense
+         COALESCE(SUM(amount) FILTER (WHERE type IN ('Income','Revenue')), 0) AS total_income,
+         COALESCE(SUM(amount) FILTER (WHERE type = 'Expense'),             0) AS total_expense
        FROM transactions WHERE user_id = $1 ${dateFilter}`,
       params
     ),
     pool.query(
       `SELECT
          COALESCE((SELECT SUM(initial_balance) FROM accounts WHERE user_id = $1), 0)
-         + COALESCE(SUM(amount) FILTER (WHERE type = 'Income'), 0)
+         + COALESCE(SUM(amount) FILTER (WHERE type IN ('Income','Revenue')), 0)
          - COALESCE(SUM(amount) FILTER (WHERE type = 'Expense'), 0)
          + COALESCE(SUM(amount) FILTER (WHERE type IN ('Balance Adjustment','Market Adjustment')), 0)
            AS net_worth
@@ -459,8 +461,8 @@ export async function getDashboard(userId) {
        )
        SELECT to_char(months.m, 'YYYY-MM') AS ym,
               to_char(months.m, 'Mon')     AS label,
-              COALESCE(SUM(t.amount) FILTER (WHERE t.type = 'Income'),  0) AS income,
-              COALESCE(SUM(t.amount) FILTER (WHERE t.type = 'Expense'), 0) AS expense
+              COALESCE(SUM(t.amount) FILTER (WHERE t.type IN ('Income','Revenue')), 0) AS income,
+              COALESCE(SUM(t.amount) FILTER (WHERE t.type = 'Expense'),             0) AS expense
        FROM months
        LEFT JOIN transactions t
          ON t.user_id = $1 AND date_trunc('month', t.date) = months.m
@@ -509,10 +511,11 @@ export async function getDashboard(userId) {
  * @param {number} userId
  */
 export async function getTodayDashboard(userId) {
-  const [flow, recv, pay] = await Promise.all([
+  const [flow, recv, pay, recvList, payList] = await Promise.all([
     pool.query(
       `SELECT
          COALESCE(SUM(amount) FILTER (WHERE type = 'Income'),  0) AS today_income,
+         COALESCE(SUM(amount) FILTER (WHERE type = 'Revenue'), 0) AS today_revenue,
          COALESCE(SUM(amount) FILTER (WHERE type = 'Expense'), 0) AS today_expense
        FROM transactions
        WHERE user_id = $1 AND date = CURRENT_DATE`,
@@ -532,10 +535,32 @@ export async function getTodayDashboard(userId) {
          AND due_date IS NOT NULL AND due_date <= CURRENT_DATE + INTERVAL '7 days'`,
       [userId]
     ),
+    // Wave 4: the actual rows so the briefing can list who/what is due, not just a count.
+    pool.query(
+      `SELECT id, person, amount, due_date
+       FROM receivables
+       WHERE user_id = $1 AND status = 'outstanding'
+         AND due_date IS NOT NULL AND due_date <= CURRENT_DATE + INTERVAL '7 days'
+       ORDER BY due_date ASC
+       LIMIT 5`,
+      [userId]
+    ),
+    pool.query(
+      `SELECT id, person, amount, due_date
+       FROM payables
+       WHERE user_id = $1 AND status = 'outstanding'
+         AND due_date IS NOT NULL AND due_date <= CURRENT_DATE + INTERVAL '7 days'
+       ORDER BY due_date ASC
+       LIMIT 5`,
+      [userId]
+    ),
   ]);
+
+  const mapDue = (r) => ({ id: r.id, person: r.person, amount: parseFloat(r.amount), due_date: r.due_date });
 
   return {
     today_income:  parseFloat(flow.rows[0].today_income),
+    today_revenue: parseFloat(flow.rows[0].today_revenue),
     today_expense: parseFloat(flow.rows[0].today_expense),
     receivables_due_this_week: {
       count: parseInt(recv.rows[0].count, 10),
@@ -545,6 +570,9 @@ export async function getTodayDashboard(userId) {
       count: parseInt(pay.rows[0].count, 10),
       total: parseFloat(pay.rows[0].total),
     },
+    // Itemized lists (≤5 each) for the Today Dashboard reminders (Wave 4).
+    receivables_due: recvList.rows.map(mapDue),
+    payables_due:    payList.rows.map(mapDue),
   };
 }
 
@@ -813,4 +841,23 @@ export async function upsertBudget(userId, categoryId, amount) {
     [userId, categoryId, amount]
   );
   return rows[0];
+}
+
+/**
+ * A single budget row with its category name, scoped to the user. Used by the
+ * Project Budget vs Actual endpoint (Wave 4) and the links ownership validator.
+ * @param {number} userId
+ * @param {number} budgetId
+ * @returns {Promise<object|null>}
+ */
+export async function getBudgetById(userId, budgetId) {
+  const { rows } = await pool.query(
+    `SELECT b.id, b.category_id, b.amount, b.created_at, b.updated_at,
+            c.name AS category_name
+     FROM budgets b
+     JOIN categories c ON c.id = b.category_id
+     WHERE b.id = $1 AND b.user_id = $2`,
+    [budgetId, userId]
+  );
+  return rows[0] ?? null;
 }

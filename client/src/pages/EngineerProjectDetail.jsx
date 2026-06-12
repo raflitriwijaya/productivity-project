@@ -6,12 +6,13 @@
 import { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
-  ArrowLeft, FileText, ClipboardCheck, Bug, ExternalLink, Layers, Cpu,
+  ArrowLeft, FileText, ClipboardCheck, Bug, ExternalLink, Layers, Cpu, Wallet, Plus,
 } from 'lucide-react';
 
 import api from '../lib/api';
 import { useApi } from '../hooks/useApi';
 import useDocumentTitle from '../hooks/useDocumentTitle';
+import { formatIdr } from '../lib/formatIdr';
 
 import { Card, CardHeader, CardBody } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -20,6 +21,7 @@ import { ListSkeleton } from '../components/ui/Skeleton';
 import { ErrorState } from '../components/ui/ErrorState';
 import { EmptyState } from '../components/ui/EmptyState';
 import { LinkedItems } from '../components/shared/LinkedItems';
+import { LinkPickerModal } from '../components/shared/LinkPickerModal';
 
 import {
   TYPE_VARIANT, TYPE_LABEL, STATUS_VARIANT, STATUS_LABEL, splitTags, RepoLink,
@@ -34,7 +36,17 @@ const TABS = [
   { key: 'documents', label: 'Documents', icon: FileText },
   { key: 'checkins',  label: 'Check-ins', icon: ClipboardCheck },
   { key: 'issues',    label: 'Issues',    icon: Bug },
+  { key: 'budget',    label: 'Budget',    icon: Wallet },
 ];
+
+/** Spend ratio → tone for the Budget vs Actual bars. */
+function budgetTone(spent, amount) {
+  if (amount <= 0) return { bar: 'bg-stone-400', text: 'text-stone-500 dark:text-gray-400' };
+  const ratio = spent / amount;
+  if (ratio >= 1)   return { bar: 'bg-red-500',   text: 'text-red-600 dark:text-red-400' };
+  if (ratio >= 0.8) return { bar: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' };
+  return { bar: 'bg-moss-500', text: 'text-moss-600 dark:text-moss-400' };
+}
 
 function formatDate(iso) {
   return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -77,12 +89,16 @@ export default function EngineerProjectDetail() {
   const { data: docs } = useApi(() => api.get(`/api/engineer/projects/${id}/documents`), [id]);
   const { data: checkins } = useApi(() => api.get(`/api/engineer/projects/${id}/checkins`), [id]);
   const { data: issues } = useApi(() => api.get(`/api/engineer/projects/${id}/issues`), [id]);
+  const { data: budget, refetch: refetchBudget } = useApi(() => api.get(`/api/engineer/projects/${id}/budget`), [id]);
+
+  const [showBudgetLink, setShowBudgetLink] = useState(false);
 
   const counts = useMemo(() => ({
     documents: docs?.length ?? 0,
     checkins:  checkins?.length ?? 0,
     issues:    issues?.length ?? 0,
-  }), [docs, checkins, issues]);
+    budget:    budget?.budgets?.length ?? 0,
+  }), [docs, checkins, issues, budget]);
 
   // ── Loading / error gate for the whole page ──────────────────────────────────
   if (loading) {
@@ -348,6 +364,94 @@ export default function EngineerProjectDetail() {
             )}
           </CardBody>
         </Card>
+      )}
+
+      {/* TAB: BUDGET (Roadmap Wave 4 — Budget vs Actual) */}
+      {tab === 'budget' && (
+        <Card>
+          <CardHeader
+            title="Budget vs Actual"
+            subtitle={budget?.budgets?.length ? `${budget.budgets.length} linked budget${budget.budgets.length === 1 ? '' : 's'}` : undefined}
+            action={
+              <Button variant="secondary" size="sm" onClick={() => setShowBudgetLink(true)}>
+                <Plus size={14} /> Link Budget
+              </Button>
+            }
+          />
+          <CardBody className="pt-0">
+            {(!budget || budget.budgets.length === 0) ? (
+              <EmptyState
+                icon={Wallet}
+                title="No budgets linked"
+                message="Link a Finance budget to track this project's spend against plan."
+                action={
+                  <Button variant="primary" size="sm" onClick={() => setShowBudgetLink(true)}>
+                    <Plus size={14} /> Link Budget
+                  </Button>
+                }
+              />
+            ) : (
+              <div className="space-y-5">
+                {/* Totals */}
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="p-3 rounded-lg bg-stone-50 dark:bg-gray-700/40">
+                    <p className="text-xs text-stone-500 dark:text-gray-400 mb-1">Budget</p>
+                    <p className="text-sm font-bold text-stone-900 dark:text-gray-50 truncate">{formatIdr(budget.total_budget)}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-stone-50 dark:bg-gray-700/40">
+                    <p className="text-xs text-stone-500 dark:text-gray-400 mb-1">Spent (this month)</p>
+                    <p className="text-sm font-bold text-stone-900 dark:text-gray-50 truncate">{formatIdr(budget.total_spent)}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-stone-50 dark:bg-gray-700/40">
+                    <p className="text-xs text-stone-500 dark:text-gray-400 mb-1">Remaining</p>
+                    <p className={`text-sm font-bold truncate ${budget.total_budget - budget.total_spent < 0 ? 'text-red-600 dark:text-red-400' : 'text-moss-600 dark:text-moss-400'}`}>
+                      {formatIdr(budget.total_budget - budget.total_spent)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Per-budget bars */}
+                <div className="space-y-4">
+                  {budget.budgets.map((b) => {
+                    const pct = b.budget_amount > 0 ? Math.min(100, Math.round((b.spent / b.budget_amount) * 100)) : 0;
+                    const tone = budgetTone(b.spent, b.budget_amount);
+                    return (
+                      <div key={b.budget_id}>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-sm font-medium text-stone-800 dark:text-gray-200">{b.category_name}</span>
+                          <span className={`text-xs font-medium tabular-nums ${tone.text}`}>
+                            {formatIdr(b.spent)} / {formatIdr(b.budget_amount)}
+                          </span>
+                        </div>
+                        <div className="w-full h-2 bg-stone-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full ${tone.bar}`} style={{ width: `${pct}%` }} />
+                        </div>
+                        <div className="flex justify-between mt-1">
+                          <span className="text-[11px] text-stone-400 dark:text-gray-500">{pct}% used</span>
+                          <span className={`text-[11px] ${b.remaining < 0 ? 'text-red-500 dark:text-red-400' : 'text-stone-400 dark:text-gray-500'}`}>
+                            {b.remaining < 0 ? `${formatIdr(Math.abs(b.remaining))} over` : `${formatIdr(b.remaining)} left`}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </CardBody>
+        </Card>
+      )}
+
+      {/* Budget link picker (constrained to the Budgets module) */}
+      {showBudgetLink && (
+        <LinkPickerModal
+          isOpen={showBudgetLink}
+          onClose={() => setShowBudgetLink(false)}
+          entityType="engineer_project"
+          entityId={project.id}
+          lockedType="budget"
+          onLinked={() => { setShowBudgetLink(false); refetchBudget(); }}
+        />
       )}
     </div>
   );

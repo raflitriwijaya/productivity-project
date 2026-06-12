@@ -34,16 +34,31 @@ describe('getTodayStats (todos)', () => {
 describe('getTodayDashboard (finance)', () => {
   it('returns today cash flow + receivable/payable dues as numbers', async () => {
     pool.query
-      .mockResolvedValueOnce({ rows: [{ today_income: '5000', today_expense: '1200' }] })
-      .mockResolvedValueOnce({ rows: [{ count: '2', total: '750.50' }] }) // receivables
-      .mockResolvedValueOnce({ rows: [{ count: '1', total: '300' }] });   // payables
+      .mockResolvedValueOnce({ rows: [{ today_income: '5000', today_revenue: '9000', today_expense: '1200' }] })
+      .mockResolvedValueOnce({ rows: [{ count: '2', total: '750.50' }] }) // receivables aggregate
+      .mockResolvedValueOnce({ rows: [{ count: '1', total: '300' }] })    // payables aggregate
+      .mockResolvedValueOnce({ rows: [                                    // receivables list (Wave 4)
+        { id: 10, person: 'Acme Co', amount: '500.50', due_date: '2026-06-15' },
+        { id: 11, person: 'Beta Ltd', amount: '250', due_date: '2026-06-16' },
+      ] })
+      .mockResolvedValueOnce({ rows: [                                    // payables list (Wave 4)
+        { id: 20, person: 'Cloud Host', amount: '300', due_date: '2026-06-14' },
+      ] });
 
     const data = await getTodayDashboard(1);
 
     expect(data.today_income).toBe(5000);
+    expect(data.today_revenue).toBe(9000);
     expect(data.today_expense).toBe(1200);
     expect(data.receivables_due_this_week).toEqual({ count: 2, total: 750.5 });
     expect(data.payables_due_this_week).toEqual({ count: 1, total: 300 });
+    expect(data.receivables_due).toEqual([
+      { id: 10, person: 'Acme Co', amount: 500.5, due_date: '2026-06-15' },
+      { id: 11, person: 'Beta Ltd', amount: 250, due_date: '2026-06-16' },
+    ]);
+    expect(data.payables_due).toEqual([
+      { id: 20, person: 'Cloud Host', amount: 300, due_date: '2026-06-14' },
+    ]);
   });
 });
 

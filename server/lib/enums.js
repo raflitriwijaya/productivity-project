@@ -27,8 +27,19 @@ export const ALLOWED_MIME = new Set([
 ]);
 
 // --- Finances ---
-export const TX_TYPES        = ['Income', 'Expense', 'Transfer', 'Balance Adjustment', 'Market Adjustment'];
+// 'Revenue' (Roadmap Wave 4) behaves like Income for balance purposes (credits the
+// destination account) but is tracked separately so a founder can see startup
+// revenue distinct from personal income. See CREDITS_DEST in finance.model.js and
+// validateTransactionShape (treated alongside Income everywhere).
+export const TX_TYPES        = ['Income', 'Expense', 'Transfer', 'Balance Adjustment', 'Market Adjustment', 'Revenue'];
 export const LEDGER_STATUSES = ['outstanding', 'settled'];
+
+// --- Contacts CRM (Roadmap Wave 4) ---
+export const CONTACT_TYPES    = ['client', 'partner', 'supplier', 'investor', 'mentor', 'other'];
+export const CONTACT_STATUSES = ['active', 'inactive', 'lead'];
+
+// --- Ideas Tracker (Roadmap Wave 4) ---
+export const IDEA_STATUSES = ['new', 'developing', 'validated', 'archived', 'converted'];
 
 // --- Engineering ---
 export const PROJECT_TYPES    = ['iot', 'embedded', 'robotics', 'other'];
@@ -44,5 +55,7 @@ export const LINKABLE_TYPES = [
   'receivable', 'payable', 'portfolio', 'budget', 'account',
   'research_topic', 'engineer_snippet', 'engineer_document', 'engineer_issue',
   'engineer_checkin', 'engineer_roadmap_skill',
-  'book', // Roadmap Wave 3 — Reading Tracker (mirrors 008_reading_tracker.sql)
+  'book',    // Roadmap Wave 3 — Reading Tracker (mirrors 008_reading_tracker.sql)
+  'contact', // Roadmap Wave 4 — Contacts CRM (mirrors 009_contacts.sql)
+  'idea',    // Roadmap Wave 4 — Ideas Tracker (mirrors 011_ideas.sql)
 ];

@@ -35,6 +35,8 @@ const spec = {
     { name: 'Dashboard',   description: 'Dashboard and daily briefing' },
     { name: 'Reading',     description: 'Reading tracker and library' },
     { name: 'Search',      description: 'Unified cross-module search' },
+    { name: 'Contacts',    description: 'Startup founder CRM — clients, partners, and stakeholders' },
+    { name: 'Ideas',       description: 'Ideas Tracker — capture ideas before they evaporate' },
   ],
   components: {
     securitySchemes: {
@@ -568,7 +570,7 @@ addPath('get', '/api/finances', {
   parameters: [
     { name: 'page',        in: 'query', schema: { type: 'integer', default: 1 } },
     { name: 'per_page',    in: 'query', schema: { type: 'integer', default: 50 } },
-    { name: 'type',        in: 'query', schema: { type: 'string', enum: ['Income', 'Expense', 'Transfer', 'Balance Adjustment', 'Market Adjustment'] } },
+    { name: 'type',        in: 'query', schema: { type: 'string', enum: ['Income', 'Expense', 'Transfer', 'Balance Adjustment', 'Market Adjustment', 'Revenue'] } },
     { name: 'category_id', in: 'query', schema: { type: 'integer' } },
     { name: 'account_id',  in: 'query', schema: { type: 'integer' } },
     { name: 'search',      in: 'query', schema: { type: 'string' } },
@@ -593,7 +595,7 @@ addPath('post', '/api/finances', {
   requestBody: jsonBody({
     type: 'object', required: ['type', 'amount', 'date'],
     properties: {
-      type:              { type: 'string', enum: ['Income', 'Expense', 'Transfer', 'Balance Adjustment', 'Market Adjustment'] },
+      type:              { type: 'string', enum: ['Income', 'Expense', 'Transfer', 'Balance Adjustment', 'Market Adjustment', 'Revenue'] },
       amount:            { type: 'number', description: 'Non-zero. Must be > 0 except for Balance/Market Adjustments.' },
       description:       { type: 'string', maxLength: 1000, nullable: true },
       date:              { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
@@ -614,7 +616,7 @@ addPath('patch', '/api/finances/{id}', {
   requestBody: jsonBody({
     type: 'object',
     properties: {
-      type:              { type: 'string', enum: ['Income', 'Expense', 'Transfer', 'Balance Adjustment', 'Market Adjustment'] },
+      type:              { type: 'string', enum: ['Income', 'Expense', 'Transfer', 'Balance Adjustment', 'Market Adjustment', 'Revenue'] },
       amount:            { type: 'number' },
       description:       { type: 'string', maxLength: 1000, nullable: true },
       date:              { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
@@ -1266,6 +1268,20 @@ addPath('post', '/api/engineer/projects/{id}/issues', {
   responses: { '201': { description: 'Created' }, ...r400, ...auth401, ...r404 },
 });
 
+addPath('get', '/api/engineer/projects/{id}/budget', {
+  tags: ['Engineering'],
+  summary: 'Project Budget vs Actual — sums current-month spend for each linked budget (Roadmap Wave 4)',
+  security: cookie,
+  parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' }, description: 'Project ID' }],
+  responses: {
+    '200': {
+      description: 'Budgets linked to the project with budget/spent/remaining, plus totals',
+      content: { 'application/json': { schema: { $ref: '#/components/schemas/Success' } } },
+    },
+    ...auth401, ...r404,
+  },
+});
+
 // Projects CRUD (collection + item — registered last in route file)
 
 addPath('get', '/api/engineer', {
@@ -1348,7 +1364,7 @@ const linkableTypeSchema = {
     'transaction', 'research_entry', 'learning_item', 'engineer_project', 'todo',
     'receivable', 'payable', 'portfolio', 'budget', 'account',
     'research_topic', 'engineer_snippet', 'engineer_document', 'engineer_issue',
-    'engineer_checkin', 'engineer_roadmap_skill', 'book',
+    'engineer_checkin', 'engineer_roadmap_skill', 'book', 'contact', 'idea',
   ],
 };
 
@@ -1498,6 +1514,169 @@ addPath('get', '/api/search', {
     { name: 'q', in: 'query', required: true, schema: { type: 'string', minLength: 1, maxLength: 200 } },
   ],
   responses: { ...ok200, ...r400, ...auth401 },
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// CONTACTS (Startup Founder CRM — Roadmap Wave 4)
+// ═════════════════════════════════════════════════════════════════════════════
+
+const contactTypeEnum   = ['client', 'partner', 'supplier', 'investor', 'mentor', 'other'];
+const contactStatusEnum = ['active', 'inactive', 'lead'];
+
+addPath('get', '/api/contacts/stats', {
+  tags: ['Contacts'],
+  summary: 'Aggregate contact counts (total, clients, partners, active, leads)',
+  security: cookie,
+  responses: { ...ok200, ...auth401 },
+});
+
+addPath('get', '/api/contacts', {
+  tags: ['Contacts'],
+  summary: 'List contacts (paginated, filterable, searchable)',
+  security: cookie,
+  parameters: [
+    ...pageParams,
+    { name: 'type',   in: 'query', schema: { type: 'string', enum: contactTypeEnum } },
+    { name: 'status', in: 'query', schema: { type: 'string', enum: contactStatusEnum } },
+    { name: 'search', in: 'query', schema: { type: 'string' }, description: 'Match name / company / email' },
+  ],
+  responses: { ...list200, ...auth401 },
+});
+
+addPath('post', '/api/contacts', {
+  tags: ['Contacts'],
+  summary: 'Create a contact',
+  security: cookie,
+  requestBody: jsonBody({
+    type: 'object', required: ['name'],
+    properties: {
+      name:    { type: 'string', minLength: 1, maxLength: 200 },
+      email:   { type: 'string', format: 'email', maxLength: 300, nullable: true },
+      phone:   { type: 'string', maxLength: 50, nullable: true },
+      company: { type: 'string', maxLength: 200, nullable: true },
+      role:    { type: 'string', maxLength: 100, nullable: true },
+      type:    { type: 'string', enum: contactTypeEnum, default: 'client' },
+      status:  { type: 'string', enum: contactStatusEnum, default: 'active' },
+      notes:   { type: 'string', nullable: true },
+    },
+  }),
+  responses: { '201': { description: 'Created' }, ...r400, ...auth401 },
+});
+
+addPath('get', '/api/contacts/{id}', {
+  tags: ['Contacts'],
+  summary: 'Get contact by ID',
+  security: cookie,
+  parameters: idParam,
+  responses: { ...ok200, ...auth401, ...r404 },
+});
+
+addPath('patch', '/api/contacts/{id}', {
+  tags: ['Contacts'],
+  summary: 'Update a contact (partial)',
+  security: cookie,
+  parameters: idParam,
+  requestBody: jsonBody({
+    type: 'object',
+    properties: {
+      name:           { type: 'string', minLength: 1, maxLength: 200 },
+      email:          { type: 'string', format: 'email', maxLength: 300, nullable: true },
+      phone:          { type: 'string', maxLength: 50, nullable: true },
+      company:        { type: 'string', maxLength: 200, nullable: true },
+      role:           { type: 'string', maxLength: 100, nullable: true },
+      type:           { type: 'string', enum: contactTypeEnum },
+      status:         { type: 'string', enum: contactStatusEnum },
+      notes:          { type: 'string', nullable: true },
+      last_contacted: { type: 'string', format: 'date-time', nullable: true },
+    },
+  }),
+  responses: { ...ok200, ...r400, ...auth401, ...r404 },
+});
+
+addPath('delete', '/api/contacts/{id}', {
+  tags: ['Contacts'],
+  summary: 'Delete a contact',
+  security: cookie,
+  parameters: idParam,
+  responses: { ...ok200, ...auth401, ...r404 },
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// IDEAS (Ideas Tracker — Roadmap Wave 4)
+// ═════════════════════════════════════════════════════════════════════════════
+
+const ideaStatusEnum = ['new', 'developing', 'validated', 'archived', 'converted'];
+
+addPath('get', '/api/ideas/stats', {
+  tags: ['Ideas'],
+  summary: 'Aggregate idea counts by status (total, new, developing, validated, archived, converted)',
+  security: cookie,
+  responses: { ...ok200, ...auth401 },
+});
+
+addPath('get', '/api/ideas', {
+  tags: ['Ideas'],
+  summary: 'List ideas (paginated, filterable by status, searchable)',
+  security: cookie,
+  parameters: [
+    ...pageParams,
+    { name: 'status', in: 'query', schema: { type: 'string', enum: ideaStatusEnum } },
+    { name: 'search', in: 'query', schema: { type: 'string' }, description: 'Match title / description / tags' },
+  ],
+  responses: { ...list200, ...auth401 },
+});
+
+addPath('post', '/api/ideas', {
+  tags: ['Ideas'],
+  summary: 'Capture an idea',
+  security: cookie,
+  requestBody: jsonBody({
+    type: 'object', required: ['title'],
+    properties: {
+      title:       { type: 'string', minLength: 1, maxLength: 500 },
+      description: { type: 'string', nullable: true },
+      status:      { type: 'string', enum: ideaStatusEnum, default: 'new' },
+      tags:        { type: 'string', maxLength: 500, nullable: true },
+      source:      { type: 'string', maxLength: 100, nullable: true },
+    },
+  }),
+  responses: { '201': { description: 'Created' }, ...r400, ...auth401 },
+});
+
+addPath('get', '/api/ideas/{id}', {
+  tags: ['Ideas'],
+  summary: 'Get idea by ID',
+  security: cookie,
+  parameters: idParam,
+  responses: { ...ok200, ...auth401, ...r404 },
+});
+
+addPath('patch', '/api/ideas/{id}', {
+  tags: ['Ideas'],
+  summary: 'Update an idea (partial). Convert-to flows set status/converted_to/converted_id.',
+  security: cookie,
+  parameters: idParam,
+  requestBody: jsonBody({
+    type: 'object',
+    properties: {
+      title:        { type: 'string', minLength: 1, maxLength: 500 },
+      description:  { type: 'string', nullable: true },
+      status:       { type: 'string', enum: ideaStatusEnum },
+      tags:         { type: 'string', maxLength: 500, nullable: true },
+      source:       { type: 'string', maxLength: 100, nullable: true },
+      converted_to: { type: 'string', maxLength: 40, nullable: true },
+      converted_id: { type: 'integer', minimum: 1, nullable: true },
+    },
+  }),
+  responses: { ...ok200, ...r400, ...auth401, ...r404 },
+});
+
+addPath('delete', '/api/ideas/{id}', {
+  tags: ['Ideas'],
+  summary: 'Delete an idea',
+  security: cookie,
+  parameters: idParam,
+  responses: { ...ok200, ...auth401, ...r404 },
 });
 
 // ─── Write output ─────────────────────────────────────────────────────────────

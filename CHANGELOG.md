@@ -7,6 +7,39 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Roadmap Wave 4 — Startup Founder OS (2026-06-12)
+
+#### Contacts CRM (lite)
+- **New `contacts` table** (migration `009_contacts.sql`) — tracks clients, partners, suppliers, investors, mentors, and "other" stakeholders with `email`/`phone`/`company`/`role`, a CHECK-constrained `type` and `status` (`active`/`inactive`/`lead`), `notes`, and `last_contacted`. `user_id` FK ON DELETE CASCADE, the shared `set_updated_at()` trigger, and indexes for per-user lists, type/status filters, and name sort. The same migration extends `entity_links.chk_entity_link_types` to whitelist `'contact'`.
+- **New Contacts API** — `server/models/contacts.model.js` (`listContacts`, `getContactById`, `createContact`, `updateContact`, `deleteContact`, `getContactStats`; all `user_id`-scoped, stats coerced to numbers, sort-column allow-list) and `server/routes/contacts.js` mounted `app.use('/api/contacts', requireAuth, contactsRouter)`. Endpoints: `GET /api/contacts` (type/status/search/sort/paginate), `GET /api/contacts/stats`, `POST`, `GET/PATCH/DELETE /api/contacts/:id`. Audit events `CONTACT_CREATE`/`CONTACT_UPDATE`/`CONTACT_DELETE`.
+- **New Contacts page `/contacts`** (`client/src/pages/Contacts.jsx`) — five stat cards (Total/Active/Clients/Partners/Leads), type filter tabs, debounced search, a `DataTable` with clickable names, create/edit modal (`CreateContactModal`), and a detail modal (`ContactDetailModal`) with mailto/tel links and embedded `LinkedItems`. Added to a new sidebar **Business** section.
+
+#### Contacts links (Wave 1 extension)
+- **`'contact'` registered in `LINKABLE_TYPES`** (`server/lib/enums.js`) and given an ownership validator in `server/routes/links.js` (adapts `getContactById(userId, id)` to the `(id, userId)` validator signature). `LinkedItems` learned the `contact` label/variant and `LinkPickerModal` gained a **Contacts** module, so a contact can link to projects, receivables, and payables.
+
+#### Revenue tracking
+- **`'Revenue'` added to `TX_TYPES`** (`server/lib/enums.js`) — a destination-only inflow that behaves like Income for balances/net worth (added to `CREDITS_DEST` and `validateTransactionShape`), but is tracked distinctly. Folded into `getSummary` (income + net worth), the 12-month `getDashboard` trend income line, and surfaced separately as `today_revenue` in `getTodayDashboard`. The Zod schemas in `finances.js` already cover it via `TX_TYPES`.
+- **Migration `010_revenue_tx_type.sql`** — extends the `transactions.type` CHECK constraint (originally defined inline in `002_finance_upgrade.sql`) to include `'Revenue'`, so the DB accepts revenue rows. Re-runnable: drops `transactions_type_check` IF EXISTS, then re-adds it named with the extended vocabulary.
+- **Frontend** — `CreateTransactionModal` offers Revenue (destination + income categories), `TransactionRow` maps it to an `ember` badge with a `+` amount tone, `Finance.jsx` gains a Revenue filter tab, and `TodayFinanceSummary` shows a "Revenue today" row and includes it in the net figure.
+
+#### Project Budget vs Actual
+- **New `GET /api/engineer/projects/:id/budget`** — for each Finance budget linked to the project (via Universal Links), sums the current-month `Expense` transactions in that budget's category and returns `budget_amount`/`spent`/`remaining` plus totals. No new table. Added `getBudgetById(userId, budgetId)` to `finance.model.js`.
+- **New Budget tab on `EngineerProjectDetail`** — color-coded progress bars (moss < 80% / amber 80–99% / red ≥ 100%), budget/spent/remaining totals, and a "Link Budget" button that opens `LinkPickerModal` constrained to the Budgets module via a new `lockedType` prop. The picker learned per-module `idKey`/`labelKey`/`filter` overrides so the category-shaped budgets endpoint (nullable `budget_id`) lists correctly.
+
+#### Receivable / Payable reminders
+- **`getTodayDashboard` extended** — alongside the existing aggregate counts, it now returns itemized `receivables_due` / `payables_due` arrays (≤5 each, `person`/`amount`/`due_date`, ordered by due date). `TodayFinanceSummary` lists who/what is due this week (with dates), falling back to the legacy aggregate display if the arrays are absent.
+
+#### Ideas Tracker ("don't let ideas evaporate")
+- **New `ideas` table** (migration `011_ideas.sql`) — captures impulsive ideas with a CHECK-constrained `status` (`new`/`developing`/`validated`/`archived`/`converted`), `description`, comma-separated `tags`, `source`, and `converted_to`/`converted_id` provenance. `user_id` FK ON DELETE CASCADE, the shared `set_updated_at()` trigger, indexes for per-user lists/status/recency. The same migration extends `entity_links.chk_entity_link_types` to whitelist `'idea'`. (Numbered `011` — `010` was taken by the Wave 4 Revenue CHECK migration.)
+- **New Ideas API** — `server/models/ideas.model.js` (`listIdeas`, `getIdeaById`, `createIdea`, `updateIdea`, `deleteIdea`, `getIdeaStats`; all `user_id`-scoped, stats coerced to numbers, sort-column allow-list) and `server/routes/ideas.js` mounted `app.use('/api/ideas', requireAuth, ideasRouter)`. Endpoints: `GET /api/ideas`, `GET /api/ideas/stats`, `POST`, `GET/PATCH/DELETE /api/ideas/:id`. Audit events `IDEA_CREATE`/`IDEA_UPDATE`/`IDEA_DELETE`.
+- **New Ideas board `/ideas`** (`client/src/pages/Ideas.jsx`) — a visual card grid (`IdeaCard`, sticky-note style) with five stat cards, status filter tabs, debounced search, create/edit modal (`CreateIdeaModal`), and a detail modal (`IdeaDetailModal`) with embedded `LinkedItems` and a **"Convert to…"** action that spawns a Project / Research Note / Todo / Learning Item, links it back to the idea, and flips the idea to `converted` with `converted_to`/`converted_id`. Added to the sidebar **Business** section. Refetches on the `quick-capture-created` event.
+- **QuickCapture gained a fourth "Idea" mode** (`client/src/components/shared/QuickCapture.jsx`) — `MODE_ORDER = ['todo','research','idea','search']`; Tab now cycles Task → Research → Idea → Search. Idea mode `POST`s the input to `/api/ideas` and dispatches `quick-capture-created`.
+- **Links extension** — `'idea'` added to `LINKABLE_TYPES` (+ `IDEA_STATUSES`) in `enums.js` and to `OWNERSHIP_VALIDATORS` (`links.js`, adapting `getIdeaById(userId, id)`); `LinkedItems` learned the `idea` label/`ember` variant and `LinkPickerModal` gained a searchable Ideas module.
+
+#### API & Docs
+- **OpenAPI** (`generate-openapi.js`) — added the `Contacts` + `Ideas` tags, six `/api/contacts*` and six `/api/ideas*` paths, the `/api/engineer/projects/{id}/budget` path, `'Revenue'` in the transaction type enums, and `'contact'`/`'idea'` in the linkable-type enum (72 paths total).
+- **Tests** — `server/test/dashboard.today.test.js` updated for the new `today_revenue` field and itemized due lists.
+
 ### Roadmap Wave 3 — Polymath Toolkit (2026-06-12)
 
 #### Reading Tracker

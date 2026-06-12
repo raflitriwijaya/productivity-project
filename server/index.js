@@ -38,6 +38,8 @@ import { linksRouter } from './routes/links.js';
 import { dashboardRouter } from './routes/dashboard.js'; // Roadmap Wave 2: Today Dashboard briefing
 import { readingRouter } from './routes/reading.js'; // Roadmap Wave 3: Reading Tracker
 import { searchRouter } from './routes/search.js';   // Roadmap Wave 3: Unified Search
+import { contactsRouter } from './routes/contacts.js'; // Roadmap Wave 4: Contacts CRM
+import { ideasRouter } from './routes/ideas.js'; // Roadmap Wave 4: Ideas Tracker
 
 // ─── Env validation ───────────────────────────────────────────────────────────
 const {
@@ -222,6 +224,8 @@ app.use('/api/links',    requireAuth, linksRouter); // Roadmap Wave 1: cross-mod
 app.use('/api/dashboard', requireAuth, dashboardRouter); // Roadmap Wave 2: Today briefing
 app.use('/api/reading',  requireAuth, readingRouter); // Roadmap Wave 3: Reading Tracker
 app.use('/api/search',   requireAuth, searchRouter);  // Roadmap Wave 3: Unified Search
+app.use('/api/contacts', requireAuth, contactsRouter); // Roadmap Wave 4: Contacts CRM
+app.use('/api/ideas',    requireAuth, ideasRouter); // Roadmap Wave 4: Ideas Tracker
 
 // ─── 404 for unmatched API routes ────────────────────────────────────────────
 app.use('/api', (_req, res) => {
