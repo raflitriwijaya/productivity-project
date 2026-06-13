@@ -4,6 +4,7 @@
 // Tailwind config uses darkMode: 'class' (§3).
 
 import { useState, useEffect } from 'react';
+import api from '../lib/api';
 
 /**
  * @returns {{ isDark: boolean, toggle: () => void }}
@@ -25,5 +26,14 @@ export function useTheme() {
     }
   }, [isDark]);
 
-  return { isDark, toggle: () => setIsDark(d => !d) };
+  // Toggle locally, then mirror the choice to the server (Post-V5 user_settings) so
+  // it follows the user across devices. Fire-and-forget: it never blocks or fails the
+  // UI, and persists only on an explicit user toggle (not on initial mount).
+  const toggle = () => {
+    const next = !isDark;
+    setIsDark(next);
+    api.put('/api/settings', { theme: next ? 'dark' : 'light' }).catch(() => {});
+  };
+
+  return { isDark, toggle };
 }

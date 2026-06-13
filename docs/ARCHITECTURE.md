@@ -58,6 +58,18 @@ All API responses use the standard envelope:
 | `/api/research` | session required | `server/routes/research.js` |
 | `/api/engineer` | session required | `server/routes/engineer.js` |
 | `/api/links` | session required | `server/routes/links.js` |
+| `/api/dashboard` | session required | `server/routes/dashboard.js` |
+| `/api/reading` | session required | `server/routes/reading.js` |
+| `/api/search` | session required | `server/routes/search.js` |
+| `/api/contacts` | session required | `server/routes/contacts.js` |
+| `/api/ideas` | session required | `server/routes/ideas.js` |
+| `/api/time` | session required | `server/routes/time.js` |
+| `/api/review` | session required | `server/routes/review.js` |
+| `/api/goals` | session required | `server/routes/goals.js` |
+| `/api/polymath` | session required | `server/routes/polymath.js` |
+| `/api/chat` | session required | `server/routes/chat.js` |
+| `/api/export` | session required | `server/routes/export.js` |
+| `/api/settings` | session required | `server/routes/settings.js` |
 
 All protected routers also pass through `generalLimiter` (100 req/min/IP).
 
@@ -87,14 +99,15 @@ All tables follow these conventions (§6.5):
 | `research_topics` | id, user_id, name, description, color (#hex), status (active/archived) |
 | `research_entry_topics` | entry_id, topic_id (pivot; both FK CASCADE) |
 | `research_attachments` | id, entry_id FK, filename (UUID), original_name, file_path, mime_type, size |
+| `user_settings` | id, user_id (UNIQUE), theme (light/dark/system), default_model, notifications_enabled — migration `016`, see [§user_settings](#user_settings-table-migration-016_user_settingssql) |
 
 ### Universal Links (migration `007_entity_links.sql`)
 
 | Table | Key columns |
 |-------|-------------|
-| `entity_links` | id, user_id, from_type, from_id, to_type, to_id, note — UNIQUE `(user_id, from_type, from_id, to_type, to_id)`; CHECK whitelists `from_type`/`to_type` against the 16 `LINKABLE_TYPES`; indexed on `(user_id, from_type, from_id)`, `(user_id, to_type, to_id)`, and `(user_id, created_at DESC)` |
+| `entity_links` | id, user_id, from_type, from_id, to_type, to_id, note — UNIQUE `(user_id, from_type, from_id, to_type, to_id)`; CHECK whitelists `from_type`/`to_type` against the 22 `LINKABLE_TYPES`; indexed on `(user_id, from_type, from_id)`, `(user_id, to_type, to_id)`, and `(user_id, created_at DESC)` |
 
-A polymorphic soft-reference: no FK to the target rows (they live in 16 different tables), so ownership of **both** sides is enforced at the API layer (`server/routes/links.js`) rather than by the database. `user_id` scoping plus the type CHECK and UNIQUE constraint protect the table itself.
+A polymorphic soft-reference: no FK to the target rows (they live in 22 different tables across all 7 waves), so ownership of **both** sides is enforced at the API layer (`server/routes/links.js`) rather than by the database. `user_id` scoping plus the type CHECK and UNIQUE constraint protect the table itself.
 
 ### Finance ledger (migration `002_finance_upgrade.sql`)
 
@@ -170,62 +183,59 @@ Attachments live on local disk (`server/uploads/`) behind authenticated download
 
 ---
 
-## Planned: `user_settings` Table
+## `user_settings` Table (migration `016_user_settings.sql`)
 
-> **Status: planning only** — no migration or code change yet.
+> **Status: shipped** (Post-V5). Server-side per-user preferences so theme, default
+> AI model, and the notification preference follow the user across devices instead of
+> living only in `localStorage`. Closes V5 §12.2 / §13.4 (personalization ceiling).
 
-### Motivation
-
-Per-user configuration (theme preference, default currency, notification flags, etc.) is currently either hardcoded or stored in `localStorage`. A server-side `user_settings` table would:
-
-- Persist preferences across devices and browsers.
-- Allow server-side defaults without coupling them to the frontend bundle.
-- Provide an audit trail for compliance-sensitive settings.
-
-### Proposed Schema
+### Schema
 
 ```sql
 CREATE TABLE user_settings (
-  id          SERIAL PRIMARY KEY,
-  user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  key         VARCHAR(100) NOT NULL,
-  value       TEXT,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (user_id, key)
+  id                    SERIAL PRIMARY KEY,
+  user_id               INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  theme                 VARCHAR(20) NOT NULL DEFAULT 'system'
+                        CHECK (theme IN ('light', 'dark', 'system')),
+  default_model         VARCHAR(50) NOT NULL DEFAULT 'deepseek-chat',
+  notifications_enabled BOOLEAN NOT NULL DEFAULT true,
+  created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (user_id)
 );
 
-CREATE INDEX idx_user_settings_user_id ON user_settings (user_id);
-CREATE TRIGGER set_updated_at BEFORE UPDATE ON user_settings
+CREATE TRIGGER set_updated_at_user_settings
+  BEFORE UPDATE ON user_settings
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 ```
 
-A key–value layout (`key VARCHAR, value TEXT`) is chosen over typed columns because it avoids schema migrations every time a new setting is added. JSON is stored as serialized text in `value`.
+Typed columns (rather than the originally-proposed key/value EAV layout) were chosen
+so each preference is constrained and self-documenting; the set is small and stable,
+so the rare ALTER to add a column is preferred over an untyped `value TEXT`. `UNIQUE
+(user_id)` gives exactly one row per user and also serves as the lookup index, so no
+separate `idx_user_settings_user` is needed.
 
-### Default-Seeding Strategy
+### Lazy seeding
 
-On first `GET /api/settings` (or lazily on `POST /api/auth/login`), seed the row set for the user if no rows exist:
+There is no seed-on-register step. `getSettings(userId)` (`server/models/settings.model.js`)
+runs `INSERT … ON CONFLICT (user_id) DO NOTHING` then selects, so the default row is
+materialised on the first `GET /api/settings`. This mirrors the `ensureDefaults`
+pattern already used in `finance.model.js`. `upsertSettings` splits the ensure-row
+INSERT from the partial UPDATE so a first-time write persists the supplied values
+rather than the schema defaults.
 
-```js
-const DEFAULTS = {
-  theme:             'system',   // 'light' | 'dark' | 'system'
-  default_currency:  'IDR',
-  items_per_page:    '20',
-};
-```
-
-A model function `ensureUserSettings(userId)` mirrors the `ensureDefaults` pattern already used in `finance.model.js`.
-
-### API Endpoints (proposed)
+### API
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET`  | `/api/settings` | Return all settings as `{ key: value }` map |
-| `PATCH`| `/api/settings` | Upsert one or more keys |
+| `GET`  | `/api/settings` | Return the user's settings (created with defaults on first access) |
+| `PUT`  | `/api/settings` | Upsert `theme` / `default_model` / `notifications_enabled` (Zod-validated; ≥1 field). Audit event `SETTINGS_UPDATE`. |
 
-### Migration File
+### Frontend wiring
 
-When implemented, create the next free sequential migration (`008_user_settings.sql` — `006` and `007` are now taken by `006_fix_dedup_nulls.sql` and `007_entity_links.sql`) following the existing conventions.
+- `client/src/hooks/useSettings.js` — loads settings once, exposes `update`, falls back to defaults on error.
+- `client/src/hooks/useTheme.js` — the dark-mode toggle fire-and-forgets `PUT /api/settings { theme }` so the choice persists server-side (never blocks the UI).
+- `client/src/pages/AIChat.jsx` — pre-selects `default_model` for a fresh chat (an open conversation still restores the model it used).
 
 ---
 

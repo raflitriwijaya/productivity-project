@@ -75,6 +75,14 @@
     {
       "name": "AI Chat",
       "description": "DeepSeek-powered AI assistant chatbox"
+    },
+    {
+      "name": "Export",
+      "description": "Universal data export — download all modules as a ZIP archive"
+    },
+    {
+      "name": "Settings",
+      "description": "Server-side user preferences — theme, default AI model, notifications"
     }
   ],
   "components": {
@@ -8232,6 +8240,142 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/export": {
+      "get": {
+        "tags": [
+          "Export"
+        ],
+        "summary": "Download all user data as a ZIP archive (JSON or CSV per module)",
+        "description": "Exports todos, transactions, learning items, research entries, books, contacts, ideas, goals, time entries, and engineer projects. Returns a ZIP with one file per module plus a `_SUMMARY.json` manifest. Capped at 10 000 rows per module.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "json",
+                "csv"
+              ],
+              "default": "json"
+            },
+            "description": "File format for each module inside the ZIP"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ZIP archive download",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/settings": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Get the current user's preferences (created with defaults on first access)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Update the current user's preferences (partial)",
+        "description": "Upserts theme, default AI model, and/or the notification preference. At least one field is required.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "theme": {
+                    "type": "string",
+                    "enum": [
+                      "light",
+                      "dark",
+                      "system"
+                    ],
+                    "default": "system"
+                  },
+                  "default_model": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "default": "deepseek-chat"
+                  },
+                  "notifications_enabled": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
           }
         }
       }

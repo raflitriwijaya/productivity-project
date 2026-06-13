@@ -1,0 +1,38 @@
+groups:
+  - name: polymath
+    rules:
+      - alert: HighErrorRate
+        expr: rate(productivity_http_requests_total{status_code=~"5.."}[5m]) / rate(productivity_http_requests_total[5m]) > 0.05
+        for: 5m
+        labels: { severity: critical }
+        annotations: { summary: "High error rate (>5%) on {{ $labels.route }}" }
+
+      - alert: P99LatencySpike
+        expr: histogram_quantile(0.99, rate(productivity_http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels: { severity: warning }
+        annotations: { summary: "P99 latency >2s on {{ $labels.route }}" }
+
+      - alert: PoolExhaustion
+        expr: productivity_pg_pool_connections{state="waiting"} > 0
+        for: 5m
+        labels: { severity: critical }
+        annotations: { summary: "Postgres pool has waiting clients" }
+
+      - alert: PoolNearCapacity
+        expr: productivity_pg_pool_connections{state="total"} / 10 > 0.8
+        for: 10m
+        labels: { severity: warning }
+        annotations: { summary: "Postgres pool >80% capacity" }
+
+      - alert: HealthCheckFailing
+        expr: rate(productivity_http_requests_total{route="/health",status_code="503"}[5m]) > 0
+        for: 2m
+        labels: { severity: critical }
+        annotations: { summary: "/health returning 503 — database may be down" }
+
+      - alert: ScrapeDown
+        expr: up{job="polymath-api"} == 0
+        for: 5m
+        labels: { severity: critical }
+        annotations: { summary: "Metrics endpoint unreachable" }

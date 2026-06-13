@@ -9,6 +9,30 @@
 
 ---
 
+## Post-V5 Medium-Term Fixes (2026-06-13)
+
+Closes the four highest-ROI gaps from Grand Final Audit V5 (`docs/audit/AUDIT_REPORT_V5.md`).
+
+### User Settings (V5 §12.2 / §13.4)
+- **Table:** `user_settings` (migration `016_user_settings.sql`) — typed columns `theme` (light/dark/system), `default_model`, `notifications_enabled`; `UNIQUE (user_id)`; `set_updated_at()` trigger; lazily seeded on first read.
+- **API:** `server/routes/settings.js` — `GET` / `PUT /api/settings` (Zod-validated, `user_id`-scoped, `SETTINGS_UPDATE` audit event). Model: `server/models/settings.model.js` (`getSettings`, `upsertSettings`).
+- **Frontend:** `client/src/hooks/useSettings.js`; `useTheme.js` toggle persists `theme` to the server (fire-and-forget); `AIChat.jsx` pre-selects `default_model` for a fresh chat.
+- **Mounted:** `app.use('/api/settings', requireAuth, settingsRouter)`.
+
+### Observability (V5 §8.1)
+- **Prometheus config:** `deploy/prometheus/prometheus.yml` (scrape config, job `polymath-api`) + `deploy/prometheus/alert_rules.yml` (6 alert rules). `docker-compose.yml` ships a commented-out `prometheus` service; RUNBOOK §6.2 references both.
+
+### Accessibility (V5 §10.1)
+- **Axe a11y:** extended from 7 to 15 pages (`client/e2e/a11y.spec.js`) — adds Reading, Contacts, Ideas, Goals, Weekly Review, Annual Report, Polymath Dashboard, AI Chat (×2 viewports = 30 a11y runs).
+
+### Code Quality (V5 §11.1)
+- **Client enums:** new `client/src/lib/enums.js` mirrors `server/lib/enums.js` (`LINKABLE_TYPES`, `TYPE_LABELS`, `TYPE_VARIANTS`, Contacts badge maps). `LinkedItems.jsx`, `Contacts.jsx`, and `ContactDetailModal.jsx` import instead of re-declaring.
+
+### OpenAPI
+- `Settings` tag + `GET`/`PUT /api/settings` paths added to `generate-openapi.js`.
+
+---
+
 ## npm packages
 
 **Server** (`server/package.json`, `"type": "module"`): `express`, `cors`, `express-session`, `connect-pg-simple`, `bcryptjs` (Phase 2/3: replaced `bcrypt` — drop-in API-compatible, pure JS, eliminates the `tar`/`node-pre-gyp` high-severity transitive vulns), `pg`, `zod`, `dotenv`, `multer` (research attachment uploads), `helmet`, `express-rate-limit`, `pino`, `pino-http` (Phase 3: structured logging). **Phase 9 devDeps:** `eslint`, `@eslint/js`, `globals` — flat ESLint config at `server/eslint.config.js`. Requires Node `>=18`. Scripts: `dev` (`node --watch index.js`), `start`, `migrate` (`node db/migrate.js`), `lint` (`eslint . --max-warnings 0`), `test` (`vitest run` — all files; integration suites skip without DB), `test:coverage` (`vitest run --coverage` — Phase 12: outputs a coverage report), `test:integration` (`vitest run test/integration` — runs only the integration suite; requires `DATABASE_URL`).

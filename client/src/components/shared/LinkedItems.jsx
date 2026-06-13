@@ -19,56 +19,9 @@ import { Skeleton } from '../ui/Skeleton';
 import { ErrorState } from '../ui/ErrorState';
 import { EmptyState } from '../ui/EmptyState';
 import { LinkPickerModal } from './LinkPickerModal';
-
-// Friendly labels per entity type.
-const TYPE_LABELS = {
-  transaction: 'Transaction',
-  research_entry: 'Research Entry',
-  learning_item: 'Learning Item',
-  engineer_project: 'Engineering Project',
-  todo: 'Todo',
-  receivable: 'Receivable',
-  payable: 'Payable',
-  portfolio: 'Portfolio',
-  budget: 'Budget',
-  account: 'Account',
-  research_topic: 'Research Topic',
-  engineer_snippet: 'Snippet',
-  engineer_document: 'Document',
-  engineer_issue: 'Issue',
-  engineer_checkin: 'Check-in',
-  engineer_roadmap_skill: 'Roadmap Skill',
-  book: 'Book',
-  contact: 'Contact',
-  idea: 'Idea',
-  time_entry: 'Time Entry',
-  goal: 'Goal',
-};
-
-// Map each type to a Badge variant (the canonical "Stoic Garden" accents).
-const TYPE_VARIANTS = {
-  transaction: 'moss',
-  research_entry: 'moss',
-  research_topic: 'moss',
-  learning_item: 'ember',
-  portfolio: 'ember',
-  engineer_project: 'terracotta',
-  engineer_snippet: 'terracotta',
-  engineer_document: 'terracotta',
-  engineer_issue: 'terracotta',
-  engineer_checkin: 'terracotta',
-  engineer_roadmap_skill: 'terracotta',
-  todo: 'blue',
-  receivable: 'amber',
-  payable: 'red',
-  budget: 'amber',
-  account: 'gray',
-  book: 'ember',
-  contact: 'moss',
-  idea: 'ember',
-  time_entry: 'gray',
-  goal: 'ember',
-};
+// Post-V5: labels/variants now live in the shared client enums module (mirrors
+// server/lib/enums.js) so a new linkable type is defined in one place.
+import { TYPE_LABELS, TYPE_VARIANTS } from '../../lib/enums';
 
 /**
  * @param {Object} props

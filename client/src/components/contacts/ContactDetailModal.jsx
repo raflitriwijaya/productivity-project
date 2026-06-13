@@ -8,12 +8,8 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { LinkedItems } from '../shared/LinkedItems';
-
-const TYPE_VARIANTS = {
-  client: 'moss', partner: 'terracotta', supplier: 'amber',
-  investor: 'ember', mentor: 'blue', other: 'gray',
-};
-const STATUS_VARIANTS = { active: 'moss', inactive: 'gray', lead: 'ember' };
+// Post-V5: contact badge maps centralized in the shared client enums module.
+import { CONTACT_TYPE_VARIANTS as TYPE_VARIANTS, CONTACT_STATUS_VARIANTS as STATUS_VARIANTS } from '../../lib/enums';
 
 /**
  * @param {{ isOpen: boolean, onClose: () => void, contact: object, onEdit: () => void }} props

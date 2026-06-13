@@ -7,6 +7,29 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Post-V5 Medium-Term Fixes (2026-06-13)
+
+> Closing the highest-ROI gaps from Grand Final Audit V5: server-side preferences, deployable monitoring, broader accessibility coverage, and a single source of truth for client enums.
+
+#### User Settings
+- **New `user_settings` table** (migration `016_user_settings.sql`) — typed columns `theme` (light/dark/system, CHECK), `default_model`, `notifications_enabled`; one row per user (`UNIQUE (user_id)`); shared `set_updated_at()` trigger. Lazily seeded on first read, so existing accounts need no backfill.
+- **New settings API** — `server/models/settings.model.js` (`getSettings` lazy-create, `upsertSettings` ensure-then-update so a first write persists the supplied values, not the defaults) + `server/routes/settings.js` mounted `app.use('/api/settings', requireAuth, settingsRouter)`. `GET /api/settings` and `PUT /api/settings` (Zod-validated, `user_id`-scoped, audit event `SETTINGS_UPDATE`).
+- **Frontend** — `client/src/hooks/useSettings.js` (load once + `update`, defaults on error); `useTheme.js` dark-mode toggle now fire-and-forgets `PUT /api/settings { theme }` so the choice follows the user across devices; `AIChat.jsx` pre-selects `default_model` for a fresh chat.
+
+#### Observability
+- **Prometheus config shipped** — `deploy/prometheus/prometheus.yml` (scrape config; job `polymath-api` → `api:3000`) + `deploy/prometheus/alert_rules.yml` (the 6 RUNBOOK alert rules, now deployable). `docker-compose.yml` gains a commented-out `prometheus` service that mounts `deploy/prometheus/` at `/etc/prometheus`. RUNBOOK §6.2 references the configs and aligns the "No Metrics" job label to `polymath-api`. Closes V5 §8.1.
+
+#### Accessibility
+- **Axe a11y extended from 7 to 15 pages** (`client/e2e/a11y.spec.js`) — adds Reading, Contacts, Ideas, Goals, Weekly Review, Annual Report, Polymath Dashboard, and AI Chat. Each page is audited across both viewports (15 × 2 = 30 a11y test runs). Closes V5 §10.1.
+
+#### Code Quality
+- **Client enums centralized** — new `client/src/lib/enums.js` mirrors `server/lib/enums.js`: `LINKABLE_TYPES` (22), `TYPE_LABELS`, `TYPE_VARIANTS`, plus the shared Contacts CRM badge maps. `LinkedItems.jsx`, `Contacts.jsx`, and `ContactDetailModal.jsx` now import these instead of re-declaring them, removing the drift risk in V5 §11.1. The previously-missing `chat` type was added to the link label/variant maps.
+
+#### OpenAPI & Docs
+- **OpenAPI** (`generate-openapi.js`) — added the `Settings` tag and `GET`/`PUT /api/settings` paths.
+- **ARCHITECTURE.md** — `user_settings` section flipped from "planning only" to shipped (typed schema, lazy seeding, API, frontend wiring); Route Map completed with every Wave 1–7 router + export + settings; stale "16 `LINKABLE_TYPES`" corrected to 22.
+- **RUNBOOK.md** — §6.2 deployable-config reference; new `SETTINGS_UPDATE` audit event row.
+
 ### Roadmap Wave 7 — AI Assistant (2026-06-12)
 
 > The finishing touch. After six waves, Polymath OS gets its brain: an integrated DeepSeek-powered chatbox for brainstorming, research, and capturing insights without leaving the system.

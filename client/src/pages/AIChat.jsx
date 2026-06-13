@@ -15,6 +15,7 @@ import { ErrorState } from '../components/ui/ErrorState';
 import { EmptyState } from '../components/ui/EmptyState';
 import useDocumentTitle from '../hooks/useDocumentTitle';
 import { useToast } from '../hooks/useToast';
+import useSettings from '../hooks/useSettings';
 
 // Raw fetch needs an absolute base in dev (client :5173 → API :3000); same value
 // the axios client uses. In production this resolves to the same origin.
@@ -37,6 +38,7 @@ const RESEARCH_CONTENT_MAX = 10000;
 export default function AIChat() {
   useDocumentTitle('AI Chat');
   const { addToast } = useToast();
+  const { settings } = useSettings();
   const [searchParams] = useSearchParams();
 
   const [conversations, setConversations] = useState([]);
@@ -58,6 +60,8 @@ export default function AIChat() {
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  // Apply the user's preferred default model exactly once, when settings first load.
+  const appliedDefaultModel = useRef(false);
 
   const fetchConversations = useCallback(async () => {
     try {
@@ -77,6 +81,15 @@ export default function AIChat() {
   // the sanctioned data-fetch-in-effect pattern (same as useApi.js).
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchConversations(); }, [fetchConversations]);
+
+  // Pre-select the user's preferred default model (Post-V5 user_settings). Applies
+  // only to a fresh chat (no conversation open) and only once, so selecting an
+  // existing conversation — which restores the model it used — always wins.
+  useEffect(() => {
+    if (appliedDefaultModel.current || !settings?.default_model || activeConvo) return;
+    appliedDefaultModel.current = true;
+    setModel(settings.default_model);
+  }, [settings, activeConvo]);
 
   // Auto-scroll to the newest message.
   useEffect(() => {

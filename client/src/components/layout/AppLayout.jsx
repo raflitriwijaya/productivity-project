@@ -6,7 +6,7 @@ import {
   LayoutDashboard, CheckSquare, BookOpen, BookMarked, GraduationCap,
   LineChart, Receipt, Wallet, ArrowDownLeft, ArrowUpRight, PieChart, Target,
   Wrench, Code, FileText, ClipboardCheck, Bug, Map, Users, Lightbulb,
-  CalendarCheck, Trophy, Sparkles, MessageSquare,
+  CalendarCheck, Trophy, Sparkles, MessageSquare, Download,
 } from 'lucide-react';
 import api from '../../lib/api';
 import { useTheme } from '../../hooks/useTheme';
@@ -175,6 +175,20 @@ function SidebarContent({ onNavigate }) {
           {isDark ? <Sun size={18} /> : <Moon size={18} />}
           {isDark ? 'Light mode' : 'Dark mode'}
         </button>
+
+        {/* Export all data — triggers a ZIP download from /api/export */}
+        <a
+          href={`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/export`}
+          download
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
+            text-stone-600 dark:text-gray-400
+            hover:bg-stone-100 dark:hover:bg-gray-700
+            transition-colors duration-150"
+          onClick={onNavigate}
+        >
+          <Download size={18} />
+          Export data
+        </a>
 
         {/* Logout — POST /api/auth/logout then redirect to /login */}
         <Button

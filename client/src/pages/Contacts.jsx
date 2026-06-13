@@ -20,12 +20,8 @@ import { EmptyState } from '../components/ui/EmptyState';
 
 import { CreateContactModal } from '../components/contacts/CreateContactModal';
 import { ContactDetailModal } from '../components/contacts/ContactDetailModal';
-
-const TYPE_VARIANTS = {
-  client: 'moss', partner: 'terracotta', supplier: 'amber',
-  investor: 'ember', mentor: 'blue', other: 'gray',
-};
-const STATUS_VARIANTS = { active: 'moss', inactive: 'gray', lead: 'ember' };
+// Post-V5: contact badge maps centralized in the shared client enums module.
+import { CONTACT_TYPE_VARIANTS as TYPE_VARIANTS, CONTACT_STATUS_VARIANTS as STATUS_VARIANTS } from '../lib/enums';
 
 const TYPE_TABS = [
   { key: '',          label: 'All' },

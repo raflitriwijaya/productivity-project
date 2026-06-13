@@ -13,6 +13,15 @@ const PAGES_TO_CHECK = [
   { path: '/finance/accounts',   name: 'Accounts' },
   { path: '/learning',           name: 'Learning' },
   { path: '/research',           name: 'Research' },
+  // Wave 3-7 pages (Post-V5 §10.1 — a11y coverage extended from 7 to 15 pages).
+  { path: '/reading',            name: 'Reading' },
+  { path: '/contacts',           name: 'Contacts' },
+  { path: '/ideas',              name: 'Ideas' },
+  { path: '/goals',              name: 'Goals' },
+  { path: '/review',             name: 'Weekly Review' },
+  { path: '/report',             name: 'Annual Report' },
+  { path: '/polymath',           name: 'Polymath Dashboard' },
+  { path: '/ai-chat',            name: 'AI Chat' },
 ];
 
 test.describe('Accessibility Audit', () => {

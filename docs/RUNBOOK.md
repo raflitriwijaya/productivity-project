@@ -216,7 +216,9 @@ If using Prometheus + Alertmanager (or any compatible monitoring stack), alert o
 | **Pool Exhaustion** | `productivity_pg_pool_connections{state="waiting"}` | > 0 for 5 min | Critical |
 | **Pool Near Capacity** | `productivity_pg_pool_connections{state="total"} / 10` | > 0.8 (80%) for 10 min | Warning |
 | **Health Check Failing** | `rate(productivity_http_requests_total{route="/health",status_code="503"}[5m])` | > 0 for 2 min | Critical |
-| **No Metrics** | `up{job="productivity"}` | == 0 for 5 min | Critical |
+| **No Metrics** | `up{job="polymath-api"}` | == 0 for 5 min | Critical |
+
+These expressions are also shipped as **deployable configs** in [`deploy/prometheus/alert_rules.yml`](../deploy/prometheus/alert_rules.yml) (the 6 rules above) and [`deploy/prometheus/prometheus.yml`](../deploy/prometheus/prometheus.yml) (scrape config; job `polymath-api` targets `api:3000`). Copy the `deploy/prometheus/` directory to your Prometheus server or mount it as a config volume — `docker-compose.yml` ships a commented-out `prometheus` service that mounts it at `/etc/prometheus`.
 
 ### 6.3 Metrics Endpoint Security
 
@@ -241,6 +243,7 @@ The following events are logged at `info` level with `userId` and `reqId` as str
 | `TRANSACTION_CREATE` | New financial transaction created |
 | `LINK_CREATE` | Cross-module link created between two entities |
 | `LINK_DELETE` | Cross-module link deleted |
+| `SETTINGS_UPDATE` | User preferences changed (theme / default_model / notifications) |
 | `DELETE` | Any resource deleted (todos, finances, research, learning, engineer) |
 
 Audit events are structured JSON via pino and include `reqId` for cross-referencing with error logs and Sentry reports. Search by `reqId` across both to reconstruct any incident timeline.

@@ -118,6 +118,19 @@ services:
         crond -f -l 8
       "
 
+  # ── Prometheus (optional) ────────────────────────────────────────────────────
+  # Scrapes /metrics and evaluates the 6 alert rules. The scrape config + rules are
+  # committed at deploy/prometheus/ (prometheus.yml + alert_rules.yml). Uncomment to
+  # run an in-stack Prometheus; lock /metrics down per RUNBOOK §6.3 before exposing.
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   volumes:
+  #     - ./deploy/prometheus:/etc/prometheus
+  #   ports:
+  #     - "9090:9090"
+  #   command: --config.file=/etc/prometheus/prometheus.yml
+  #   restart: unless-stopped
+
 volumes:
   postgres_data:
   uploads_data:      # Phase 2: named volume so attachments survive rebuilds
