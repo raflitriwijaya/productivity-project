@@ -26,4 +26,12 @@ export const poolSize = new client.Gauge({
   registers: [register],
 });
 
+export const aiUpstreamDuration = new client.Histogram({
+  name: 'productivity_ai_upstream_duration_seconds',
+  help: 'Duration of upstream AI API calls in seconds',
+  labelNames: ['provider', 'model', 'status'],
+  buckets: [0.1, 0.5, 1, 2, 5, 10, 30, 60, 120],
+  registers: [register],
+});
+
 export { register };

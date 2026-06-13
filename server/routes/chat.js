@@ -16,6 +16,7 @@ import { z } from 'zod';
 import { validate } from '../middleware/validate.js';
 import { AppError } from '../lib/AppError.js';
 import { logger } from '../lib/logger.js';
+import { aiUpstreamDuration } from '../lib/metrics.js';
 import {
   listConversations,
   getConversationById,
@@ -170,6 +171,8 @@ router.post('/send', validate(sendMessageSchema), async (req, res, next) => {
       if (modelMeta.provider === 'ollama') {
         const ollamaAbort = new AbortController();
         const ollamaTimeout = setTimeout(() => ollamaAbort.abort(), 120_000);
+        const ollamaStart = Date.now();
+        let ollamaStatus = 'success';
         try {
           const ollamaRes = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
             method: 'POST',
@@ -183,6 +186,7 @@ router.post('/send', validate(sendMessageSchema), async (req, res, next) => {
             signal: ollamaAbort.signal,
           });
           if (!ollamaRes.ok || !ollamaRes.body) {
+            ollamaStatus = String(ollamaRes.status);
             throw new Error(`Ollama unavailable (${ollamaRes.status}). Is Ollama running with deepseek-r1:7b pulled?`);
           }
 
@@ -202,8 +206,16 @@ router.post('/send', validate(sendMessageSchema), async (req, res, next) => {
               } catch { /* skip non-JSON keep-alive lines */ }
             }
           }
+        } catch (err) {
+          if (err.name === 'AbortError' || err.code === 'ABORT_ERR') ollamaStatus = 'timeout';
+          else if (ollamaStatus === 'success') ollamaStatus = 'error';
+          throw err;
         } finally {
           clearTimeout(ollamaTimeout);
+          aiUpstreamDuration.observe(
+            { provider: 'ollama', model: 'deepseek-r1:7b', status: ollamaStatus },
+            (Date.now() - ollamaStart) / 1000
+          );
         }
       } else {
         // Cloud DeepSeek API.
@@ -215,6 +227,8 @@ router.post('/send', validate(sendMessageSchema), async (req, res, next) => {
 
         const cloudAbort = new AbortController();
         const cloudTimeout = setTimeout(() => cloudAbort.abort(), 60_000);
+        const cloudStart = Date.now();
+        let cloudStatus = 'success';
         try {
           // Both cloud tiers map to the real deepseek-chat model.
           const apiModel = 'deepseek-chat';
@@ -229,6 +243,7 @@ router.post('/send', validate(sendMessageSchema), async (req, res, next) => {
           });
 
           if (!apiRes.ok || !apiRes.body) {
+            cloudStatus = apiRes.ok ? 'no_body' : String(apiRes.status);
             const errText = await apiRes.text().catch(() => '');
             res.write(`data: ${JSON.stringify({ type: 'error', message: `API error: ${apiRes.status} - ${errText}` })}\n\n`);
             res.end();
@@ -254,8 +269,16 @@ router.post('/send', validate(sendMessageSchema), async (req, res, next) => {
               } catch { /* skip partial/non-JSON frames */ }
             }
           }
+        } catch (err) {
+          if (err.name === 'AbortError' || err.code === 'ABORT_ERR') cloudStatus = 'timeout';
+          else if (cloudStatus === 'success') cloudStatus = 'error';
+          throw err;
         } finally {
           clearTimeout(cloudTimeout);
+          aiUpstreamDuration.observe(
+            { provider: 'deepseek', model: 'deepseek-chat', status: cloudStatus },
+            (Date.now() - cloudStart) / 1000
+          );
         }
       }
 

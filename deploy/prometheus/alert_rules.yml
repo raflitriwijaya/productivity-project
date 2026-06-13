@@ -36,3 +36,15 @@ groups:
         for: 5m
         labels: { severity: critical }
         annotations: { summary: "Metrics endpoint unreachable" }
+
+      - alert: AIUpstreamHighLatency
+        expr: histogram_quantile(0.95, rate(productivity_ai_upstream_duration_seconds_bucket[10m])) > 30
+        for: 10m
+        labels: { severity: warning }
+        annotations: { summary: "AI upstream P95 latency >30s for {{ $labels.provider }}/{{ $labels.model }}" }
+
+      - alert: AIUpstreamTimeoutRate
+        expr: rate(productivity_ai_upstream_duration_seconds_count{status="timeout"}[10m]) / rate(productivity_ai_upstream_duration_seconds_count[10m]) > 0.1
+        for: 5m
+        labels: { severity: warning }
+        annotations: { summary: "AI upstream timeout rate >10% for {{ $labels.provider }}/{{ $labels.model }}" }

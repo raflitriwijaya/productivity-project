@@ -4,13 +4,46 @@ A personal web-based productivity suite that combines task management, finance t
 
 ## Features
 
-- **Dashboard** — overview of recent activity across all modules
-- **Todo** — daily task management
-- **Finance** — transaction recording, ledger reports, budgeting, portfolio, receivables, and payables
-- **Research** — research entry logging and tracking
-- **Learning** — learning notes and progress tracking
-- **Engineering** — IoT/embedded/robotics project tracker with scaffolding templates, a syntax-highlighted code snippet library, per-project Markdown docs, weekly check-ins, an issue tracker, and a 12-month skills roadmap
-- **Universal Links** — connect any item to any other across every module (e.g. link a Finance transaction to a Research entry, or a Learning item to an Engineering project), with an optional note per link, surfaced in the relevant detail views
+### Core Modules (Wave 1-2)
+- **Dashboard** — today's briefing across all modules: tasks due, finance summary, active learning, research stats, engineering issues
+- **Todo** — daily task management with priorities, due dates, and status tracking
+- **Finance** — multi-account ledger (Cash, ATM, DANA, ShopeePay, GoPay, Investment) with transactions, receivables, payables, portfolio, budgets, and revenue tracking
+
+### Knowledge & Learning (Wave 3)
+- **Research** — journal entries with markdown, topics, tags, attachments, semantic search, and AI auto-tagging
+- **Learning** — learning tracker with progress, hours, and status
+- **Reading** — book tracker with shelves (Want to Read / Reading / Finished), progress, ratings, and notes linked to research
+
+### Business & Startup (Wave 4)
+- **Contacts** — client, partner, supplier, investor CRM with links to projects and receivables
+- **Ideas** — capture impulsive ideas before they evaporate; convert to projects, research, or tasks
+- **Revenue Tracking** — founder income categorization alongside expense tracking
+
+### Engineering Toolkit
+- **Projects** — IoT/embedded/robotics project tracker with templates, budget vs actual, and timer
+- **Snippets** — syntax-highlighted code snippet library
+- **Docs** — per-project markdown documentation
+- **Check-ins** — weekly engineering check-ins with health indicators
+- **Issues** — P0-P3 issue tracker with component and assignee
+- **Roadmap** — 12-month skills roadmap with progress tracking
+
+### Reflection & Growth (Wave 5)
+- **Time Tracking** — start/stop timer on any entity (research, reading, engineering, tasks)
+- **Weekly Review** — auto-generated summary across all modules
+- **Goals/OKRs** — cross-module goals with progress derived from linked entities
+- **Annual Report** — yearly polymath report: books, papers, projects, hours
+
+### Intelligence (Wave 6-7)
+- **Polymath Dashboard** — multi-year growth visualization across all disciplines
+- **AI Chat** — DeepSeek-powered chatbox (cloud V4 Pro/Max + local R1 via Ollama) with streaming, context injection from your data, and save-to-research
+- **Semantic Search** — find research by meaning, not just keywords (pgvector)
+- **PWA** — installable, works offline
+- **Quick Capture** — ⌘K command palette for instant task/idea/research capture and cross-module search
+
+### Cross-Module
+- **Universal Links** — connect anything to anything (22 entity types)
+- **Universal Export** — download all your data as ZIP of JSON or CSV
+- **Unified Search** — search across todos, research, learning, transactions, projects, and books
 
 ## Tech Stack
 
@@ -24,6 +57,7 @@ A personal web-based productivity suite that combines task management, finance t
 - @uiw/react-md-editor (Markdown docs editor)
 - rehype-sanitize (markdown XSS sanitization)
 - @sentry/react (error reporting — optional, gated on `VITE_SENTRY_DSN`)
+- @axe-core/playwright (a11y testing — dev only)
 
 **Backend**
 - Node.js + Express 5
@@ -32,6 +66,9 @@ A personal web-based productivity suite that combines task management, finance t
 - Zod (input validation)
 - Helmet (security headers) + express-rate-limit (brute-force protection)
 - Pino (structured logging)
+- prom-client (Prometheus metrics — `/metrics` endpoint)
+- archiver (ZIP streaming for Universal Export)
+- pgvector (semantic search / embeddings)
 - @sentry/node (error reporting — optional, gated on `SENTRY_DSN`)
 
 ## Project Structure

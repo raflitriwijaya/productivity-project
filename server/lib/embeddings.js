@@ -13,6 +13,8 @@
 // and the fire-and-forget indexing hook) treat that as a soft failure so keyword
 // search and the rest of the app stay fully functional.
 
+import { aiUpstreamDuration } from './metrics.js';
+
 const EMBEDDING_API_URL    = process.env.EMBEDDING_API_URL || 'https://api.deepseek.com/v1/embeddings';
 const EMBEDDING_API_KEY    = process.env.EMBEDDING_API_KEY || process.env.DEEPSEEK_API_KEY || '';
 const EMBEDDING_MODEL      = process.env.EMBEDDING_MODEL || 'text-embedding-3-small';
@@ -44,6 +46,7 @@ export async function generateEmbedding(text) {
 
   const abort = new AbortController();
   const timeout = setTimeout(() => abort.abort(), 30_000);
+  const embedStart = Date.now();
   let response;
   try {
     response = await fetch(EMBEDDING_API_URL, {
@@ -59,13 +62,20 @@ export async function generateEmbedding(text) {
       signal: abort.signal,
     });
   } catch (err) {
-    if (err.name === 'AbortError' || err.code === 'ABORT_ERR') {
-      return [];
-    }
-    throw err;
-  } finally {
+    const embedStatus = (err.name === 'AbortError' || err.code === 'ABORT_ERR') ? 'timeout' : 'error';
+    aiUpstreamDuration.observe(
+      { provider: 'deepseek', model: EMBEDDING_MODEL, status: embedStatus },
+      (Date.now() - embedStart) / 1000
+    );
     clearTimeout(timeout);
+    if (embedStatus === 'timeout') return [];
+    throw err;
   }
+  clearTimeout(timeout);
+  aiUpstreamDuration.observe(
+    { provider: 'deepseek', model: EMBEDDING_MODEL, status: 'success' },
+    (Date.now() - embedStart) / 1000
+  );
 
   if (!response.ok) {
     const err = await response.text().catch(() => '');

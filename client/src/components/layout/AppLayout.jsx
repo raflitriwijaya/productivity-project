@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import {
@@ -11,6 +11,7 @@ import {
 import api from '../../lib/api';
 import { useTheme } from '../../hooks/useTheme';
 import { useToast } from '../../hooks/useToast';
+import useSettings from '../../hooks/useSettings';
 import { Button } from '../ui/Button';
 import { QuickCapture } from '../shared/QuickCapture';
 
@@ -85,10 +86,17 @@ const navLinkClass = ({ isActive }) =>
  * @param {{ onNavigate?: () => void }} props
  */
 function SidebarContent({ onNavigate }) {
-  const { isDark, toggle } = useTheme();
+  const { isDark, toggle, hydrateFromServer } = useTheme();
   const navigate = useNavigate();
   const { addToast } = useToast();
   const [loggingOut, setLoggingOut] = useState(false);
+  const { settings } = useSettings();
+
+  // Complete the theme cross-device read path (V6 §4.2): once server settings arrive,
+  // apply the saved theme on a fresh device that has no localStorage preference yet.
+  useEffect(() => {
+    if (settings?.theme) hydrateFromServer(settings.theme);
+  }, [settings?.theme, hydrateFromServer]);
 
   /**
    * Destroy the server session, then redirect to /login. We navigate even if the

@@ -5,9 +5,12 @@
 // Mounted in index.js as:
 //   app.use('/api/export', requireAuth, exportRouter)
 
+import path from 'path';
+import fs from 'fs';
 import { Router } from 'express';
 import archiver from 'archiver';
 import { logger } from '../lib/logger.js';
+import { pool } from '../lib/db.js';
 import { listTodos } from '../models/todo.model.js';
 import { listTransactions } from '../models/finance.model.js';
 import { listLearningItems } from '../models/learning.model.js';
@@ -108,6 +111,7 @@ router.get('/', async (req, res, next) => {
       modules: Object.fromEntries(
         Object.entries(data).map(([k, v]) => [k, Array.isArray(v) ? v.length : 0])
       ),
+      attachments_exported: 0,
     };
 
     res.writeHead(200, {
@@ -123,9 +127,6 @@ router.get('/', async (req, res, next) => {
 
     archive.pipe(res);
 
-    // Summary manifest
-    archive.append(JSON.stringify(summary, null, 2), { name: '_SUMMARY.json' });
-
     for (const [module, rows] of Object.entries(data)) {
       const safeRows = Array.isArray(rows) ? rows : [];
       if (format === 'json') {
@@ -134,6 +135,48 @@ router.get('/', async (req, res, next) => {
         archive.append(toCsv(safeRows), { name: `${module}.csv` });
       }
     }
+
+    // Bundle uploaded attachments
+    try {
+      const uploadsDir = path.resolve('uploads');
+      if (fs.existsSync(uploadsDir)) {
+        const files = fs.readdirSync(uploadsDir).filter(f =>
+          fs.statSync(path.join(uploadsDir, f)).isFile()
+        );
+        const { rows: attachmentRows } = await pool.query(
+          `SELECT filename, original_name FROM research_attachments WHERE user_id = $1`,
+          [req.user.id]
+        );
+        const nameMap = {};
+        for (const row of attachmentRows) {
+          nameMap[row.filename] = row.original_name || row.filename;
+        }
+
+        const usedNames = new Set();
+        for (const file of files) {
+          let displayName = nameMap[file] || file;
+          if (usedNames.has(displayName)) {
+            const ext = path.extname(displayName);
+            const base = path.basename(displayName, ext);
+            let counter = 1;
+            while (usedNames.has(`${base}_${counter}${ext}`)) counter++;
+            displayName = `${base}_${counter}${ext}`;
+          }
+          usedNames.add(displayName);
+          archive.file(path.join(uploadsDir, file), { name: `attachments/${displayName}` });
+        }
+        summary.attachments_exported = usedNames.size;
+      }
+    } catch (err) {
+      (req.log ?? logger).error({ err }, 'Export attachment bundling error');
+      archive.append(
+        JSON.stringify({ error: err.message, section: 'attachments' }, null, 2),
+        { name: 'attachments/_ERROR.txt' }
+      );
+    }
+
+    // Summary manifest (after attachments so the count is final)
+    archive.append(JSON.stringify(summary, null, 2), { name: '_SUMMARY.json' });
 
     await archive.finalize();
   } catch (err) {
