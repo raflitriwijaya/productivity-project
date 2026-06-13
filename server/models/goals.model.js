@@ -171,8 +171,8 @@ export async function getGoalStats(userId) {
              CASE
                WHEN target_date IS NOT NULL AND start_date IS NOT NULL AND target_date > start_date
                THEN LEAST(1, GREATEST(0,
-                 EXTRACT(EPOCH FROM (NOW()::date - start_date)) /
-                 NULLIF(EXTRACT(EPOCH FROM (target_date - start_date)), 0)))
+                 (NOW()::date - start_date)::float /
+                 NULLIF((target_date - start_date), 0)))
                ELSE 0
              END, 0)
        ) AS on_track
