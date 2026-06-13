@@ -14,6 +14,7 @@ import { useToast } from '../../hooks/useToast';
 import useSettings from '../../hooks/useSettings';
 import { Button } from '../ui/Button';
 import { QuickCapture } from '../shared/QuickCapture';
+import NotificationBell from './NotificationBell';
 
 // Single source of truth for nav, grouped into labelled sections. The Finance
 // module fans out into its own section after the multi-account upgrade.
@@ -118,7 +119,7 @@ function SidebarContent({ onNavigate }) {
   return (
     <>
       {/* Logo — "Stoic Garden": moss wordmark with an ember innovation dot */}
-      <div className="h-16 flex items-center px-6 border-b border-stone-200 dark:border-gray-700">
+      <div className="h-16 flex items-center justify-between px-6 border-b border-stone-200 dark:border-gray-700">
         <div>
           <p className="text-sm font-bold text-moss-700 dark:text-moss-400 tracking-tight">
             Rafli's Suite
@@ -128,6 +129,8 @@ function SidebarContent({ onNavigate }) {
             Laboratory
           </p>
         </div>
+        {/* Reminders bell — opens rightward into the content area in the narrow sidebar */}
+        <NotificationBell align="left" />
       </div>
 
       {/* Navigation */}
@@ -260,6 +263,9 @@ export function AppLayout() {
           <p className="text-sm font-bold text-stone-900 dark:text-gray-50 tracking-tight">
             Rafli's Suite
           </p>
+          <div className="ml-auto">
+            <NotificationBell />
+          </div>
         </header>
 
         <main className="min-h-screen">

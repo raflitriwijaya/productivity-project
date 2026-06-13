@@ -5,7 +5,7 @@
 // goalProgress helper, reused by GoalDetailModal (mirrors ResearchEntryRow pattern).
 /* eslint-disable react-refresh/only-export-components */
 
-import { Target, Calendar, Flag } from 'lucide-react';
+import { Target, Calendar, Flag, Flame } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 
 export const PRIORITY_VARIANT = { low: 'gray', medium: 'blue', high: 'amber', critical: 'red' };
@@ -59,8 +59,15 @@ export function GoalCard({ goal, onClick }) {
         <p className="text-xs text-stone-400 dark:text-gray-500 mb-3">{goal.category}</p>
       )}
 
-      {/* Progress */}
-      {pct != null ? (
+      {/* Progress — habits show a streak; numeric goals show a bar */}
+      {goal.goal_type === 'habit' ? (
+        <div className="mt-3 flex items-center gap-1.5 text-xs">
+          <Flame size={13} className={current > 0 ? 'text-ember-500' : 'text-stone-300 dark:text-gray-600'} />
+          <span className={current > 0 ? 'text-stone-600 dark:text-gray-300 font-medium' : 'text-stone-400 dark:text-gray-500'}>
+            {current > 0 ? `${current} day${current === 1 ? '' : 's'} streak` : 'No streak yet'}
+          </span>
+        </div>
+      ) : pct != null ? (
         <div className="mt-3">
           <div className="flex items-center justify-between text-xs mb-1">
             <span className="text-stone-600 dark:text-gray-400 tabular-nums">

@@ -10,6 +10,7 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { LinkedItems } from '../shared/LinkedItems';
+import HabitCalendar from './HabitCalendar';
 import api from '../../lib/api';
 import { useToast } from '../../hooks/useToast';
 import {
@@ -116,8 +117,12 @@ export function GoalDetailModal({ isOpen, onClose, goal, onEdit, onChanged }) {
         <p className="text-sm text-stone-400 dark:text-gray-500 italic">No description.</p>
       )}
 
-      {/* Progress */}
-      {pct != null ? (
+      {/* Progress — habit goals show a streak calendar instead of a numeric bar */}
+      {goal.goal_type === 'habit' ? (
+        <div className="rounded-lg border border-stone-200 dark:border-gray-700 p-4">
+          <HabitCalendar goal={goal} onChanged={onChanged} />
+        </div>
+      ) : pct != null ? (
         <div className="rounded-lg border border-stone-200 dark:border-gray-700 p-4">
           <div className="flex items-center justify-between text-sm mb-2">
             <span className="font-medium text-stone-700 dark:text-gray-300">Progress</span>

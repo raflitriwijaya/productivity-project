@@ -21,6 +21,8 @@ import {
   deleteGoal,
   getGoalStats,
   recalcGoalProgress,
+  toggleHabitLog,
+  getHabitLogs,
 } from '../models/goals.model.js';
 
 const router = Router();
@@ -133,6 +135,51 @@ router.post('/:id/recalc', async (req, res, next) => {
     );
 
     res.json({ success: true, data: goal });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── POST /api/goals/:id/habit-log — toggle today's check-in for a habit goal ──
+// Two-segment path, so it never collides with the single-segment /:id route.
+router.post('/:id/habit-log', async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isInteger(id) || id <= 0) throw new AppError('Invalid goal ID.', 400, 'VALIDATION_ERROR', 'id');
+
+    const goal = await getGoalById(req.user.id, id);
+    if (!goal) throw new AppError('Goal not found.', 404, 'NOT_FOUND');
+    if (goal.goal_type !== 'habit') {
+      throw new AppError('Only habit goals support daily check-ins.', 400, 'VALIDATION_ERROR', 'goal_type');
+    }
+
+    const result = await toggleHabitLog(req.user.id, id);
+
+    (req.log ?? logger).info(
+      { event: 'HABIT_TOGGLE', userId: req.user.id, goalId: id, action: result.action, streak: result.streak, reqId: req.id },
+      `User ${req.user.id} ${result.action} habit goal ${id} (streak ${result.streak})`
+    );
+
+    res.json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── GET /api/goals/:id/habit-logs — calendar data + current streak ───────────
+router.get('/:id/habit-logs', async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isInteger(id) || id <= 0) throw new AppError('Invalid goal ID.', 400, 'VALIDATION_ERROR', 'id');
+
+    const goal = await getGoalById(req.user.id, id);
+    if (!goal) throw new AppError('Goal not found.', 404, 'NOT_FOUND');
+
+    const from = /^\d{4}-\d{2}-\d{2}$/.test(req.query.from ?? '') ? req.query.from : undefined;
+    const to   = /^\d{4}-\d{2}-\d{2}$/.test(req.query.to ?? '')   ? req.query.to   : undefined;
+
+    const data = await getHabitLogs(req.user.id, id, { from, to });
+    res.json({ success: true, data });
   } catch (err) {
     next(err);
   }

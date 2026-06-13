@@ -256,3 +256,126 @@ export async function recalcGoalProgress(userId, goalId) {
   );
   return rows[0] ?? goal;
 }
+
+// ─── Habit Streaks (Roadmap Forward Phase 1) ─────────────────────────────────
+// Goals with goal_type = 'habit' get a daily check-in log (habit_logs). Streaks
+// are derived from the consecutive log_date rows rather than stored, so they can
+// never drift out of sync. Ownership is enforced by the caller (the route fetches
+// the goal via getGoalById first), and every query here is still user-scoped.
+
+/**
+ * Shift a 'YYYY-MM-DD' calendar date by `deltaDays`, using UTC arithmetic so the
+ * walk never drifts with the server's local timezone (DATE has no time/zone).
+ * @param {string} dateStr 'YYYY-MM-DD'
+ * @param {number} deltaDays
+ * @returns {string} 'YYYY-MM-DD'
+ */
+function shiftDate(dateStr, deltaDays) {
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + deltaDays);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Derive the current streak for a habit goal from its log rows. "Today" is the
+ * database's CURRENT_DATE so it agrees with the dates written by toggleHabitLog.
+ * The streak counts back from today (or yesterday, if today isn't logged yet — a
+ * streak isn't broken until a whole day is missed).
+ * @param {number} userId
+ * @param {number} goalId
+ * @returns {Promise<{ streak: number, today: string, checkedToday: boolean, total: number }>}
+ */
+async function deriveStreak(userId, goalId) {
+  const [logsRes, todayRes] = await Promise.all([
+    pool.query(
+      `SELECT to_char(log_date, 'YYYY-MM-DD') AS d
+         FROM habit_logs
+        WHERE user_id = $1 AND goal_id = $2
+        ORDER BY log_date DESC`,
+      [userId, goalId]
+    ),
+    pool.query(`SELECT to_char(CURRENT_DATE, 'YYYY-MM-DD') AS today`),
+  ]);
+
+  const logged = new Set(logsRes.rows.map((r) => r.d));
+  const today = todayRes.rows[0].today;
+  const checkedToday = logged.has(today);
+
+  let streak = 0;
+  let cursor = checkedToday ? today : shiftDate(today, -1);
+  while (logged.has(cursor)) {
+    streak += 1;
+    cursor = shiftDate(cursor, -1);
+  }
+
+  return { streak, today, checkedToday, total: logged.size };
+}
+
+/**
+ * Toggle today's check-in for a habit goal: insert a row if absent, delete it if
+ * present. Recomputes the streak and mirrors it onto goals.current_value so the
+ * card/stats reflect it. Caller must have verified the goal exists, is owned, and
+ * is goal_type = 'habit'.
+ * @param {number} userId
+ * @param {number} goalId
+ * @returns {Promise<{ action: 'checked' | 'unchecked', streak: number, date: string }>}
+ */
+export async function toggleHabitLog(userId, goalId) {
+  const { rows: [existing] } = await pool.query(
+    `SELECT id FROM habit_logs WHERE user_id = $1 AND goal_id = $2 AND log_date = CURRENT_DATE`,
+    [userId, goalId]
+  );
+
+  let action;
+  if (existing) {
+    await pool.query(`DELETE FROM habit_logs WHERE id = $1`, [existing.id]);
+    action = 'unchecked';
+  } else {
+    await pool.query(
+      `INSERT INTO habit_logs (user_id, goal_id, log_date) VALUES ($1, $2, CURRENT_DATE)`,
+      [userId, goalId]
+    );
+    action = 'checked';
+  }
+
+  const { streak, today } = await deriveStreak(userId, goalId);
+
+  // Mirror the streak into current_value (the set_updated_at trigger stamps updated_at).
+  await pool.query(
+    `UPDATE goals SET current_value = $3 WHERE id = $2 AND user_id = $1`,
+    [userId, goalId, streak]
+  );
+
+  return { action, streak, date: today };
+}
+
+/**
+ * Habit calendar data: the log dates within [from, to] (default: the last 90 days
+ * ending today) plus the current streak / checked-today flag derived from the full
+ * history. Dates are returned as 'YYYY-MM-DD' strings so the client compares them
+ * against its own local calendar without timezone surprises.
+ * @param {number} userId
+ * @param {number} goalId
+ * @param {{ from?: string, to?: string }} [range]
+ * @returns {Promise<{ logs: Array<{ log_date: string, value: number, note: string|null }>, current_streak: number, checked_today: boolean, total_days: number }>}
+ */
+export async function getHabitLogs(userId, goalId, { from, to } = {}) {
+  const { rows } = await pool.query(
+    `SELECT to_char(log_date, 'YYYY-MM-DD') AS log_date, value, note
+       FROM habit_logs
+      WHERE user_id = $1 AND goal_id = $2
+        AND log_date BETWEEN COALESCE($3::date, CURRENT_DATE - INTERVAL '89 days')
+                         AND COALESCE($4::date, CURRENT_DATE)
+      ORDER BY log_date ASC`,
+    [userId, goalId, from ?? null, to ?? null]
+  );
+
+  const { streak, checkedToday, total } = await deriveStreak(userId, goalId);
+
+  return {
+    logs: rows,
+    current_streak: streak,
+    checked_today: checkedToday,
+    total_days: total,
+  };
+}

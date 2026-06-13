@@ -47,6 +47,7 @@ import { polymathRouter } from './routes/polymath.js'; // Roadmap Wave 6: Polyma
 import { chatRouter } from './routes/chat.js'; // Roadmap Wave 7: AI Chat (DeepSeek)
 import { exportRouter } from './routes/export.js'; // Universal export (all modules → ZIP)
 import { settingsRouter } from './routes/settings.js'; // Post-V5: server-side user preferences
+import { notificationsRouter } from './routes/notifications.js'; // Roadmap Forward Phase 1: reminders
 
 // ─── Env validation ───────────────────────────────────────────────────────────
 const {
@@ -240,6 +241,7 @@ app.use('/api/polymath', requireAuth, polymathRouter); // Roadmap Wave 6: Polyma
 app.use('/api/chat',     requireAuth, chatRouter); // Roadmap Wave 7: AI Chat (DeepSeek)
 app.use('/api/export',   requireAuth, exportRouter); // Universal data export (ZIP)
 app.use('/api/settings', requireAuth, settingsRouter); // Post-V5: user preferences (theme, model, notifications)
+app.use('/api/notifications', requireAuth, notificationsRouter); // Roadmap Forward Phase 1: reminders (due items, push subscriptions)
 
 // ─── 404 for unmatched API routes ────────────────────────────────────────────
 app.use('/api', (_req, res) => {

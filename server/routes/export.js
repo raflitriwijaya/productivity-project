@@ -8,7 +8,7 @@
 import path from 'path';
 import fs from 'fs';
 import { Router } from 'express';
-import archiver from 'archiver';
+import { ZipArchive } from 'archiver';
 import { logger } from '../lib/logger.js';
 import { pool } from '../lib/db.js';
 import { listTodos } from '../models/todo.model.js';
@@ -119,7 +119,7 @@ router.get('/', async (req, res, next) => {
       'Content-Disposition': `attachment; filename="polymath-export-${Date.now()}.zip"`,
     });
 
-    const archive = archiver('zip', { zlib: { level: 6 } });
+    const archive = new ZipArchive({ zlib: { level: 6 } });
 
     archive.on('error', (err) => {
       (req.log ?? logger).error({ err }, 'Archive error during export');
@@ -144,7 +144,10 @@ router.get('/', async (req, res, next) => {
           fs.statSync(path.join(uploadsDir, f)).isFile()
         );
         const { rows: attachmentRows } = await pool.query(
-          `SELECT filename, original_name FROM research_attachments WHERE user_id = $1`,
+          `SELECT a.filename, a.original_name
+           FROM research_attachments a
+           JOIN research_entries e ON e.id = a.entry_id
+           WHERE e.user_id = $1`,
           [req.user.id]
         );
         const nameMap = {};
