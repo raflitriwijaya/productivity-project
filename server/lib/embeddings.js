@@ -42,17 +42,30 @@ export async function generateEmbedding(text) {
     throw new Error('Cannot embed empty text');
   }
 
-  const response = await fetch(EMBEDDING_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${EMBEDDING_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: EMBEDDING_MODEL,
-      input: text.slice(0, 8000), // truncate to a safe token budget
-    }),
-  });
+  const abort = new AbortController();
+  const timeout = setTimeout(() => abort.abort(), 30_000);
+  let response;
+  try {
+    response = await fetch(EMBEDDING_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${EMBEDDING_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: EMBEDDING_MODEL,
+        input: text.slice(0, 8000), // truncate to a safe token budget
+      }),
+      signal: abort.signal,
+    });
+  } catch (err) {
+    if (err.name === 'AbortError' || err.code === 'ABORT_ERR') {
+      return [];
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!response.ok) {
     const err = await response.text().catch(() => '');

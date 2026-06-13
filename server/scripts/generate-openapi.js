@@ -39,6 +39,8 @@ const spec = {
     { name: 'Ideas',       description: 'Ideas Tracker — capture ideas before they evaporate' },
     { name: 'Polymath',    description: 'Polymath Dashboard — multi-year cross-module growth' },
     { name: 'AI Chat',     description: 'DeepSeek-powered AI assistant chatbox' },
+    { name: 'Export',      description: 'Universal data export — download all modules as a ZIP archive' },
+    { name: 'Settings',    description: 'Server-side user preferences — theme, default AI model, notifications' },
   ],
   components: {
     securitySchemes: {
@@ -1951,6 +1953,57 @@ addPath('post', '/api/chat/send', {
     '200': { description: 'SSE stream of the assistant reply', content: { 'text/event-stream': { schema: { type: 'string' } } } },
     ...r400, ...auth401, ...r404,
   },
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// EXPORT (Universal data export — all modules as ZIP)
+// ═════════════════════════════════════════════════════════════════════════════
+
+addPath('get', '/api/export', {
+  tags: ['Export'],
+  summary: 'Download all user data as a ZIP archive (JSON or CSV per module)',
+  description: 'Exports todos, transactions, learning items, research entries, books, contacts, ideas, goals, time entries, and engineer projects. Returns a ZIP with one file per module plus a `_SUMMARY.json` manifest. Capped at 10 000 rows per module.',
+  security: cookie,
+  parameters: [
+    { name: 'format', in: 'query', schema: { type: 'string', enum: ['json', 'csv'], default: 'json' }, description: 'File format for each module inside the ZIP' },
+  ],
+  responses: {
+    '200': {
+      description: 'ZIP archive download',
+      content: { 'application/zip': { schema: { type: 'string', format: 'binary' } } },
+    },
+    ...r400,
+    ...auth401,
+  },
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// SETTINGS (Server-side user preferences — Post-V5)
+// ═════════════════════════════════════════════════════════════════════════════
+
+const settingsSchema = {
+  type: 'object',
+  properties: {
+    theme:                 { type: 'string', enum: ['light', 'dark', 'system'], default: 'system' },
+    default_model:         { type: 'string', maxLength: 50, default: 'deepseek-chat' },
+    notifications_enabled: { type: 'boolean', default: true },
+  },
+};
+
+addPath('get', '/api/settings', {
+  tags: ['Settings'],
+  summary: 'Get the current user\'s preferences (created with defaults on first access)',
+  security: cookie,
+  responses: { ...ok200, ...auth401 },
+});
+
+addPath('put', '/api/settings', {
+  tags: ['Settings'],
+  summary: 'Update the current user\'s preferences (partial)',
+  description: 'Upserts theme, default AI model, and/or the notification preference. At least one field is required.',
+  security: cookie,
+  requestBody: jsonBody(settingsSchema),
+  responses: { ...ok200, ...r400, ...auth401 },
 });
 
 // ─── Write output ─────────────────────────────────────────────────────────────

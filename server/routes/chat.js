@@ -168,35 +168,42 @@ router.post('/send', validate(sendMessageSchema), async (req, res, next) => {
       const apiMessages = messages.map(m => ({ role: m.role, content: m.content }));
 
       if (modelMeta.provider === 'ollama') {
-        const ollamaRes = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: 'deepseek-r1:7b',
-            messages: apiMessages,
-            stream: true,
-            options: { temperature, top_p },
-          }),
-        });
-        if (!ollamaRes.ok || !ollamaRes.body) {
-          throw new Error(`Ollama unavailable (${ollamaRes.status}). Is Ollama running with deepseek-r1:7b pulled?`);
-        }
-
-        const reader = ollamaRes.body.getReader();
-        const decoder = new TextDecoder();
-        for (;;) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          for (const line of chunk.split('\n').filter(l => l.trim())) {
-            try {
-              const json = JSON.parse(line);
-              if (json.message?.content) {
-                fullResponse += json.message.content;
-                res.write(`data: ${JSON.stringify({ type: 'token', content: json.message.content })}\n\n`);
-              }
-            } catch { /* skip non-JSON keep-alive lines */ }
+        const ollamaAbort = new AbortController();
+        const ollamaTimeout = setTimeout(() => ollamaAbort.abort(), 120_000);
+        try {
+          const ollamaRes = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: 'deepseek-r1:7b',
+              messages: apiMessages,
+              stream: true,
+              options: { temperature, top_p },
+            }),
+            signal: ollamaAbort.signal,
+          });
+          if (!ollamaRes.ok || !ollamaRes.body) {
+            throw new Error(`Ollama unavailable (${ollamaRes.status}). Is Ollama running with deepseek-r1:7b pulled?`);
           }
+
+          const reader = ollamaRes.body.getReader();
+          const decoder = new TextDecoder();
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            for (const line of chunk.split('\n').filter(l => l.trim())) {
+              try {
+                const json = JSON.parse(line);
+                if (json.message?.content) {
+                  fullResponse += json.message.content;
+                  res.write(`data: ${JSON.stringify({ type: 'token', content: json.message.content })}\n\n`);
+                }
+              } catch { /* skip non-JSON keep-alive lines */ }
+            }
+          }
+        } finally {
+          clearTimeout(ollamaTimeout);
         }
       } else {
         // Cloud DeepSeek API.
@@ -206,42 +213,49 @@ router.post('/send', validate(sendMessageSchema), async (req, res, next) => {
           return;
         }
 
-        // Both cloud tiers map to the real deepseek-chat model.
-        const apiModel = 'deepseek-chat';
-        const apiRes = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
-          },
-          body: JSON.stringify({ model: apiModel, messages: apiMessages, temperature, top_p, stream: true }),
-        });
+        const cloudAbort = new AbortController();
+        const cloudTimeout = setTimeout(() => cloudAbort.abort(), 60_000);
+        try {
+          // Both cloud tiers map to the real deepseek-chat model.
+          const apiModel = 'deepseek-chat';
+          const apiRes = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+            },
+            body: JSON.stringify({ model: apiModel, messages: apiMessages, temperature, top_p, stream: true }),
+            signal: cloudAbort.signal,
+          });
 
-        if (!apiRes.ok || !apiRes.body) {
-          const errText = await apiRes.text().catch(() => '');
-          res.write(`data: ${JSON.stringify({ type: 'error', message: `API error: ${apiRes.status} - ${errText}` })}\n\n`);
-          res.end();
-          return;
-        }
-
-        const reader = apiRes.body.getReader();
-        const decoder = new TextDecoder();
-        for (;;) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          for (const line of chunk.split('\n').filter(l => l.trim() && l.startsWith('data: '))) {
-            const data = line.slice(6);
-            if (data === '[DONE]') continue;
-            try {
-              const json = JSON.parse(data);
-              const content = json.choices?.[0]?.delta?.content;
-              if (content) {
-                fullResponse += content;
-                res.write(`data: ${JSON.stringify({ type: 'token', content })}\n\n`);
-              }
-            } catch { /* skip partial/non-JSON frames */ }
+          if (!apiRes.ok || !apiRes.body) {
+            const errText = await apiRes.text().catch(() => '');
+            res.write(`data: ${JSON.stringify({ type: 'error', message: `API error: ${apiRes.status} - ${errText}` })}\n\n`);
+            res.end();
+            return;
           }
+
+          const reader = apiRes.body.getReader();
+          const decoder = new TextDecoder();
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            for (const line of chunk.split('\n').filter(l => l.trim() && l.startsWith('data: '))) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+              try {
+                const json = JSON.parse(data);
+                const content = json.choices?.[0]?.delta?.content;
+                if (content) {
+                  fullResponse += content;
+                  res.write(`data: ${JSON.stringify({ type: 'token', content })}\n\n`);
+                }
+              } catch { /* skip partial/non-JSON frames */ }
+            }
+          }
+        } finally {
+          clearTimeout(cloudTimeout);
         }
       }
 
@@ -256,8 +270,12 @@ router.post('/send', validate(sendMessageSchema), async (req, res, next) => {
         `User ${userId} sent chat message in conversation ${conversation.id}`
       );
     } catch (streamErr) {
+      const isAbort = streamErr.name === 'AbortError' || streamErr.code === 'ABORT_ERR';
+      const message = isAbort
+        ? 'AI request timed out. Try again or switch to the local model.'
+        : streamErr.message;
       (req.log ?? logger).error({ err: streamErr, reqId: req.id }, 'Chat stream error');
-      res.write(`data: ${JSON.stringify({ type: 'error', message: streamErr.message })}\n\n`);
+      res.write(`data: ${JSON.stringify({ type: 'error', message })}\n\n`);
     }
 
     res.end();

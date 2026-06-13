@@ -45,6 +45,8 @@ import { reviewRouter } from './routes/review.js'; // Roadmap Wave 5: Weekly Rev
 import { goalsRouter } from './routes/goals.js'; // Roadmap Wave 5: Goals/OKRs
 import { polymathRouter } from './routes/polymath.js'; // Roadmap Wave 6: Polymath Dashboard
 import { chatRouter } from './routes/chat.js'; // Roadmap Wave 7: AI Chat (DeepSeek)
+import { exportRouter } from './routes/export.js'; // Universal export (all modules → ZIP)
+import { settingsRouter } from './routes/settings.js'; // Post-V5: server-side user preferences
 
 // ─── Env validation ───────────────────────────────────────────────────────────
 const {
@@ -236,6 +238,8 @@ app.use('/api/review',   requireAuth, reviewRouter); // Roadmap Wave 5: Weekly R
 app.use('/api/goals',    requireAuth, goalsRouter); // Roadmap Wave 5: Goals/OKRs
 app.use('/api/polymath', requireAuth, polymathRouter); // Roadmap Wave 6: Polymath Dashboard
 app.use('/api/chat',     requireAuth, chatRouter); // Roadmap Wave 7: AI Chat (DeepSeek)
+app.use('/api/export',   requireAuth, exportRouter); // Universal data export (ZIP)
+app.use('/api/settings', requireAuth, settingsRouter); // Post-V5: user preferences (theme, model, notifications)
 
 // ─── 404 for unmatched API routes ────────────────────────────────────────────
 app.use('/api', (_req, res) => {

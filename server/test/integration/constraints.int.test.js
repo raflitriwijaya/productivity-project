@@ -4,6 +4,7 @@
 // Skips cleanly when DATABASE_URL is not set.
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { hasDb, setupDb, teardownDb, makeUser, cleanupUsers } from './db.setup.js';
+import { getGoalStats } from '../../models/goals.model.js';
 
 describe.skipIf(!hasDb)('DB constraints (real DB)', () => {
   let pool, user, acct1, acct2;
@@ -70,5 +71,36 @@ describe.skipIf(!hasDb)('DB constraints (real DB)', () => {
       code: '23505',
       constraint: 'idx_transactions_transfer_dedup',
     });
+  });
+});
+
+describe.skipIf(!hasDb)('getGoalStats with date-bounded goals (real DB)', () => {
+  let pool, user, goalId;
+
+  beforeAll(async () => {
+    pool = await setupDb();
+    user = await makeUser(pool, `gs_${Date.now()}@t.com`);
+
+    const { rows } = await pool.query(
+      `INSERT INTO goals (user_id, title, goal_type, status, priority, start_date, target_date, target_value, current_value)
+       VALUES ($1, 'Test date-bounded goal', 'target', 'active', 'medium', '2026-01-01', '2026-12-31', 100, 50)
+       RETURNING id`,
+      [user]
+    );
+    goalId = rows[0].id;
+  }, 120_000);
+
+  afterAll(async () => {
+    if (pool && goalId) {
+      await pool.query('DELETE FROM goals WHERE id = $1', [goalId]);
+    }
+    await cleanupUsers(pool, [user]);
+    await teardownDb();
+  });
+
+  it('getGoalStats returns on_track as a number for a date-bounded goal (not a 500)', async () => {
+    const stats = await getGoalStats(user);
+    expect(typeof stats.on_track).toBe('number');
+    expect(stats.active).toBeGreaterThanOrEqual(1);
   });
 });
