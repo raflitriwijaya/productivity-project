@@ -8193,11 +8193,11 @@
                   "model": {
                     "type": "string",
                     "enum": [
-                      "deepseek-chat",
-                      "deepseek-chat-max",
+                      "deepseek-v4-flash",
+                      "deepseek-v4-pro",
                       "deepseek-r1-local"
                     ],
-                    "default": "deepseek-chat"
+                    "default": "deepseek-v4-flash"
                   },
                   "temperature": {
                     "type": "number",
@@ -8353,7 +8353,7 @@
                   "default_model": {
                     "type": "string",
                     "maxLength": 50,
-                    "default": "deepseek-chat"
+                    "default": "deepseek-v4-flash"
                   },
                   "notifications_enabled": {
                     "type": "boolean",

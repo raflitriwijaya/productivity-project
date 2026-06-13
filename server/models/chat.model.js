@@ -47,7 +47,7 @@ export async function getConversationById(userId, convoId) {
 export async function createConversation(userId, data) {
   const {
     title,
-    model = 'deepseek-chat',
+    model = 'deepseek-v4-flash',
     messages = [],
     context_entity_type,
     context_entity_id,

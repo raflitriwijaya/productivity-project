@@ -25,7 +25,7 @@ CREATE TABLE chat_conversations (
   id                  SERIAL PRIMARY KEY,
   user_id             INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   title               VARCHAR(500),
-  model               VARCHAR(100) NOT NULL DEFAULT 'deepseek-chat',
+  model               VARCHAR(100) NOT NULL DEFAULT 'deepseek-v4-flash',
   messages            JSONB NOT NULL DEFAULT '[]'::jsonb,
   context_entity_type VARCHAR(40),
   context_entity_id   INTEGER,

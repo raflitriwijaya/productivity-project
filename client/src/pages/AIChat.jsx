@@ -22,13 +22,13 @@ import useSettings from '../hooks/useSettings';
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const MODEL_LABELS = {
-  'deepseek-chat': 'V4 Pro',
-  'deepseek-chat-max': 'V4 Pro Max',
+  'deepseek-v4-flash': 'V4 Flash',
+  'deepseek-v4-pro': 'V4 Pro',
   'deepseek-r1-local': 'R1 (Local)',
 };
 const MODEL_COLORS = {
-  'deepseek-chat': 'moss',
-  'deepseek-chat-max': 'ember',
+  'deepseek-v4-flash': 'moss',
+  'deepseek-v4-pro': 'ember',
   'deepseek-r1-local': 'terracotta',
 };
 
@@ -45,7 +45,7 @@ export default function AIChat() {
   const [activeConvo, setActiveConvo] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [model, setModel] = useState('deepseek-chat');
+  const [model, setModel] = useState('deepseek-v4-flash');
   const [temperature, setTemperature] = useState(0.7);
   const [topP, setTopP] = useState(0.9);
   const [loading, setLoading] = useState(true);
@@ -353,8 +353,8 @@ export default function AIChat() {
               aria-label="Model"
               className="text-xs border border-stone-300 dark:border-gray-600 rounded-lg px-2 py-1 bg-white dark:bg-gray-800 text-stone-700 dark:text-gray-300"
             >
-              <option value="deepseek-chat">V4 Pro</option>
-              <option value="deepseek-chat-max">V4 Pro Max</option>
+              <option value="deepseek-v4-flash">V4 Flash</option>
+              <option value="deepseek-v4-pro">V4 Pro</option>
               <option value="deepseek-r1-local">R1 (Local)</option>
             </select>
             <button

@@ -15,7 +15,7 @@ const UPDATABLE = ['theme', 'default_model', 'notifications_enabled'];
  */
 export async function getSettings(userId) {
   // Lazily materialise a row using the schema defaults (theme 'system', model
-  // 'deepseek-chat', notifications on). No-op once it exists.
+  // 'deepseek-v4-flash', notifications on). No-op once it exists.
   await pool.query(
     `INSERT INTO user_settings (user_id) VALUES ($1)
      ON CONFLICT (user_id) DO NOTHING`,

@@ -9,7 +9,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../lib/api';
 
-const DEFAULTS = { theme: 'system', default_model: 'deepseek-chat', notifications_enabled: true };
+const DEFAULTS = { theme: 'system', default_model: 'deepseek-v4-flash', notifications_enabled: true };
 
 export default function useSettings() {
   const [settings, setSettings] = useState(null);

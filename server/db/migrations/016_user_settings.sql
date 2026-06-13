@@ -25,7 +25,7 @@ CREATE TABLE user_settings (
   user_id               INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   theme                 VARCHAR(20) NOT NULL DEFAULT 'system'
                         CHECK (theme IN ('light', 'dark', 'system')),
-  default_model         VARCHAR(50) NOT NULL DEFAULT 'deepseek-chat',
+  default_model         VARCHAR(50) NOT NULL DEFAULT 'deepseek-v4-flash',
   notifications_enabled BOOLEAN NOT NULL DEFAULT true,
   created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),

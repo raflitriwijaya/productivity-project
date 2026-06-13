@@ -73,7 +73,7 @@ Once a fix is merged, the vulnerability will be documented in [CHANGELOG.md](CHA
 
 ### AI Chat (DeepSeek cloud)
 
-**What leaves the host:** when a user sends a chat message using a `cloud` model (`deepseek-chat`, `deepseek-chat-max`), the following is transmitted to DeepSeek's API:
+**What leaves the host:** when a user sends a chat message using a `cloud` model (`deepseek-v4-flash`, `deepseek-v4-pro`), the following is transmitted to DeepSeek's API:
 
 1. The user's message text.
 2. All prior messages in the conversation thread (the running context window).

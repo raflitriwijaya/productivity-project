@@ -35,7 +35,7 @@ A personal web-based productivity suite that combines task management, finance t
 
 ### Intelligence (Wave 6-7)
 - **Polymath Dashboard** — multi-year growth visualization across all disciplines
-- **AI Chat** — DeepSeek-powered chatbox (cloud V4 Pro/Max + local R1 via Ollama) with streaming, context injection from your data, and save-to-research
+- **AI Chat** — DeepSeek-powered chatbox (cloud V4 Flash/Pro + local R1 via Ollama) with streaming, context injection from your data, and save-to-research
 - **Semantic Search** — find research by meaning, not just keywords (pgvector)
 - **PWA** — installable, works offline
 - **Quick Capture** — ⌘K command palette for instant task/idea/research capture and cross-module search

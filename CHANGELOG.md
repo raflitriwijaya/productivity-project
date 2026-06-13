@@ -11,6 +11,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 > Closing the highest-ROI gaps from Grand Final Audit V5: server-side preferences, deployable monitoring, broader accessibility coverage, and a single source of truth for client enums.
 
+#### DeepSeek V4 Model Migration
+- **Migrated all DeepSeek model references to the V4 family** ahead of the 2026-07-24 sunset deadline for `deepseek-chat` / `deepseek-reasoner`. Two cloud models: `deepseek-v4-flash` (fast/economical tier, replaces `deepseek-chat`) and `deepseek-v4-pro` (premium/reasoning tier, replaces `deepseek-chat-max` and `deepseek-reasoner`). The local Ollama `deepseek-r1-local` key is unchanged.
+- **Single source of truth** — `server/routes/chat.js` MODELS object now carries an `apiModel` field per entry; the cloud and Ollama code paths use `modelMeta.apiModel` instead of hardcoded strings. Metric labels follow suit.
+- **Backward-compat** — a `MODEL_COMPAT` mapping in the `POST /api/chat/send` handler auto-remaps legacy model IDs from old conversations to their V4 equivalents so existing DB rows don't throw "Unknown model" errors.
+- **Frontend** — model selector labels and keys in `AIChat.jsx` updated; default model is `deepseek-v4-flash`. `useSettings.js` DEFAULTS, `settings.model.js` comment, and both migration `DEFAULT` clauses updated.
+- **Docs** — `SECURITY.md` egress section, `README.md` AI Chat description, `ARCHITECTURE.md` schema, `PROJECT_STATE.md` Wave 7 section, and the OpenAPI spec (`generate-openapi.js`) all updated.
+
 #### User Settings
 - **New `user_settings` table** (migration `016_user_settings.sql`) — typed columns `theme` (light/dark/system, CHECK), `default_model`, `notifications_enabled`; one row per user (`UNIQUE (user_id)`); shared `set_updated_at()` trigger. Lazily seeded on first read, so existing accounts need no backfill.
 - **New settings API** — `server/models/settings.model.js` (`getSettings` lazy-create, `upsertSettings` ensure-then-update so a first write persists the supplied values, not the defaults) + `server/routes/settings.js` mounted `app.use('/api/settings', requireAuth, settingsRouter)`. `GET /api/settings` and `PUT /api/settings` (Zod-validated, `user_id`-scoped, audit event `SETTINGS_UPDATE`).

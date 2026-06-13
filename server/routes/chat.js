@@ -29,10 +29,13 @@ import {
 const router = Router();
 
 // ─── Available models ────────────────────────────────────────────────────────
+// Single source of truth for all model configuration. Frontend reads labels via
+// GET /api/chat/models; backend uses modelMeta.apiModel for the actual API call.
+// DeepSeek V4 family (2026-07-24 sunset deadline for legacy deepseek-chat/reasoner).
 const MODELS = {
-  'deepseek-chat':     { label: 'DeepSeek V4 Pro',       provider: 'cloud' },
-  'deepseek-chat-max': { label: 'DeepSeek V4 Pro Max',   provider: 'cloud' },
-  'deepseek-r1-local': { label: 'DeepSeek R1 (Local)',   provider: 'ollama' },
+  'deepseek-v4-flash': { label: 'DeepSeek V4 Flash',   provider: 'cloud',  apiModel: 'deepseek-v4-flash' },
+  'deepseek-v4-pro':   { label: 'DeepSeek V4 Pro',     provider: 'cloud',  apiModel: 'deepseek-v4-pro' },
+  'deepseek-r1-local': { label: 'DeepSeek R1 (Local)', provider: 'ollama', apiModel: 'deepseek-r1:7b' },
 };
 const MODEL_IDS = Object.keys(MODELS);
 
@@ -45,7 +48,7 @@ const OLLAMA_BASE_URL   = process.env.OLLAMA_BASE_URL || 'http://localhost:11434
 const sendMessageSchema = z.object({
   conversation_id:     z.number().int().positive().optional().nullable(),
   message:             z.string().min(1).max(10000),
-  model:               z.enum(MODEL_IDS).optional().default('deepseek-chat'),
+  model:               z.enum(MODEL_IDS).optional().default('deepseek-v4-flash'),
   temperature:         z.number().min(0).max(2).optional().default(0.7),
   top_p:               z.number().min(0).max(1).optional().default(0.9),
   context_entity_type: z.string().max(40).optional().nullable(),
@@ -114,7 +117,18 @@ router.delete('/conversations/:id', async (req, res, next) => {
 router.post('/send', validate(sendMessageSchema), async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const { conversation_id, message, model, temperature, top_p, context_entity_type, context_entity_id } = req.body;
+    let { conversation_id, message, model, temperature, top_p, context_entity_type, context_entity_id } = req.body;
+
+    // Backward-compat: map legacy model IDs from old conversations to V4 equivalents.
+    // DeepSeek retires deepseek-chat / deepseek-reasoner on 2026-07-24.
+    const MODEL_COMPAT = {
+      'deepseek-chat':     'deepseek-v4-flash',
+      'deepseek-chat-max': 'deepseek-v4-pro',
+      'deepseek-reasoner': 'deepseek-v4-pro',
+    };
+    if (MODEL_COMPAT[model]) {
+      model = MODEL_COMPAT[model];
+    }
 
     const modelMeta = MODELS[model];
     if (!modelMeta) throw new AppError(`Unknown model: ${model}`, 400, 'VALIDATION_ERROR', 'model');
@@ -178,7 +192,7 @@ router.post('/send', validate(sendMessageSchema), async (req, res, next) => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              model: 'deepseek-r1:7b',
+              model: modelMeta.apiModel,
               messages: apiMessages,
               stream: true,
               options: { temperature, top_p },
@@ -213,7 +227,7 @@ router.post('/send', validate(sendMessageSchema), async (req, res, next) => {
         } finally {
           clearTimeout(ollamaTimeout);
           aiUpstreamDuration.observe(
-            { provider: 'ollama', model: 'deepseek-r1:7b', status: ollamaStatus },
+            { provider: 'ollama', model: modelMeta.apiModel, status: ollamaStatus },
             (Date.now() - ollamaStart) / 1000
           );
         }
@@ -230,8 +244,7 @@ router.post('/send', validate(sendMessageSchema), async (req, res, next) => {
         const cloudStart = Date.now();
         let cloudStatus = 'success';
         try {
-          // Both cloud tiers map to the real deepseek-chat model.
-          const apiModel = 'deepseek-chat';
+          const apiModel = modelMeta.apiModel;
           const apiRes = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
             method: 'POST',
             headers: {
@@ -276,7 +289,7 @@ router.post('/send', validate(sendMessageSchema), async (req, res, next) => {
         } finally {
           clearTimeout(cloudTimeout);
           aiUpstreamDuration.observe(
-            { provider: 'deepseek', model: 'deepseek-chat', status: cloudStatus },
+            { provider: 'deepseek', model: modelMeta.apiModel, status: cloudStatus },
             (Date.now() - cloudStart) / 1000
           );
         }

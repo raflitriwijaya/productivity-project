@@ -1897,7 +1897,7 @@ addPath('get', '/api/polymath', {
 // AI CHAT (Roadmap Wave 7 — DeepSeek-powered assistant)
 // ═════════════════════════════════════════════════════════════════════════════
 
-const chatModelEnum = ['deepseek-chat', 'deepseek-chat-max', 'deepseek-r1-local'];
+const chatModelEnum = ['deepseek-v4-flash', 'deepseek-v4-pro', 'deepseek-r1-local'];
 
 addPath('get', '/api/chat/models', {
   tags: ['AI Chat'],
@@ -1943,7 +1943,7 @@ addPath('post', '/api/chat/send', {
     properties: {
       conversation_id:     { type: 'integer', nullable: true, description: 'Omit/null to start a new conversation' },
       message:             { type: 'string', minLength: 1, maxLength: 10000 },
-      model:               { type: 'string', enum: chatModelEnum, default: 'deepseek-chat' },
+      model:               { type: 'string', enum: chatModelEnum, default: 'deepseek-v4-flash' },
       temperature:         { type: 'number', minimum: 0, maximum: 2, default: 0.7 },
       top_p:               { type: 'number', minimum: 0, maximum: 1, default: 0.9 },
       context_entity_type: { type: 'string', maxLength: 40, nullable: true },
@@ -1986,7 +1986,7 @@ const settingsSchema = {
   type: 'object',
   properties: {
     theme:                 { type: 'string', enum: ['light', 'dark', 'system'], default: 'system' },
-    default_model:         { type: 'string', maxLength: 50, default: 'deepseek-chat' },
+    default_model:         { type: 'string', maxLength: 50, default: 'deepseek-v4-flash' },
     notifications_enabled: { type: 'boolean', default: true },
   },
 };
