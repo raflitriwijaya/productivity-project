@@ -6,7 +6,7 @@ import {
   LayoutDashboard, CheckSquare, BookOpen, BookMarked, GraduationCap,
   LineChart, Receipt, Wallet, ArrowDownLeft, ArrowUpRight, PieChart, Target,
   Wrench, Code, FileText, ClipboardCheck, Bug, Map, Users, Lightbulb,
-  CalendarCheck, Trophy, Sparkles, MessageSquare, Download,
+  CalendarCheck, Trophy, Sparkles, MessageSquare, Download, Zap,
 } from 'lucide-react';
 import api from '../../lib/api';
 import { useTheme } from '../../hooks/useTheme';
@@ -29,7 +29,8 @@ const NAV_SECTIONS = [
   {
     label: 'Finance',
     items: [
-      { to: '/finance/dashboard',   label: 'Overview',     icon: LineChart },
+      { to: '/finance/overview',    label: 'Overview',     icon: LayoutDashboard, end: true },
+      { to: '/finance/dashboard',   label: 'Charts',       icon: LineChart },
       { to: '/finance',             label: 'Transactions', icon: Receipt, end: true },
       { to: '/finance/accounts',    label: 'Accounts',     icon: Wallet },
       { to: '/finance/receivables', label: 'Receivables',  icon: ArrowDownLeft },
@@ -56,6 +57,7 @@ const NAV_SECTIONS = [
   {
     label: 'Engineering',
     items: [
+      { to: '/engineer/sprint',   label: 'Sprint Board', icon: Zap },
       { to: '/engineer',          label: 'Projects',  icon: Wrench, end: true },
       { to: '/engineer/snippets', label: 'Snippets',  icon: Code },
       { to: '/engineer/docs',     label: 'Docs',      icon: FileText },

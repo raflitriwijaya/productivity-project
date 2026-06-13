@@ -151,6 +151,95 @@ router.get('/templates', async (_req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ─── GET /api/engineer/sprint — consolidated Sprint Board (V6 §13.2) ───────────
+// One payload that answers "what am I working on now, what's blocked, what did I
+// do this week, and what's next?" so planning a sprint no longer means hopping
+// between Projects / Issues / Check-ins / Roadmap. Additive — the detail pages
+// stay untouched. Reuses listOpenIssues() and getRoadmap() (the latter lazily
+// seeds the per-user skill checklist) so behaviour matches the existing pages.
+router.get('/sprint', async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    const [statsRes, criticalCountRes, projectsRes, criticalIssues, checkinRes, roadmap] =
+      await Promise.all([
+        pool.query(
+          `SELECT
+             COUNT(*) FILTER (WHERE status IN ('planning','development','testing')) AS active,
+             COUNT(*) FILTER (WHERE status = 'deployed')                            AS deployed,
+             COUNT(*) FILTER (WHERE status = 'archived')                            AS archived
+           FROM engineer_projects WHERE user_id = $1`,
+          [userId]
+        ),
+        pool.query(
+          `SELECT COUNT(*) AS c FROM engineer_issues
+           WHERE user_id = $1 AND severity IN ('P0-Critical','P1-High')
+             AND status IN ('open','in_progress')`,
+          [userId]
+        ),
+        pool.query(
+          `SELECT id, name, project_type, status, updated_at FROM engineer_projects
+           WHERE user_id = $1 AND status IN ('planning','development','testing')
+           ORDER BY (status = 'development') DESC, updated_at DESC
+           LIMIT 10`,
+          [userId]
+        ),
+        // Reuse the tested cross-project open-issue query (severity-ordered, carries
+        // project_name). Capped at 15 rows for the board; the stat card uses the
+        // exact count above.
+        listOpenIssues(userId, {
+          severities: ['P0-Critical', 'P1-High'],
+          statuses:   ['open', 'in_progress'],
+          limit:      15,
+        }),
+        // This week's check-in (Monday-anchored, matching getTodayEngineerStats).
+        // Check-ins are per-project; the board surfaces the most recent one logged
+        // this week, with its project name.
+        pool.query(
+          `SELECT ec.id, ec.project_id, ec.week_start, ec.achievements, ec.plans_next,
+                  ec.blockers, ec.bugs_discovered, ec.concerns, ep.name AS project_name
+           FROM engineer_checkins ec
+           LEFT JOIN engineer_projects ep ON ep.id = ec.project_id
+           WHERE ec.user_id = $1 AND ec.week_start = DATE_TRUNC('week', CURRENT_DATE)::date
+           ORDER BY ec.created_at DESC
+           LIMIT 1`,
+          [userId]
+        ),
+        getRoadmap(userId),
+      ]);
+
+    // Open P0/P1 count per project (keyed by id — names aren't unique).
+    const issueCounts = {};
+    for (const i of criticalIssues) {
+      issueCounts[i.project_id] = (issueCounts[i.project_id] || 0) + 1;
+    }
+
+    // "Upcoming skills" = the first 2 roadmap months that still have an incomplete
+    // skill — i.e. where the user is in the 12-month curriculum.
+    const upcomingMonths = roadmap
+      .filter(m => m.skills.some(s => !s.completed))
+      .slice(0, 2)
+      .map(m => ({ month_number: m.month_number, month_title: m.title, skills: m.skills }));
+
+    const s = statsRes.rows[0];
+    res.json({
+      success: true,
+      data: {
+        stats: {
+          active:        parseInt(s.active, 10),
+          deployed:      parseInt(s.deployed, 10),
+          archived:      parseInt(s.archived, 10),
+          open_critical: parseInt(criticalCountRes.rows[0].c, 10),
+        },
+        projects: projectsRes.rows.map(p => ({ ...p, open_issues: issueCounts[p.id] || 0 })),
+        critical_issues: criticalIssues,
+        checkin: checkinRes.rows[0] || null,
+        roadmap_months: upcomingMonths,
+      },
+    });
+  } catch (err) { next(err); }
+});
+
 // ─── Snippets ─────────────────────────────────────────────────────────────────
 
 router.get('/snippets', async (req, res, next) => {

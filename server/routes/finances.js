@@ -165,6 +165,106 @@ router.get('/dashboard', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// GET /api/finances/overview?month&year — one-screen financial review (V6 §13.2).
+// Consolidates Transactions / Accounts / Receivables / Payables / Portfolio /
+// Budget into a single payload so a monthly review no longer means hopping
+// between pages. Additive — every detail page stays untouched. Built entirely on
+// existing model functions (listBudgets already returns spend; listPortfolio
+// already derives market_value/gain) so no new SQL or column assumptions.
+router.get('/overview', async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    // month+year are required-together here (the UI always sends both); reuse the
+    // shared parser so an invalid pair is a clean 400. Default to the current
+    // month when neither is supplied.
+    const { month, year } = parseMonthYear(req);
+    const now = new Date();
+    const m = month ?? now.getMonth() + 1;
+    const y = year ?? now.getFullYear();
+
+    const today    = new Date().toISOString().slice(0, 10);
+    const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+
+    const [summary, budgets, receivables, payables, portfolio, recentTx, accounts] =
+      await Promise.all([
+        getSummary(userId, { month: m, year: y }),
+        listBudgets(userId, { month: m, year: y }),
+        listLedger('receivables', userId, { status: 'outstanding' }),
+        listLedger('payables', userId, { status: 'outstanding' }),
+        listPortfolio(userId),
+        listTransactions(userId, { page: 1, perPage: 10 }),
+        getBalances(userId),
+      ]);
+
+    const income  = parseFloat(summary.total_income) || 0;
+    const expense = parseFloat(summary.total_expense) || 0;
+
+    // Budget vs actual — listBudgets already computed `spent`. Keep only categories
+    // with a budget set or some spend, biggest spenders first.
+    const budgetVsActual = budgets
+      .map((b) => {
+        const budgeted = parseFloat(b.amount) || 0;
+        const spent    = parseFloat(b.spent) || 0;
+        return {
+          category_id:   b.category_id,
+          category_name: b.category_name,
+          budgeted,
+          spent,
+          remaining: budgeted - spent,
+          percent:   budgeted > 0 ? (spent / budgeted) * 100 : 0,
+        };
+      })
+      .filter((b) => b.budgeted > 0 || b.spent > 0)
+      .sort((a, b) => b.spent - a.spent);
+
+    // Aging buckets via lexicographic YYYY-MM-DD comparison (works whether pg
+    // returns the DATE as a string or a Date). No due date → 'upcoming'.
+    const agingOf = (rows) => {
+      const aging = { overdue: 0, due_soon: 0, upcoming: 0, total: 0 };
+      const items = rows.map((r) => {
+        const dueStr = r.due_date
+          ? (typeof r.due_date === 'string'
+              ? r.due_date.slice(0, 10)
+              : new Date(r.due_date).toISOString().slice(0, 10))
+          : null;
+        let bucket = 'upcoming';
+        if (dueStr && dueStr < today) bucket = 'overdue';
+        else if (dueStr && dueStr <= nextWeek) bucket = 'due_soon';
+        const amount = parseFloat(r.amount) || 0;
+        aging[bucket] += amount;
+        aging.total   += amount;
+        return { id: r.id, person: r.person, amount, due_date: r.due_date, aging: bucket };
+      });
+      return { items, aging };
+    };
+
+    const holdings = portfolio.map((h) => ({
+      id:           h.id,
+      name:         h.name,
+      symbol:       h.symbol,
+      quantity:     h.quantity,
+      market_value: parseFloat(h.market_value) || 0,
+      gain:         parseFloat(h.gain) || 0,
+    }));
+    const portfolioTotal = holdings.reduce((sum, h) => sum + h.market_value, 0);
+
+    res.json({
+      success: true,
+      data: {
+        month: m,
+        year:  y,
+        summary: { income, expense, net: income - expense },
+        accounts,
+        budget_vs_actual: budgetVsActual,
+        receivables: agingOf(receivables),
+        payables:    agingOf(payables),
+        portfolio:   { holdings, total: portfolioTotal },
+        recent_transactions: recentTx.rows,
+      },
+    });
+  } catch (err) { next(err); }
+});
+
 // ─── Accounts ────────────────────────────────────────────────────────────────────
 
 router.get('/accounts', async (req, res, next) => {
