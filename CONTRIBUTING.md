@@ -83,7 +83,7 @@ Both jobs must pass before a merge. Set them as required status checks in **Sett
 
 ## Adding a DB Migration
 
-1. **Name your migration:** The next migration number is one higher than the latest in `server/db/migrations/`. Run `ls server/db/migrations/ | tail -5` to see the most recent files. Current latest is `016_user_settings.sql`, so the next would be `017_your_feature.sql`. Follow the established pattern: `DROP TABLE IF EXISTS … CASCADE` for re-runnability, `user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE`, and the shared `set_updated_at()` trigger.
+1. **Name your migration:** Run `ls server/db/migrations/ | tail -5` to see the most recent files. The next migration number is one higher than the latest. Follow the established pattern: `DROP TABLE IF EXISTS … CASCADE` for re-runnability, `user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE`, and the shared `set_updated_at()` trigger.
 2. Write idempotent SQL: `CREATE TABLE IF NOT EXISTS` / `ADD COLUMN IF NOT EXISTS` / `DROP … IF EXISTS CASCADE` before each `CREATE`.
 3. Test by running `npm run migrate` against a dev database.
 4. The CI pipeline does **not** run migrations automatically — do not rely on migrations running in CI tests.

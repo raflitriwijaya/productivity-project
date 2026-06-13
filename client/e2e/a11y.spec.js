@@ -22,6 +22,9 @@ const PAGES_TO_CHECK = [
   { path: '/report',             name: 'Annual Report' },
   { path: '/polymath',           name: 'Polymath Dashboard' },
   { path: '/ai-chat',            name: 'AI Chat' },
+  // Consolidation dashboards (V7 §6.2 / §10.1 — a11y coverage extended to 17 pages).
+  { path: '/engineer/sprint',   name: 'Engineer Sprint Board' },
+  { path: '/finance/overview',  name: 'Finance Overview' },
 ];
 
 test.describe('Accessibility Audit', () => {

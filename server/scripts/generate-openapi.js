@@ -40,7 +40,8 @@ const spec = {
     { name: 'Polymath',    description: 'Polymath Dashboard — multi-year cross-module growth' },
     { name: 'AI Chat',     description: 'DeepSeek-powered AI assistant chatbox' },
     { name: 'Export',      description: 'Universal data export — download all modules as a ZIP archive' },
-    { name: 'Settings',    description: 'Server-side user preferences — theme, default AI model, notifications' },
+    { name: 'Settings',       description: 'Server-side user preferences — theme, default AI model, notifications' },
+    { name: 'Notifications',  description: 'Push notification subscriptions and due-item reminders' },
   ],
   components: {
     securitySchemes: {
@@ -2004,6 +2005,94 @@ addPath('put', '/api/settings', {
   security: cookie,
   requestBody: jsonBody(settingsSchema),
   responses: { ...ok200, ...r400, ...auth401 },
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ENGINEER SPRINT BOARD (Roadmap Forward Phase 1.5)
+// ═════════════════════════════════════════════════════════════════════════════
+
+addPath('get', '/api/engineer/sprint', {
+  tags: ['Engineering'],
+  summary: 'Consolidated Sprint Board — active projects, open issues, and upcoming check-ins in one view',
+  security: cookie,
+  responses: { ...ok200, ...auth401 },
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// FINANCE OVERVIEW (Roadmap Forward Phase 1.5)
+// ═════════════════════════════════════════════════════════════════════════════
+
+addPath('get', '/api/finances/overview', {
+  tags: ['Finances'],
+  summary: 'One-screen financial review: summary, balances, budget progress, top categories, and upcoming payables/receivables',
+  security: cookie,
+  parameters: [
+    { name: 'month', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 12 } },
+    { name: 'year',  in: 'query', schema: { type: 'integer', minimum: 1900 } },
+  ],
+  responses: { ...ok200, ...r400, ...auth401 },
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// NOTIFICATIONS (Roadmap Forward Phase 1.3)
+// ═════════════════════════════════════════════════════════════════════════════
+
+addPath('post', '/api/notifications/subscribe', {
+  tags: ['Notifications'],
+  summary: 'Store (or refresh) a Web Push subscription for this user+endpoint',
+  security: cookie,
+  requestBody: jsonBody({
+    type: 'object', required: ['endpoint', 'keys'],
+    properties: {
+      endpoint: { type: 'string', format: 'uri' },
+      keys: {
+        type: 'object', required: ['p256dh', 'auth'],
+        properties: {
+          p256dh: { type: 'string' },
+          auth:   { type: 'string' },
+        },
+      },
+    },
+  }),
+  responses: { ...ok200, ...r400, ...auth401 },
+});
+
+addPath('get', '/api/notifications/status', {
+  tags: ['Notifications'],
+  summary: 'Whether reminders are enabled (user_settings) + count of stored push endpoints',
+  security: cookie,
+  responses: { ...ok200, ...auth401 },
+});
+
+addPath('get', '/api/notifications/due', {
+  tags: ['Notifications'],
+  summary: 'Items due today through the next 7 days across all modules (todos, receivables, payables, check-ins, goals)',
+  security: cookie,
+  responses: { ...ok200, ...auth401 },
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// HABIT LOGS (Roadmap Forward Phase 1.4 — nested under Goals)
+// ═════════════════════════════════════════════════════════════════════════════
+
+addPath('post', '/api/goals/{id}/habit-log', {
+  tags: ['Goals'],
+  summary: 'Toggle today\'s check-in for a habit goal (insert if absent, delete if present)',
+  security: cookie,
+  parameters: idParam,
+  responses: { ...ok200, ...auth401, ...r404 },
+});
+
+addPath('get', '/api/goals/{id}/habit-logs', {
+  tags: ['Goals'],
+  summary: 'Habit calendar data — log dates in range plus current streak, checked-today flag, and total days',
+  security: cookie,
+  parameters: [
+    ...idParam,
+    { name: 'from', in: 'query', schema: { type: 'string', format: 'date' }, description: 'Start of date range (default: 89 days ago)' },
+    { name: 'to',   in: 'query', schema: { type: 'string', format: 'date' }, description: 'End of date range (default: today)' },
+  ],
+  responses: { ...ok200, ...auth401, ...r404 },
 });
 
 // ─── Write output ─────────────────────────────────────────────────────────────

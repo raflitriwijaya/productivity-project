@@ -2,7 +2,7 @@
 
 > **Status:** Living document. Updated as phases complete and priorities evolve.
 > **Last updated:** 2026-06-13
-> **Current score:** 8.4 blended / 8.6 technical (AUDIT_REPORT_V6.md)
+> **Current score:** 8.6 technical / blended PMF+0.7 from V6 (see AUDIT_REPORT_V7.md)
 > **Foundation era closed:** Waves 1–7 + post-V5 fix-wave, all 9/9 quality gates green.
 
 ---
@@ -45,11 +45,11 @@ Close the remaining V6 gaps. None requires new architecture — these are comple
 | Item | Status |
 |------|--------|
 | 1.1 Theme cross-device read path | ✅ Done (2026-06-13) |
-| 1.2 Attachments in export ZIP | ⬜ |
-| 1.3 Web-push reminders | ⬜ |
-| 1.4 Habit streaks | ⬜ |
-| 1.5 Engineer/Finance consolidation | ⬜ |
-| 1.6 AI upstream latency metric | ⬜ |
+| 1.2 Attachments in export ZIP | ✅ Done (2026-06-13) |
+| 1.3 Web-push reminders | ✅ Done (2026-06-13, v1 — Notification API + polling) |
+| 1.4 Habit streaks | ✅ Done (2026-06-13) |
+| 1.5 Engineer/Finance consolidation | ✅ Done (2026-06-13) |
+| 1.6 AI upstream latency metric | ✅ Done (2026-06-13) |
 | 1.7 Feature-flag on user_settings | ⬜ |
 | 1.8 OpenAPI gate | ⬜ |
 | 1.9 Client coverage in CI | ⬜ |
@@ -136,11 +136,11 @@ These are the architectural decisions that earn the §14 score. Treat them as lo
 | CONTRIBUTING migration number | V6 §11.1 | ✅ Fixed |
 | Theme cross-device read path | V6 §4.2 | ✅ Fixed (2026-06-13) |
 | Forward roadmap exists | V6 §12.1 | ✅ This document |
-| Attachments in export ZIP | V6 §13.3 | ⬜ Phase 1.2 |
-| Web-push reminders | V6 §13.5 | ⬜ Phase 1.3 |
-| Habit streaks/calendar | V6 §13.5 | ⬜ Phase 1.4 |
-| Engineer/Finance consolidation | V6 §13.2 | ⬜ Phase 1.5 |
-| AI upstream latency metric | V6 §8.1 | ⬜ Phase 1.6 |
+| Attachments in export ZIP | V6 §13.3 | ✅ Done (2026-06-13) |
+| Web-push reminders | V6 §13.5 | ✅ Done (2026-06-13, v1) |
+| Habit streaks/calendar | V6 §13.5 | ✅ Done (2026-06-13) |
+| Engineer/Finance consolidation | V6 §13.2 | ✅ Done (2026-06-13) |
+| AI upstream latency metric | V6 §8.1 | ✅ Done (2026-06-13) |
 | Feature-flag on user_settings | V6 §14.4 | ⬜ Phase 1.7 |
 | OpenAPI gate parses spec | V6 §5.1 | ⬜ Phase 1.8 |
 | Client coverage in CI | V6 §6.1 | ⬜ Phase 1.9 |

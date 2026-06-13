@@ -285,7 +285,7 @@ function shiftDate(dateStr, deltaDays) {
  * @param {number} goalId
  * @returns {Promise<{ streak: number, today: string, checkedToday: boolean, total: number }>}
  */
-async function deriveStreak(userId, goalId) {
+export async function deriveStreak(userId, goalId) {
   const [logsRes, todayRes] = await Promise.all([
     pool.query(
       `SELECT to_char(log_date, 'YYYY-MM-DD') AS d

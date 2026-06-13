@@ -14,8 +14,8 @@ import Receivables from './pages/Receivables';
 import Payables from './pages/Payables';
 import Portfolio from './pages/Portfolio';
 import Budget from './pages/Budget';
-import FinanceOverview from './pages/FinanceOverview';
-import EngineerSprint from './pages/EngineerSprint';
+const FinanceOverview = lazy(() => import('./pages/FinanceOverview'));
+const EngineerSprint  = lazy(() => import('./pages/EngineerSprint'));
 import Learning from './pages/Learning';
 import Reading from './pages/Reading';
 import Contacts from './pages/Contacts';
@@ -100,7 +100,7 @@ export default function App() {
             <Route path="/todo" element={<Todo />} />
             <Route path="/ai-chat" element={<AIChat />} />
             <Route path="/finance" element={<Finance />} />
-            <Route path="/finance/overview" element={<FinanceOverview />} />
+            <Route path="/finance/overview" element={<Suspense fallback={<PageFallback />}><FinanceOverview /></Suspense>} />
             <Route path="/finance/dashboard" element={<FinanceDashboard />} />
             <Route path="/finance/accounts" element={<Accounts />} />
             <Route path="/finance/receivables" element={<Receivables />} />
@@ -124,7 +124,7 @@ export default function App() {
                 Each element is wrapped in <Suspense> so the skeleton shows while
                 the route's chunk (and its editor/prism deps) downloads. */}
             <Route path="/engineer"          element={<Suspense fallback={<PageFallback />}><EngineerProjects /></Suspense>} />
-            <Route path="/engineer/sprint"   element={<EngineerSprint />} />
+            <Route path="/engineer/sprint"   element={<Suspense fallback={<PageFallback />}><EngineerSprint /></Suspense>} />
             <Route path="/engineer/snippets" element={<Suspense fallback={<PageFallback />}><EngineerSnippets /></Suspense>} />
             <Route path="/engineer/docs"     element={<Suspense fallback={<PageFallback />}><EngineerDocs /></Suspense>} />
             <Route path="/engineer/checkins" element={<Suspense fallback={<PageFallback />}><EngineerCheckins /></Suspense>} />
