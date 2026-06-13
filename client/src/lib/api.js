@@ -16,10 +16,18 @@ if (import.meta.env.PROD && !import.meta.env.VITE_API_URL) {
   throw new Error('VITE_API_URL is required in production. Set it in your deployment environment.');
 }
 
+// const api = axios.create({
+//   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
+//   headers: { 'Content-Type': 'application/json' },
+//   withCredentials: true,
+// });
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
-  headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
+  // Hapus Content-Type default — biarkan axios auto-detect
+  // FormData akan otomatis jadi multipart/form-data
+  // JSON body akan otomatis jadi application/json
 });
 
 api.interceptors.response.use(
