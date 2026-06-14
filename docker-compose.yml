@@ -67,7 +67,7 @@ services:
     restart: unless-stopped
     # Phase 3: healthcheck on nginx to detect crashed worker processes
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:80/ || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost/ || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -90,33 +90,12 @@ services:
       AWS_DEFAULT_REGION: ${BACKUP_S3_REGION:-auto}
     volumes:
       - postgres_backups:/backups
+      - ./deploy/scripts:/deploy/scripts:ro
     depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
-    entrypoint: >
-      sh -c "
-        apk add --no-cache aws-cli >/dev/null 2>&1 || true;
-        cat > /usr/local/bin/do-backup.sh << 'BACKUPEOF'
-      #!/bin/sh
-      set -e
-      F=/backups/backup_$$(date +%Y%m%d_%H%M%S).sql.gz
-      pg_dump postgresql://productivity:$$PGPASSWORD@db:5432/productivity_db | gzip > \"$$F\"
-      echo \"local backup written: $$F\"
-      if [ -n \"$$S3_BUCKET\" ]; then
-        if [ -n \"$$S3_ENDPOINT\" ]; then
-          aws --endpoint-url \"$$S3_ENDPOINT\" s3 cp \"$$F\" \"s3://$$S3_BUCKET/$$(basename $$F)\" && echo \"off-host copy ok\";
-        else
-          aws s3 cp \"$$F\" \"s3://$$S3_BUCKET/$$(basename $$F)\" && echo \"off-host copy ok\";
-        fi
-      else
-        echo \"S3_BUCKET unset — off-host sync disabled (local backup only)\";
-      fi
-      BACKUPEOF
-        chmod +x /usr/local/bin/do-backup.sh;
-        echo \"$$BACKUP_SCHEDULE /usr/local/bin/do-backup.sh >> /backups/backup.log 2>&1\" | crontab -;
-        crond -f -l 8
-      "
+    entrypoint: ["/deploy/scripts/entrypoint.sh"]
 
   # ── Prometheus (optional) ────────────────────────────────────────────────────
   # Scrapes /metrics and evaluates the 6 alert rules. The scrape config + rules are
@@ -131,7 +110,15 @@ services:
   #   command: --config.file=/etc/prometheus/prometheus.yml
   #   restart: unless-stopped
 
+  cloudflared:
+      image: cloudflare/cloudflared:latest
+      command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+      depends_on:
+        nginx:
+          condition: service_healthy
+      restart: unless-stopped
+
 volumes:
   postgres_data:
   uploads_data:      # Phase 2: named volume so attachments survive rebuilds
-  postgres_backups:  # Phase 3: dedicated backup volume — mount externally for off-host copies
+  postgres_backups:  # Phase 3: dedicated backup volume — mount externally for off-host copi es
