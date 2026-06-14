@@ -38,6 +38,7 @@ const spec = {
     { name: 'Contacts',    description: 'Startup founder CRM — clients, partners, and stakeholders' },
     { name: 'Ideas',       description: 'Ideas Tracker — capture ideas before they evaporate' },
     { name: 'Polymath',    description: 'Polymath Dashboard — multi-year cross-module growth' },
+    { name: 'Roadmaps',    description: 'Custom Learning Roadmaps — user-defined learning paths with tracks and milestones' },
     { name: 'AI Chat',     description: 'DeepSeek-powered AI assistant chatbox' },
     { name: 'Export',      description: 'Universal data export — download all modules as a ZIP archive' },
     { name: 'Settings',       description: 'Server-side user preferences — theme, default AI model, notifications' },
@@ -2092,6 +2093,179 @@ addPath('get', '/api/goals/{id}/habit-logs', {
     { name: 'from', in: 'query', schema: { type: 'string', format: 'date' }, description: 'Start of date range (default: 89 days ago)' },
     { name: 'to',   in: 'query', schema: { type: 'string', format: 'date' }, description: 'End of date range (default: today)' },
   ],
+  responses: { ...ok200, ...auth401, ...r404 },
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ROADMAPS (Custom Learning Roadmaps)
+// ═════════════════════════════════════════════════════════════════════════════
+
+const trackIdParam     = [{ name: 'trackId',     in: 'path', required: true, schema: { type: 'integer' } }];
+const milestoneIdParam = [{ name: 'milestoneId', in: 'path', required: true, schema: { type: 'integer' } }];
+
+const milestoneProps = {
+  title:           { type: 'string', minLength: 1, maxLength: 500 },
+  description:     { type: 'string', nullable: true },
+  status:          { type: 'string', enum: ['pending', 'in_progress', 'completed', 'skipped'] },
+  priority:        { type: 'string', enum: ['low', 'medium', 'high', 'critical'] },
+  sort_order:      { type: 'integer' },
+  due_date:        { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$', nullable: true },
+  notes:           { type: 'string', nullable: true },
+  resources:       { type: 'array', items: { type: 'object', properties: { title: { type: 'string' }, url: { type: 'string' }, type: { type: 'string' } } } },
+  estimated_hours: { type: 'number', minimum: 0, nullable: true },
+  actual_hours:    { type: 'number', minimum: 0, nullable: true },
+};
+
+addPath('get', '/api/roadmaps/stats', {
+  tags: ['Roadmaps'],
+  summary: 'Aggregate stats across all roadmaps (totals, by status, milestone counts)',
+  security: cookie,
+  responses: { ...ok200, ...auth401 },
+});
+
+addPath('get', '/api/roadmaps', {
+  tags: ['Roadmaps'],
+  summary: 'List roadmaps (flat, with track/milestone counts)',
+  security: cookie,
+  parameters: [
+    { name: 'status',   in: 'query', schema: { type: 'string', enum: ['active', 'completed', 'archived', 'paused'] } },
+    { name: 'category', in: 'query', schema: { type: 'string' } },
+    { name: 'sort',     in: 'query', schema: { type: 'string' } },
+    { name: 'order',    in: 'query', schema: { type: 'string', enum: ['asc', 'desc'], default: 'desc' } },
+  ],
+  responses: { ...ok200, ...auth401 },
+});
+
+addPath('post', '/api/roadmaps', {
+  tags: ['Roadmaps'],
+  summary: 'Create a roadmap (optionally with inline starter tracks)',
+  security: cookie,
+  requestBody: jsonBody({
+    type: 'object', required: ['title'],
+    properties: {
+      title:       { type: 'string', minLength: 1, maxLength: 300 },
+      description: { type: 'string', nullable: true },
+      category:    { type: 'string', maxLength: 100, nullable: true },
+      status:      { type: 'string', enum: ['active', 'completed', 'archived', 'paused'], default: 'active' },
+      icon:        { type: 'string', maxLength: 50, nullable: true },
+      color:       { type: 'string', maxLength: 7, nullable: true },
+      tracks:      { type: 'array', maxItems: 20, items: { type: 'object', required: ['title'], properties: { title: { type: 'string', maxLength: 300 }, description: { type: 'string', nullable: true }, color: { type: 'string', maxLength: 7, nullable: true } } } },
+    },
+  }),
+  responses: { '201': { description: 'Created' }, ...r400, ...auth401 },
+});
+
+addPath('get', '/api/roadmaps/{id}', {
+  tags: ['Roadmaps'],
+  summary: 'Get a roadmap with its tracks and milestones nested',
+  security: cookie,
+  parameters: idParam,
+  responses: { ...ok200, ...auth401, ...r404 },
+});
+
+addPath('patch', '/api/roadmaps/{id}', {
+  tags: ['Roadmaps'],
+  summary: 'Update a roadmap (metadata only — progress is auto-calculated)',
+  security: cookie,
+  parameters: idParam,
+  requestBody: jsonBody({
+    type: 'object',
+    properties: {
+      title:       { type: 'string', minLength: 1, maxLength: 300 },
+      description: { type: 'string', nullable: true },
+      category:    { type: 'string', maxLength: 100, nullable: true },
+      status:      { type: 'string', enum: ['active', 'completed', 'archived', 'paused'] },
+      icon:        { type: 'string', maxLength: 50, nullable: true },
+      color:       { type: 'string', maxLength: 7, nullable: true },
+    },
+  }),
+  responses: { ...ok200, ...r400, ...auth401, ...r404 },
+});
+
+addPath('delete', '/api/roadmaps/{id}', {
+  tags: ['Roadmaps'],
+  summary: 'Delete a roadmap (cascades to tracks + milestones)',
+  security: cookie,
+  parameters: idParam,
+  responses: { ...ok200, ...auth401, ...r404 },
+});
+
+addPath('post', '/api/roadmaps/{id}/tracks', {
+  tags: ['Roadmaps'],
+  summary: 'Add a track (lane) to a roadmap',
+  security: cookie,
+  parameters: idParam,
+  requestBody: jsonBody({
+    type: 'object', required: ['title'],
+    properties: {
+      title:       { type: 'string', minLength: 1, maxLength: 300 },
+      description: { type: 'string', nullable: true },
+      color:       { type: 'string', maxLength: 7, nullable: true },
+      sort_order:  { type: 'integer', nullable: true },
+    },
+  }),
+  responses: { '201': { description: 'Created' }, ...r400, ...auth401, ...r404 },
+});
+
+addPath('post', '/api/roadmaps/{id}/recalc', {
+  tags: ['Roadmaps'],
+  summary: 'Force-recalculate roadmap + track progress from milestone statuses',
+  security: cookie,
+  parameters: idParam,
+  responses: { ...ok200, ...auth401, ...r404 },
+});
+
+addPath('patch', '/api/roadmaps/tracks/{trackId}', {
+  tags: ['Roadmaps'],
+  summary: 'Update a track',
+  security: cookie,
+  parameters: trackIdParam,
+  requestBody: jsonBody({
+    type: 'object',
+    properties: {
+      title:       { type: 'string', minLength: 1, maxLength: 300 },
+      description: { type: 'string', nullable: true },
+      color:       { type: 'string', maxLength: 7, nullable: true },
+      sort_order:  { type: 'integer' },
+    },
+  }),
+  responses: { ...ok200, ...r400, ...auth401, ...r404 },
+});
+
+addPath('delete', '/api/roadmaps/tracks/{trackId}', {
+  tags: ['Roadmaps'],
+  summary: 'Delete a track (cascades to its milestones, recalculates progress)',
+  security: cookie,
+  parameters: trackIdParam,
+  responses: { ...ok200, ...auth401, ...r404 },
+});
+
+addPath('post', '/api/roadmaps/tracks/{trackId}/milestones', {
+  tags: ['Roadmaps'],
+  summary: 'Add a milestone to a track',
+  security: cookie,
+  parameters: trackIdParam,
+  requestBody: jsonBody({
+    type: 'object', required: ['title'],
+    properties: milestoneProps,
+  }),
+  responses: { '201': { description: 'Created' }, ...r400, ...auth401, ...r404 },
+});
+
+addPath('patch', '/api/roadmaps/milestones/{milestoneId}', {
+  tags: ['Roadmaps'],
+  summary: 'Update a milestone (status change auto-stamps completed_at + recalculates progress)',
+  security: cookie,
+  parameters: milestoneIdParam,
+  requestBody: jsonBody({ type: 'object', properties: milestoneProps }),
+  responses: { ...ok200, ...r400, ...auth401, ...r404 },
+});
+
+addPath('delete', '/api/roadmaps/milestones/{milestoneId}', {
+  tags: ['Roadmaps'],
+  summary: 'Delete a milestone (recalculates progress)',
+  security: cookie,
+  parameters: milestoneIdParam,
   responses: { ...ok200, ...auth401, ...r404 },
 });
 

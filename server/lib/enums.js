@@ -61,6 +61,8 @@ export const LINKABLE_TYPES = [
   'time_entry', // Roadmap Wave 5 — Time Tracking (mirrors 012_time_entries.sql)
   'goal',       // Roadmap Wave 5 — Goals/OKRs (mirrors 013_goals.sql)
   'chat',       // Roadmap Wave 7 — AI Chat (mirrors 015_chat_history.sql)
+  'learning_roadmap',  // Custom Learning Roadmaps (mirrors 019_learning_roadmaps.sql)
+  'roadmap_milestone', // Custom Learning Roadmaps (mirrors 019_learning_roadmaps.sql)
 ];
 
 // --- Time Tracking (Roadmap Wave 5) ---
@@ -70,3 +72,12 @@ export const TIME_ENTITY_TYPES = ['todo', 'research_entry', 'learning_item', 'en
 export const GOAL_TYPES      = ['target', 'milestone', 'habit', 'learning'];
 export const GOAL_STATUSES   = ['active', 'completed', 'abandoned', 'paused'];
 export const GOAL_PRIORITIES = ['low', 'medium', 'high', 'critical'];
+
+// --- Custom Learning Roadmaps ---
+// User-defined learning paths for any discipline. Mirrors the CHECK constraints in
+// 019_learning_roadmaps.sql. ROADMAP_STATUSES applies to learning_roadmaps; the
+// milestone enums apply to roadmap_milestones (tracks have no status).
+export const ROADMAP_STATUSES     = ['active', 'completed', 'archived', 'paused'];
+export const MILESTONE_STATUSES   = ['pending', 'in_progress', 'completed', 'skipped'];
+export const MILESTONE_PRIORITIES = ['low', 'medium', 'high', 'critical'];
+export const RESOURCE_TYPES       = ['video', 'article', 'book', 'course', 'doc', 'other'];

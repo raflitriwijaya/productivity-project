@@ -32,6 +32,7 @@ import { getIdeaById } from '../models/ideas.model.js';
 import { getTimeEntryById } from '../models/time.model.js';
 import { getGoalById } from '../models/goals.model.js';
 import { getConversationById } from '../models/chat.model.js';
+import { getRoadmapById, getMilestoneRow } from '../models/roadmap.model.js';
 
 const router = Router();
 
@@ -58,6 +59,9 @@ const OWNERSHIP_VALIDATORS = {
   goal:             (id, userId) => getGoalById(userId, id),
   // Wave 7 chat.model.getConversationById is (userId, id) — same adaptation.
   chat:             (id, userId) => getConversationById(userId, id),
+  // Custom Learning Roadmaps — both model fns are (userId, id); adapt the order.
+  learning_roadmap:  (id, userId) => getRoadmapById(userId, id),
+  roadmap_milestone: (id, userId) => getMilestoneRow(userId, id),
 };
 
 /**

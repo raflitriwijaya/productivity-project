@@ -32,10 +32,12 @@ const router = Router();
 // Single source of truth for all model configuration. Frontend reads labels via
 // GET /api/chat/models; backend uses modelMeta.apiModel for the actual API call.
 // DeepSeek V4 family (2026-07-24 sunset deadline for legacy deepseek-chat/reasoner).
+// `thinking` flags whether the model supports DeepSeek's thinking mode. Only
+// deepseek-v4-pro does; Flash and the local R1 ignore the thinking toggle.
 const MODELS = {
-  'deepseek-v4-flash': { label: 'DeepSeek V4 Flash',   provider: 'cloud',  apiModel: 'deepseek-v4-flash' },
-  'deepseek-v4-pro':   { label: 'DeepSeek V4 Pro',     provider: 'cloud',  apiModel: 'deepseek-v4-pro' },
-  'deepseek-r1-local': { label: 'DeepSeek R1 (Local)', provider: 'ollama', apiModel: 'deepseek-r1:7b' },
+  'deepseek-v4-flash': { label: 'DeepSeek V4 Flash',   provider: 'cloud',  apiModel: 'deepseek-v4-flash', thinking: false },
+  'deepseek-v4-pro':   { label: 'DeepSeek V4 Pro',     provider: 'cloud',  apiModel: 'deepseek-v4-pro',   thinking: true },
+  'deepseek-r1-local': { label: 'DeepSeek R1 (Local)', provider: 'ollama', apiModel: 'deepseek-r1:7b',    thinking: false },
 };
 const MODEL_IDS = Object.keys(MODELS);
 
@@ -45,12 +47,16 @@ const DEEPSEEK_BASE_URL = process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek
 const OLLAMA_BASE_URL   = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
 
 // ─── Zod schema ───────────────────────────────────────────────────────────────
+// temperature and top_p are optional (not defaulted) because DeepSeek thinking
+// mode requires them to be OMITTED — see the request-body builder in POST /send.
 const sendMessageSchema = z.object({
   conversation_id:     z.number().int().positive().optional().nullable(),
   message:             z.string().min(1).max(10000),
   model:               z.enum(MODEL_IDS).optional().default('deepseek-v4-flash'),
-  temperature:         z.number().min(0).max(2).optional().default(0.7),
-  top_p:               z.number().min(0).max(1).optional().default(0.9),
+  thinking:            z.boolean().optional().default(false),
+  reasoning_effort:    z.enum(['low', 'medium', 'high', 'max']).optional().default('high'),
+  temperature:         z.number().min(0).max(2).optional(),
+  top_p:               z.number().min(0).max(1).optional(),
   context_entity_type: z.string().max(40).optional().nullable(),
   context_entity_id:   z.number().int().positive().optional().nullable(),
 });
@@ -117,7 +123,7 @@ router.delete('/conversations/:id', async (req, res, next) => {
 router.post('/send', validate(sendMessageSchema), async (req, res, next) => {
   try {
     const userId = req.user.id;
-    let { conversation_id, message, model, temperature, top_p, context_entity_type, context_entity_id } = req.body;
+    let { conversation_id, message, model, thinking, reasoning_effort, temperature, top_p, context_entity_type, context_entity_id } = req.body;
 
     // Backward-compat: map legacy model IDs from old conversations to V4 equivalents.
     // DeepSeek retires deepseek-chat / deepseek-reasoner on 2026-07-24.
@@ -146,8 +152,8 @@ router.post('/send', validate(sendMessageSchema), async (req, res, next) => {
         messages: [],
         context_entity_type: context_entity_type ?? null,
         context_entity_id: context_entity_id ?? null,
-        temperature,
-        top_p,
+        temperature: temperature ?? 0.7,
+        top_p: top_p ?? 0.9,
       });
     }
 
@@ -180,7 +186,33 @@ router.post('/send', validate(sendMessageSchema), async (req, res, next) => {
 
     try {
       let fullResponse = '';
-      const apiMessages = messages.map(m => ({ role: m.role, content: m.content }));
+      let fullReasoning = '';
+
+      // Build the upstream message list. reasoning_content MUST be passed back for
+      // tool-call turns (DeepSeek thinking-mode docs); for non-tool-call turns it
+      // is ignored, so including it is harmless.
+      const apiMessages = messages.map(m => {
+        const msg = { role: m.role, content: m.content };
+        if (m.reasoning_content) {
+          msg.reasoning_content = m.reasoning_content;
+        }
+        return msg;
+      });
+
+      // Trim to avoid exceeding the context window (400 on token overflow). Keep
+      // any system messages plus the most recent N non-system turns.
+      const MAX_MESSAGES = modelMeta.thinking ? 30 : 20;
+      let trimmedMessages = [...apiMessages];
+      if (trimmedMessages.length > MAX_MESSAGES) {
+        const systemMessages = trimmedMessages.filter(m => m.role === 'system');
+        const recentMessages = trimmedMessages.filter(m => m.role !== 'system').slice(-MAX_MESSAGES);
+        trimmedMessages = [...systemMessages, ...recentMessages];
+      }
+      // Truncate very long individual messages.
+      trimmedMessages = trimmedMessages.map(m => ({
+        ...m,
+        content: typeof m.content === 'string' ? m.content.slice(0, 8000) : m.content,
+      }));
 
       if (modelMeta.provider === 'ollama') {
         const ollamaAbort = new AbortController();
@@ -193,9 +225,9 @@ router.post('/send', validate(sendMessageSchema), async (req, res, next) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               model: modelMeta.apiModel,
-              messages: apiMessages,
+              messages: trimmedMessages,
               stream: true,
-              options: { temperature, top_p },
+              options: { temperature: temperature ?? 0.7, top_p: top_p ?? 0.9 },
             }),
             signal: ollamaAbort.signal,
           });
@@ -244,14 +276,28 @@ router.post('/send', validate(sendMessageSchema), async (req, res, next) => {
         const cloudStart = Date.now();
         let cloudStatus = 'success';
         try {
-          const apiModel = modelMeta.apiModel;
+          // Build request body — when thinking mode is enabled DeepSeek requires
+          // temperature/top_p (and presence/frequency penalties) to be OMITTED.
+          const requestBody = {
+            model: modelMeta.apiModel,
+            messages: trimmedMessages,
+            stream: true,
+          };
+          if (modelMeta.thinking && thinking) {
+            requestBody.thinking = { type: 'enabled' };
+            requestBody.reasoning_effort = reasoning_effort || 'high';
+          } else {
+            if (temperature !== undefined) requestBody.temperature = temperature;
+            if (top_p !== undefined) requestBody.top_p = top_p;
+          }
+
           const apiRes = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
             },
-            body: JSON.stringify({ model: apiModel, messages: apiMessages, temperature, top_p, stream: true }),
+            body: JSON.stringify(requestBody),
             signal: cloudAbort.signal,
           });
 
@@ -274,7 +320,13 @@ router.post('/send', validate(sendMessageSchema), async (req, res, next) => {
               if (data === '[DONE]') continue;
               try {
                 const json = JSON.parse(data);
-                const content = json.choices?.[0]?.delta?.content;
+                const delta = json.choices?.[0]?.delta || {};
+                const reasoning = delta.reasoning_content;
+                const content = delta.content;
+                if (reasoning) {
+                  fullReasoning += reasoning;
+                  res.write(`data: ${JSON.stringify({ type: 'reasoning', content: reasoning })}\n\n`);
+                }
                 if (content) {
                   fullResponse += content;
                   res.write(`data: ${JSON.stringify({ type: 'token', content })}\n\n`);
@@ -295,8 +347,13 @@ router.post('/send', validate(sendMessageSchema), async (req, res, next) => {
         }
       }
 
-      // Persist the assistant reply.
-      messages.push({ role: 'assistant', content: fullResponse });
+      // Persist the assistant reply. Save reasoning_content so it can be passed
+      // back on subsequent tool-call turns (DeepSeek thinking-mode requirement).
+      messages.push({
+        role: 'assistant',
+        content: fullResponse,
+        ...(fullReasoning ? { reasoning_content: fullReasoning } : {}),
+      });
       await updateConversation(userId, conversation.id, { messages });
 
       res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
