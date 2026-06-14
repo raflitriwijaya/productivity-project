@@ -161,3 +161,72 @@ describe('Auth flow', () => {
     expect(res.status).toBe(401);
   });
 });
+
+describe('PUT /api/auth/password', () => {
+  // Log in via an agent so the session cookie rides along to the password change.
+  // Returns the agent and the bcrypt hash of `currentPass` for the seeded user.
+  async function loginAgent(currentPass = 'currentPass') {
+    const agent = request.agent(makeApp());
+    const hash = await bcrypt.hash(currentPass, 10);
+    pool.query.mockResolvedValueOnce({
+      rows: [{ id: 1, email: 'alice@test.com', name: 'Alice', password_hash: hash }],
+    }); // login → findByEmail
+    await agent.post('/api/auth/login').send({ email: 'alice@test.com', password: currentPass });
+    return { agent, hash };
+  }
+
+  it('→ 401 AUTH_REQUIRED when there is no session', async () => {
+    const res = await request(makeApp())
+      .put('/api/auth/password')
+      .send({ current_password: 'whatever', new_password: 'newpassword123' });
+
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('AUTH_REQUIRED');
+  });
+
+  it('→ 200 and re-hashes the password on correct current password', async () => {
+    const { agent, hash } = await loginAgent();
+    pool.query
+      .mockResolvedValueOnce({ rows: [{ password_hash: hash }] }) // SELECT password_hash
+      .mockResolvedValueOnce({ rowCount: 1 });                    // UPDATE
+
+    const res = await agent
+      .put('/api/auth/password')
+      .send({ current_password: 'currentPass', new_password: 'newpassword123' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+
+    // The UPDATE must store a bcrypt hash of the NEW password, never the plaintext.
+    const updateCall = pool.query.mock.calls.at(-1);
+    expect(updateCall[0]).toMatch(/UPDATE users SET password_hash/i);
+    const storedHash = updateCall[1][0];
+    expect(storedHash).not.toBe('newpassword123');
+    expect(await bcrypt.compare('newpassword123', storedHash)).toBe(true);
+  });
+
+  it('→ 400 VALIDATION_ERROR on incorrect current password (field=current_password)', async () => {
+    const { agent, hash } = await loginAgent();
+    pool.query.mockResolvedValueOnce({ rows: [{ password_hash: hash }] }); // SELECT password_hash
+
+    const res = await agent
+      .put('/api/auth/password')
+      .send({ current_password: 'wrongPass', new_password: 'newpassword123' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.field).toBe('current_password');
+  });
+
+  it('→ 400 VALIDATION_ERROR when the new password is shorter than 8 chars', async () => {
+    const { agent } = await loginAgent();
+
+    const res = await agent
+      .put('/api/auth/password')
+      .send({ current_password: 'currentPass', new_password: 'short' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.field).toBe('new_password');
+  });
+});

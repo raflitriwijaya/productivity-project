@@ -126,6 +126,8 @@ app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 // The session table is auto-created on first connect (createTableIfMissing: true).
 const PgSession = connectPgSimple(session);
 
+app.set('trust proxy', 1); // Required in production so Express sees the real client IP and protocol
+
 app.use(session({
   name: 'sid', // Must match the cookie name cleared in POST /api/auth/logout.
   secret: SESSION_SECRET,

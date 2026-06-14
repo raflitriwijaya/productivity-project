@@ -6,7 +6,7 @@ import {
   LayoutDashboard, CheckSquare, BookOpen, BookMarked, GraduationCap,
   LineChart, Receipt, Wallet, ArrowDownLeft, ArrowUpRight, PieChart, Target,
   Wrench, Code, FileText, ClipboardCheck, Bug, Map, Users, Lightbulb,
-  CalendarCheck, Trophy, Sparkles, MessageSquare, Download, Zap,
+  CalendarCheck, Trophy, Sparkles, MessageSquare, Download, Zap, Lock,
 } from 'lucide-react';
 import api from '../../lib/api';
 import { useTheme } from '../../hooks/useTheme';
@@ -14,6 +14,7 @@ import { useToast } from '../../hooks/useToast';
 import useSettings from '../../hooks/useSettings';
 import { Button } from '../ui/Button';
 import { QuickCapture } from '../shared/QuickCapture';
+import ChangePasswordModal from '../auth/ChangePasswordModal';
 import NotificationBell from './NotificationBell';
 
 // Single source of truth for nav, grouped into labelled sections. The Finance
@@ -93,6 +94,7 @@ function SidebarContent({ onNavigate }) {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const { settings } = useSettings();
 
   // Complete the theme cross-device read path (V6 §4.2): once server settings arrive,
@@ -203,6 +205,19 @@ function SidebarContent({ onNavigate }) {
           Export data
         </a>
 
+        {/* Change password — opens a modal (does NOT call onNavigate: closing the
+            mobile drawer would unmount the modal that lives in this subtree). */}
+        <button
+          onClick={() => setShowPasswordModal(true)}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
+            text-stone-600 dark:text-gray-400
+            hover:bg-stone-100 dark:hover:bg-gray-700
+            transition-colors duration-150"
+        >
+          <Lock size={18} />
+          Change password
+        </button>
+
         {/* Logout — POST /api/auth/logout then redirect to /login */}
         <Button
           variant="ghost"
@@ -216,6 +231,11 @@ function SidebarContent({ onNavigate }) {
           {loggingOut ? 'Signing out…' : 'Log out'}
         </Button>
       </div>
+
+      <ChangePasswordModal
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+      />
     </>
   );
 }

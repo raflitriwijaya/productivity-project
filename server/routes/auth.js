@@ -7,8 +7,10 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs'; // Phase 3: switched from bcrypt to drop tar/node-pre-gyp high-severity vulns
 import { z } from 'zod';
 import { findByEmail, createUser, findById } from '../models/user.model.js';
+import { pool } from '../lib/db.js'; // Change-password reads/writes password_hash directly (findById omits it).
 import { AppError } from '../lib/AppError.js';
 import { validate } from '../middleware/validate.js';
+import { requireAuth } from '../middleware/auth.js'; // Per-route guard — the auth router itself is mounted publicly.
 import { logger } from '../lib/logger.js';
 
 export const authRouter = Router();
@@ -26,6 +28,11 @@ const registerSchema = z.object({
 const loginSchema = z.object({
   email:    z.string().email('A valid email is required.'),
   password: z.string().min(1, 'Password is required.'),
+});
+
+const changePasswordSchema = z.object({
+  current_password: z.string().min(1, 'Current password is required.'),
+  new_password:     z.string().min(8, 'New password must be at least 8 characters.'),
 });
 
 // ─── POST /api/auth/register ──────────────────────────────────────────────────
@@ -125,6 +132,47 @@ authRouter.get('/me', async (req, res, next) => {
     }
 
     return res.json({ success: true, data: user });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── PUT /api/auth/password ───────────────────────────────────────────────────
+// Change the signed-in user's password (current password required). requireAuth
+// is applied per-route because this router is mounted publicly (login/register
+// must stay open). Session is intentionally NOT regenerated — per spec the user
+// stays logged in after changing their password.
+
+authRouter.put('/password', requireAuth, validate(changePasswordSchema), async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { current_password, new_password } = req.body;
+
+    // findById() deliberately omits password_hash, so read the hash directly.
+    const { rows } = await pool.query(
+      'SELECT password_hash FROM users WHERE id = $1 LIMIT 1',
+      [userId]
+    );
+    const user = rows[0];
+    if (!user) {
+      throw new AppError('User not found.', 404, 'NOT_FOUND');
+    }
+
+    const passwordMatch = await bcrypt.compare(current_password, user.password_hash);
+    if (!passwordMatch) {
+      (req.log ?? logger).info({ event: 'PASSWORD_CHANGE_FAILURE', userId, reason: 'invalid_current_password', reqId: req.id }, `Failed password change for user ${userId}`);
+      throw new AppError('Current password is incorrect.', 400, 'VALIDATION_ERROR', 'current_password');
+    }
+
+    const password_hash = await bcrypt.hash(new_password, BCRYPT_ROUNDS);
+    await pool.query(
+      'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2',
+      [password_hash, userId]
+    );
+
+    (req.log ?? logger).info({ event: 'PASSWORD_CHANGE', userId, reqId: req.id }, `User ${userId} changed their password`);
+
+    return res.json({ success: true, data: { message: 'Password changed successfully.' } });
   } catch (err) {
     next(err);
   }
