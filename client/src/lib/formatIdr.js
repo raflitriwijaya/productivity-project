@@ -45,6 +45,23 @@ export function parseIdrInput(input) {
 }
 
 /**
+ * Normalize a stored numeric value (the API returns money as a NUMERIC string such
+ * as "59137.00") into a plain, un-grouped string for use as a raw <input> value —
+ * e.g. "59137.00" → "59137", "1500.5" → "1500.5". Nullish / empty / non-numeric → "".
+ *
+ * Money inputs submit raw numbers parsed with `Number()`, so this must NOT apply
+ * locale grouping: grouping with "." (id-ID) is exactly what caused the ×100 bug,
+ * because `parseIdrInput` then treats a "." decimal point as a thousands separator.
+ * @param {string|number|null|undefined} value
+ * @returns {string}
+ */
+export function toAmountInput(value) {
+  if (value == null || value === '') return '';
+  const n = Number(value);
+  return Number.isFinite(n) ? String(n) : '';
+}
+
+/**
  * Reformat a raw input value into grouped digits for display inside a text field,
  * with no currency symbol — e.g. "1500000" → "1.500.000". Keeps a lone leading
  * minus or empty string as-is so typing isn't interrupted.

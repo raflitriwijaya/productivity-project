@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input, Textarea, Select } from '../ui/Input';
-import { parseIdrInput, formatIdrInput } from '../../lib/formatIdr';
+import { toAmountInput } from '../../lib/formatIdr';
 
 const EMPTY_FORM = { person: '', amount: '', due_date: '', account_id: '', description: '' };
 
@@ -37,7 +37,7 @@ export function LedgerModal({ isOpen, onClose, onSubmit, record, accounts = [], 
     if (isEditing) {
       setForm({
         person:      record.person ?? '',
-        amount:      formatIdrInput(String(record.amount ?? '')),
+        amount:      toAmountInput(record.amount),
         due_date:    record.due_date?.slice(0, 10) ?? '',
         account_id:  record.account_id != null ? String(record.account_id) : '',
         description: record.description ?? '',
@@ -52,7 +52,7 @@ export function LedgerModal({ isOpen, onClose, onSubmit, record, accounts = [], 
 
   function set(field) {
     return (e) => {
-      const value = field === 'amount' ? formatIdrInput(e.target.value.replace(/-/g, '')) : e.target.value;
+      const value = field === 'amount' ? e.target.value.replace(/[^0-9.]/g, '') : e.target.value;
       setForm(prev => ({ ...prev, [field]: value }));
       setErrors(prev => { if (!prev[field]) return prev; const n = { ...prev }; delete n[field]; return n; });
     };
@@ -61,8 +61,8 @@ export function LedgerModal({ isOpen, onClose, onSubmit, record, accounts = [], 
   function validate() {
     const e = {};
     if (!form.person.trim()) e.person = `${personLabel} is required.`;
-    const amt = parseIdrInput(form.amount);
-    if (Number.isNaN(amt) || amt <= 0) e.amount = 'Enter a valid positive amount.';
+    const amt = Number(form.amount);
+    if (form.amount === '' || Number.isNaN(amt) || amt <= 0) e.amount = 'Enter a valid positive amount.';
     return e;
   }
 
@@ -74,7 +74,7 @@ export function LedgerModal({ isOpen, onClose, onSubmit, record, accounts = [], 
     try {
       await onSubmit({
         person:      form.person.trim(),
-        amount:      parseIdrInput(form.amount),
+        amount:      Number(form.amount),
         due_date:    form.due_date || null,
         account_id:  form.account_id ? Number(form.account_id) : null,
         description: form.description.trim() || null,

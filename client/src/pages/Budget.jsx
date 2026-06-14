@@ -19,17 +19,17 @@ import { ErrorState } from '../components/ui/ErrorState';
 
 import { MonthYearSelector } from '../components/finance/MonthYearSelector';
 import { ProgressBar } from '../components/finance/ProgressBar';
-import { formatIdr, parseIdrInput, formatIdrInput } from '../lib/formatIdr';
+import { formatIdr, toAmountInput } from '../lib/formatIdr';
 
 /** Inline-editable budget amount — commits on blur or Enter when changed. */
 function BudgetAmountCell({ row, onSave }) {
-  const [value, setValue] = useState(formatIdrInput(String(row.amount ?? '')));
+  const [value, setValue] = useState(toAmountInput(row.amount));
   const [saving, setSaving] = useState(false);
 
   async function commit() {
-    const parsed = parseIdrInput(value || '0');
-    if (Number.isNaN(parsed) || parsed < 0 || parsed === (parseFloat(row.amount) || 0)) {
-      setValue(formatIdrInput(String(row.amount ?? '')));
+    const parsed = Number(value);
+    if (Number.isNaN(parsed) || parsed < 0 || parsed === (Number(row.amount) || 0)) {
+      setValue(toAmountInput(row.amount));
       return;
     }
     setSaving(true);
@@ -47,7 +47,7 @@ function BudgetAmountCell({ row, onSave }) {
         inputMode="numeric"
         value={value}
         disabled={saving}
-        onChange={(e) => setValue(formatIdrInput(e.target.value.replace(/-/g, '')))}
+        onChange={(e) => setValue(e.target.value.replace(/[^0-9.]/g, ''))}
         onBlur={commit}
         onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
         className="text-right py-1.5"

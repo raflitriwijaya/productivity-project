@@ -23,17 +23,17 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { PortfolioModal } from '../components/finance/PortfolioModal';
 import { PortfolioDetailModal } from '../components/finance/PortfolioDetailModal';
 import { DonutChart } from '../components/finance/charts/DonutChart';
-import { formatIdr, parseIdrInput, formatIdrInput } from '../lib/formatIdr';
+import { formatIdr, toAmountInput } from '../lib/formatIdr';
 
 /** Inline-editable current price cell — commits on blur or Enter when changed. */
 function CurrentPriceCell({ row, onSave }) {
-  const [value, setValue] = useState(formatIdrInput(String(row.current_price ?? '')));
+  const [value, setValue] = useState(toAmountInput(row.current_price));
   const [saving, setSaving] = useState(false);
 
   async function commit() {
-    const parsed = parseIdrInput(value || '0');
-    if (Number.isNaN(parsed) || parsed === (parseFloat(row.current_price) || 0)) {
-      setValue(formatIdrInput(String(row.current_price ?? '')));
+    const parsed = Number(value);
+    if (Number.isNaN(parsed) || parsed === (Number(row.current_price) || 0)) {
+      setValue(toAmountInput(row.current_price));
       return;
     }
     setSaving(true);
@@ -51,7 +51,7 @@ function CurrentPriceCell({ row, onSave }) {
         inputMode="numeric"
         value={value}
         disabled={saving}
-        onChange={(e) => setValue(formatIdrInput(e.target.value.replace(/-/g, '')))}
+        onChange={(e) => setValue(e.target.value.replace(/[^0-9.]/g, ''))}
         onBlur={commit}
         onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
         className="text-right py-1.5"

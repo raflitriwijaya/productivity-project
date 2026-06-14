@@ -16,7 +16,7 @@ import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Skeleton } from '../components/ui/Skeleton';
 import { ErrorState } from '../components/ui/ErrorState';
-import { formatIdr, parseIdrInput, formatIdrInput } from '../lib/formatIdr';
+import { formatIdr, toAmountInput } from '../lib/formatIdr';
 
 const ACCOUNT_ICON = {
   CASH: Banknote, ATM: Landmark, DANA: Wallet, SHOPEEPAY: ShoppingBag, GOPAY: Smartphone, INVESTMENT: TrendingUp,
@@ -33,7 +33,7 @@ function AccountEditModal({ isOpen, onClose, onSubmit, account }) {
     /* Phase 4: setState here is intentional modal-open sync */
     /* eslint-disable react-hooks/set-state-in-effect */
     setName(account.name ?? '');
-    setInitial(formatIdrInput(String(account.initial_balance ?? '')));
+    setInitial(toAmountInput(account.initial_balance));
     setError('');
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [isOpen, account]);
@@ -42,7 +42,7 @@ function AccountEditModal({ isOpen, onClose, onSubmit, account }) {
     if (!name.trim()) { setError('Name is required.'); return; }
     setSubmitting(true);
     try {
-      await onSubmit({ name: name.trim(), initial_balance: parseIdrInput(initial || '0') || 0 });
+      await onSubmit({ name: name.trim(), initial_balance: Number(initial || '0') || 0 });
     } catch (err) {
       setError(err.message ?? 'Could not save.');
     } finally {
@@ -66,7 +66,7 @@ function AccountEditModal({ isOpen, onClose, onSubmit, account }) {
       }
     >
       <Input id="acc-name" label="Account Name" value={name} onChange={(e) => { setName(e.target.value); setError(''); }} error={error || undefined} disabled={submitting} />
-      <Input id="acc-initial" label="Opening Balance (IDR)" inputMode="numeric" value={initial} onChange={(e) => setInitial(formatIdrInput(e.target.value.replace(/-/g, '')))} disabled={submitting} helperText="The balance before any recorded transactions." />
+      <Input id="acc-initial" label="Opening Balance (IDR)" inputMode="numeric" value={initial} onChange={(e) => setInitial(e.target.value.replace(/[^0-9.]/g, ''))} disabled={submitting} helperText="The balance before any recorded transactions." />
     </Modal>
   );
 }
