@@ -15,6 +15,9 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:integration": "vitest run test/integration",
+    "test:performance": "vitest run --reporter=verbose test/performance.test.js",
+    "test:integrity": "vitest run --reporter=verbose test/integrity.test.js",
+    "test:mutation": "stryker run",
     "openapi": "node scripts/generate-openapi.js"
   },
   "keywords": [],
@@ -41,6 +44,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@stryker-mutator/core": "^9.6.1",
+    "@stryker-mutator/vitest-runner": "^9.6.1",
     "eslint": "^10.4.1",
     "globals": "^17.6.0",
     "pino-pretty": "^13.1.3",

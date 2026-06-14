@@ -25,6 +25,12 @@ export function formatIdr(value) {
  * Parse a user-typed IDR string back to a number. Strips "Rp", spaces and
  * thousands separators ("."), treats "," as the decimal point, and preserves a
  * leading minus (used for balance/market adjustments). Unparseable → NaN.
+ *
+ * Hardened: rather than silently stripping unknown characters, clearly invalid
+ * money is REJECTED as NaN — scientific notation ('5e10'), hex ('0x1A'), double
+ * negatives ('--50000'), and any stray non-numeric character. Legitimate forms
+ * stay valid: dot thousands separators ('50.000.000.000' = 50 billion), a single
+ * leading minus ('-50000'), one comma decimal, and the 'Rp'/'IDR' currency prefix.
  * @param {string|number|null|undefined} input
  * @returns {number}
  */
@@ -32,14 +38,29 @@ export function parseIdrInput(input) {
   if (typeof input === 'number') return input;
   if (input == null) return NaN;
   const negative = /^\s*-/.test(String(input));
+
+  // Strip the currency symbol and whitespace, then validate the remainder BEFORE
+  // collapsing separators — at this point a "." is still a (thousands) separator.
   const cleaned = String(input)
     .replace(/rp/gi, '')
-    .replace(/\s/g, '')
+    .replace(/\s/g, '');
+
+  // Reject scientific notation — never used for IDR entry ('5e10', '1e100').
+  if (/[eE]/.test(cleaned)) return NaN;
+  // Reject hex notation ('0x1A').
+  if (/0x/i.test(cleaned)) return NaN;
+  // Reject double negatives — always a typo ('--50000').
+  if (/--/.test(cleaned)) return NaN;
+  // Reject any character that is not a digit, separator or single minus. 'IDR' is
+  // the ISO 4217 code for Rupiah, allowed as a prefix alongside the 'Rp' symbol.
+  if (/[^0-9.,\-\s]/.test(cleaned.replace(/idr/gi, ''))) return NaN;
+
+  const digits = cleaned
     .replace(/\./g, '')
     .replace(/,/g, '.')
     .replace(/[^0-9.]/g, '');
-  if (cleaned === '' || cleaned === '.') return NaN;
-  const n = Number(cleaned);
+  if (digits === '' || digits === '.') return NaN;
+  const n = Number(digits);
   if (!Number.isFinite(n)) return NaN;
   return negative ? -n : n;
 }

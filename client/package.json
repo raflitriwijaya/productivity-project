@@ -10,7 +10,12 @@
     "test": "vitest run",
     "preview": "vite preview",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "test:property": "vitest run --reporter=verbose src/test/formatIdr.property.test.js",
+    "test:fuzz": "vitest run --reporter=verbose src/test/forms.fuzz.test.js",
+    "test:input": "npm run test:property && npm run test:fuzz",
+    "test:visual": "cross-env RUN_VISUAL=1 playwright test visual.spec.js",
+    "test:smoke": "cross-env RUN_SMOKE=1 playwright test smoke-full.spec.js"
   },
   "dependencies": {
     "@sentry/react": "^10.57.0",
@@ -33,6 +38,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "^10.4.20",
+    "cross-env": "^10.1.0",
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",

@@ -26,3 +26,12 @@ npm-debug.log*
 
 # OS
 Thumbs.db
+
+# Mutation testing (Stryker) — temp sandbox + generated reports
+server/.stryker-tmp/
+server/reports/
+.stryker-tmp/
+
+# Playwright run artifacts (visual baselines under *-snapshots/ ARE committed)
+client/test-results/
+client/playwright-report/

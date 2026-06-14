@@ -77,6 +77,12 @@ jobs:
       - name: Run tests with coverage
         run: npx vitest run --coverage --coverage.thresholds.lines=60 --coverage.thresholds.functions=50 --coverage.thresholds.branches=40 --coverage.thresholds.statements=60
 
+      # Testing suite: structural DB integrity (critical CHECKs, ON DELETE CASCADE on
+      # every user_id FK, dedup/unique indexes). Inherits the job-level DATABASE_URL
+      # (the postgres service above); the migrate step already ran the schema.
+      - name: Database integrity checks
+        run: npm run test:integrity
+
   client:
     name: Client — lint, build, audit, test
     runs-on: ubuntu-latest
@@ -109,6 +115,15 @@ jobs:
       # Phase 4: markdown sanitization regression test (confirms rehype-sanitize holds)
       - name: Tests
         run: npm test
+
+      # Testing suite: property-based gate for the IDR money boundary (the x100-bug guard).
+      # 10K-iteration roundtrip/idempotent properties; fast (<1s), safe on every push.
+      - name: Property-based tests (formatIdr)
+        run: npm run test:property
+
+      # Testing suite: hostile/malformed input fuzzing for parseIdrInput (never throws).
+      - name: Input fuzzing tests
+        run: npm run test:fuzz
 
   e2e:
     name: E2E Tests
