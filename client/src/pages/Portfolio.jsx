@@ -21,6 +21,7 @@ import { ErrorState } from '../components/ui/ErrorState';
 import { EmptyState } from '../components/ui/EmptyState';
 
 import { PortfolioModal } from '../components/finance/PortfolioModal';
+import { PortfolioDetailModal } from '../components/finance/PortfolioDetailModal';
 import { DonutChart } from '../components/finance/charts/DonutChart';
 import { formatIdr, parseIdrInput, formatIdrInput } from '../lib/formatIdr';
 
@@ -63,6 +64,7 @@ export default function Portfolio() {
   useDocumentTitle('Finance — Portfolio');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [viewing, setViewing] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
 
@@ -112,10 +114,10 @@ export default function Portfolio() {
 
   const columns = [
     { key: 'name', header: 'Holding', sortable: true, render: (row) => (
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-stone-900 dark:text-gray-50 truncate">{row.name}</p>
+      <button type="button" onClick={() => setViewing(row)} className="min-w-0 text-left group/name" aria-label={`View ${row.name}`}>
+        <p className="text-sm font-medium text-stone-900 dark:text-gray-50 truncate group-hover/name:text-moss-600 dark:group-hover/name:text-moss-400 transition-colors duration-100">{row.name}</p>
         {row.symbol && <p className="text-xs text-stone-500 dark:text-gray-400 font-mono">{row.symbol}</p>}
-      </div>
+      </button>
     ) },
     { key: 'quantity', header: 'Qty', align: 'right', sortable: true, render: (row) => (
       <span className="text-sm text-stone-700 dark:text-gray-200 tabular-nums">{Number(row.quantity).toLocaleString('id-ID')}</span>
@@ -204,6 +206,13 @@ export default function Portfolio() {
         onClose={() => { setIsCreateOpen(false); setEditing(null); }}
         onSubmit={editing ? handleEdit : handleCreate}
         holding={editing}
+      />
+
+      <PortfolioDetailModal
+        isOpen={viewing != null}
+        onClose={() => setViewing(null)}
+        holding={viewing}
+        onEdit={() => { setEditing(viewing); setViewing(null); }}
       />
 
       <Modal

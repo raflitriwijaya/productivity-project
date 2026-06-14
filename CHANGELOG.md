@@ -7,6 +7,27 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Custom Learning Roadmaps (2026-06-14)
+
+> Replaces the single hardcoded 12-month Engineer Roadmap with unlimited user-defined learning paths for **any** discipline — ESP32-S3, STM32, ROS2, gardening, car building, languages. A 50-year, fully-customizable feature. The old `/engineer/roadmap` is untouched and keeps working; this is purely additive.
+
+#### Schema
+- **New tables** (migration `019_learning_roadmaps.sql`) — `learning_roadmaps` → `roadmap_tracks` → `roadmap_milestones`, a three-level hierarchy. Each `user_id` FK ON DELETE CASCADE, VARCHAR enums via CHECK, the shared no-arg `set_updated_at()` trigger + an explicit `CREATE TRIGGER` per table (the codebase has **no** `set_updated_at(text)` helper, so the spec's `SELECT set_updated_at('…')` form was adapted to the real pattern). Roadmaps carry `status`/`icon`/`color`/`progress`; milestones carry `status`/`priority`/`due_date`/`completed_at`/`notes`/a JSONB `resources` array/`estimated_hours`/`actual_hours`. The same migration extends `entity_links.chk_entity_link_types` to whitelist `'learning_roadmap'` + `'roadmap_milestone'` (24 types total — no existing type dropped).
+
+#### API
+- **New model** `server/models/roadmap.model.js` — full CRUD for roadmaps, tracks, and milestones (all `user_id`-scoped, parameterized). `progress` is **auto-calculated**, never user-set: any milestone create/update/delete triggers `recalcProgress`, which rewrites every `roadmap_tracks.progress` and `learning_roadmaps.progress` as completed ÷ non-skipped. Milestone `completed_at` is auto-stamped/cleared on status transitions. Creating a roadmap can include inline starter tracks (wrapped in a transaction).
+- **New routes** `server/routes/roadmaps.js` mounted `app.use('/api/roadmaps', requireAuth, roadmapsRouter)`. Literal `/stats`, `/tracks/*`, and `/milestones/*` paths are registered before the parameterized `/:id` routes. 13 endpoints (list, stats, create, get, update, delete, +tracks add/update/delete, +milestones add/update/delete, +recalc). Zod-validated, audit-logged (`ROADMAP_*` events).
+- **Universal Links** — `links.js` gains ownership validators for `learning_roadmap` (→ `getRoadmapById`) and `roadmap_milestone` (→ `getMilestoneRow`).
+
+#### Frontend
+- **New pages** `client/src/pages/LearningRoadmaps.jsx` (card grid: stat cards, data-derived category filter pills, create modal, all four states) and `RoadmapDetail.jsx` (header with overall progress, track lanes, recalc/edit/delete, the `LinkedItems` Connections section).
+- **New components** under `client/src/components/roadmaps/` — `RoadmapCard`, `TrackLane`, `MilestoneItem` (checkbox-toggle + expandable detail with resource links), `CreateRoadmapModal`, `CreateTrackModal`, `CreateMilestoneModal`. Shared badge/label maps + presets in `client/src/lib/roadmapEnums.js`.
+- **Routing & nav** — `/roadmaps` + `/roadmaps/:id` in `App.jsx` (literal before param); a "Roadmaps" item (Map icon) in the **Knowledge** sidebar section. `learning_roadmap`/`roadmap_milestone` added to the client `LINKABLE_TYPES`/`TYPE_LABELS`/`TYPE_VARIANTS` and the `LinkPickerModal` module list.
+
+#### Enums, OpenAPI & Docs
+- **Enums** — `ROADMAP_STATUSES`, `MILESTONE_STATUSES`, `MILESTONE_PRIORITIES`, `RESOURCE_TYPES` added to `server/lib/enums.js`; `LINKABLE_TYPES` grows to 24 on both server and client.
+- **OpenAPI** (`generate-openapi.js`) — new `Roadmaps` tag and all 13 paths.
+
 ### Post-V5 Medium-Term Fixes (2026-06-13)
 
 > Closing the highest-ROI gaps from Grand Final Audit V5: server-side preferences, deployable monitoring, broader accessibility coverage, and a single source of truth for client enums.

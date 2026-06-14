@@ -33,6 +33,31 @@ Closes the four highest-ROI gaps from Grand Final Audit V5 (`docs/audit/AUDIT_RE
 
 ---
 
+## Custom Learning Roadmaps (2026-06-14)
+
+Replaces the single hardcoded 12-month Engineer Roadmap with unlimited user-defined learning paths for any discipline. **Additive** — the old `/engineer/roadmap` (`engineer_roadmap_months` / `engineer_roadmap_skills`) is untouched and keeps working.
+
+### Schema (migration `019_learning_roadmaps.sql`)
+- **`learning_roadmaps`** — `title`, `description`, `category`, `status` (active/completed/archived/paused), `icon`, `color` (hex), `progress` (auto). 
+- **`roadmap_tracks`** — belongs to a roadmap; `title`, `description`, `sort_order`, `color`, `progress` (auto).
+- **`roadmap_milestones`** — belongs to a track; `title`, `description`, `status` (pending/in_progress/completed/skipped), `priority` (low/medium/high/critical), `sort_order`, `due_date`, `completed_at`, `notes`, `resources` JSONB `[{title,url,type}]`, `estimated_hours`, `actual_hours`.
+- All `user_id` FK ON DELETE CASCADE; shared no-arg `set_updated_at()` trigger + explicit `CREATE TRIGGER` per table (codebase has **no** `set_updated_at(text)` helper — the spec form was adapted). `entity_links.chk_entity_link_types` extended with `'learning_roadmap'` + `'roadmap_milestone'` (24 types).
+
+### API
+- **Model:** `server/models/roadmap.model.js` — CRUD for all three levels, `user_id`-scoped + parameterized. `recalcProgress` rewrites track + roadmap progress (completed ÷ non-skipped) on every milestone change; milestone `completed_at` auto-managed on status transitions. `createRoadmap` can create inline starter tracks in one transaction.
+- **Routes:** `server/routes/roadmaps.js` mounted `app.use('/api/roadmaps', requireAuth, roadmapsRouter)`. 13 endpoints; literal `/stats`, `/tracks/*`, `/milestones/*` before `/:id`. Zod-validated, `ROADMAP_*` audit events.
+- **Links:** `learning_roadmap` + `roadmap_milestone` ownership validators in `links.js`.
+
+### Frontend
+- **Pages:** `/roadmaps` → `client/src/pages/LearningRoadmaps.jsx` (stat cards, data-derived category pills, card grid, create modal, all four states); `/roadmaps/:id` → `RoadmapDetail.jsx` (overall progress, track lanes, recalc/edit/delete, `LinkedItems` Connections).
+- **Components** (`client/src/components/roadmaps/`): `RoadmapCard`, `TrackLane`, `MilestoneItem`, `CreateRoadmapModal`, `CreateTrackModal`, `CreateMilestoneModal`; shared maps/presets in `client/src/lib/roadmapEnums.js`.
+- **Nav:** "Roadmaps" (Map icon) in the sidebar **Knowledge** section; `learning_roadmap` added to `LinkPickerModal`.
+
+### Enums & OpenAPI
+- `ROADMAP_STATUSES`, `MILESTONE_STATUSES`, `MILESTONE_PRIORITIES`, `RESOURCE_TYPES` in `server/lib/enums.js`; `LINKABLE_TYPES` = 24 (server + client). `Roadmaps` tag + 13 paths in `generate-openapi.js`.
+
+---
+
 ## npm packages
 
 **Server** (`server/package.json`, `"type": "module"`): `express`, `cors`, `express-session`, `connect-pg-simple`, `bcryptjs` (Phase 2/3: replaced `bcrypt` — drop-in API-compatible, pure JS, eliminates the `tar`/`node-pre-gyp` high-severity transitive vulns), `pg`, `zod`, `dotenv`, `multer` (research attachment uploads), `helmet`, `express-rate-limit`, `pino`, `pino-http` (Phase 3: structured logging). **Phase 9 devDeps:** `eslint`, `@eslint/js`, `globals` — flat ESLint config at `server/eslint.config.js`. Requires Node `>=18`. Scripts: `dev` (`node --watch index.js`), `start`, `migrate` (`node db/migrate.js`), `lint` (`eslint . --max-warnings 0`), `test` (`vitest run` — all files; integration suites skip without DB), `test:coverage` (`vitest run --coverage` — Phase 12: outputs a coverage report), `test:integration` (`vitest run test/integration` — runs only the integration suite; requires `DATABASE_URL`).

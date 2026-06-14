@@ -22,6 +22,8 @@ import Contacts from './pages/Contacts';
 import Ideas from './pages/Ideas';
 import WeeklyReview from './pages/WeeklyReview';
 import Goals from './pages/Goals';
+import LearningRoadmaps from './pages/LearningRoadmaps';
+import RoadmapDetail from './pages/RoadmapDetail';
 import AnnualReport from './pages/AnnualReport';
 import PolymathDashboard from './pages/PolymathDashboard';
 import AIChat from './pages/AIChat';
@@ -110,6 +112,9 @@ export default function App() {
             <Route path="/research" element={<Suspense fallback={<PageFallback />}><Research /></Suspense>} />
             <Route path="/learning" element={<Learning />} />
             <Route path="/reading" element={<Reading />} />
+            {/* Custom Learning Roadmaps — literal /roadmaps before the /:id detail */}
+            <Route path="/roadmaps" element={<LearningRoadmaps />} />
+            <Route path="/roadmaps/:id" element={<RoadmapDetail />} />
             <Route path="/contacts" element={<Contacts />} />
             <Route path="/ideas" element={<Ideas />} />
 

@@ -50,9 +50,10 @@ const NAV_SECTIONS = [
   {
     label: 'Knowledge',
     items: [
-      { to: '/research', label: 'Research', icon: BookOpen },
-      { to: '/learning', label: 'Learning', icon: GraduationCap },
-      { to: '/reading',  label: 'Reading',  icon: BookMarked },
+      { to: '/research', label: 'Research',  icon: BookOpen },
+      { to: '/learning', label: 'Learning',  icon: GraduationCap },
+      { to: '/reading',  label: 'Reading',   icon: BookMarked },
+      { to: '/roadmaps', label: 'Roadmaps',  icon: Map },
     ],
   },
   {

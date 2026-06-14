@@ -6,13 +6,13 @@
 // every component. Keep LINKABLE_TYPES in sync with LINKABLE_TYPES in
 // server/lib/enums.js and the chk_entity_link_types CHECK in the migrations.
 
-// ── Universal Links (Wave 1) — 22 linkable entity types ──────────────────────
+// ── Universal Links (Wave 1) — 24 linkable entity types ──────────────────────
 export const LINKABLE_TYPES = [
   'transaction', 'research_entry', 'learning_item', 'engineer_project', 'todo',
   'receivable', 'payable', 'portfolio', 'budget', 'account',
   'research_topic', 'engineer_snippet', 'engineer_document', 'engineer_issue',
   'engineer_checkin', 'engineer_roadmap_skill', 'book', 'contact', 'idea',
-  'time_entry', 'goal', 'chat',
+  'time_entry', 'goal', 'chat', 'learning_roadmap', 'roadmap_milestone',
 ];
 
 // Friendly label per entity type (shown on link badges / rows).
@@ -39,6 +39,8 @@ export const TYPE_LABELS = {
   time_entry: 'Time Entry',
   goal: 'Goal',
   chat: 'Chat',
+  learning_roadmap: 'Learning Roadmap',
+  roadmap_milestone: 'Milestone',
 };
 
 // Map each type to a Badge variant (the canonical "Stoic Garden" accents).
@@ -65,6 +67,8 @@ export const TYPE_VARIANTS = {
   time_entry: 'gray',
   goal: 'ember',
   chat: 'moss',
+  learning_roadmap: 'ember',
+  roadmap_milestone: 'moss',
 };
 
 // ── Contacts CRM (Wave 4) — badge maps shared by Contacts.jsx + ContactDetailModal

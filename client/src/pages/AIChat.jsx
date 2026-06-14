@@ -48,6 +48,8 @@ export default function AIChat() {
   const [model, setModel] = useState('deepseek-v4-flash');
   const [temperature, setTemperature] = useState(0.7);
   const [topP, setTopP] = useState(0.9);
+  const [thinking, setThinking] = useState(false);
+  const [reasoningEffort, setReasoningEffort] = useState('high');
   const [loading, setLoading] = useState(true);
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState(null);
@@ -162,6 +164,8 @@ export default function AIChat() {
           conversation_id: activeConvo?.id ?? null,
           message: userMessage,
           model,
+          thinking: modelSupportsThinking && thinking,
+          reasoning_effort: reasoningEffort,
           temperature,
           top_p: topP,
           // Only inject context when kicking off a brand-new context-linked chat.
@@ -192,6 +196,18 @@ export default function AIChat() {
             const data = JSON.parse(line.slice(6));
             if (data.type === 'conversation_id') {
               newConvoId = data.id;
+            } else if (data.type === 'reasoning') {
+              setMessages(prev => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                if (last?.role === 'assistant') {
+                  updated[updated.length - 1] = {
+                    ...last,
+                    reasoning: (last.reasoning || '') + data.content,
+                  };
+                }
+                return updated;
+              });
             } else if (data.type === 'token') {
               assistantContent += data.content;
               setMessages(prev => {
@@ -261,6 +277,9 @@ export default function AIChat() {
       addToast({ type: 'error', title: 'Failed to save', message: err.message });
     }
   };
+
+  // Only DeepSeek V4 Pro supports thinking mode (Flash and local R1 do not).
+  const modelSupportsThinking = model === 'deepseek-v4-pro';
 
   const visibleMessages = messages.filter(m => m.role !== 'system');
   const activeContextType = activeConvo?.context_entity_type ?? (contextType || null);
@@ -384,6 +403,41 @@ export default function AIChat() {
                 onChange={(e) => setTopP(parseFloat(e.target.value))} className="flex-1 accent-moss-500" />
               <span className="text-xs text-stone-600 dark:text-gray-400 w-8 text-right tabular-nums">{topP}</span>
             </div>
+
+            {/* Thinking mode — only DeepSeek V4 Pro supports it. */}
+            {modelSupportsThinking && (
+              <>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs text-stone-500 dark:text-gray-400">Deep Think</label>
+                  <button
+                    type="button"
+                    onClick={() => setThinking(t => !t)}
+                    role="switch"
+                    aria-checked={thinking}
+                    aria-label="Deep Think"
+                    className={`w-10 h-5 rounded-full transition-colors ${thinking ? 'bg-moss-500' : 'bg-stone-300 dark:bg-gray-600'}`}
+                  >
+                    <div className={`w-4 h-4 bg-white rounded-full transition-transform ${thinking ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                  </button>
+                </div>
+
+                {thinking && (
+                  <div className="flex items-center gap-4">
+                    <label htmlFor="reasoning-effort" className="text-xs text-stone-500 dark:text-gray-400 w-24">Reasoning</label>
+                    <select
+                      id="reasoning-effort"
+                      value={reasoningEffort}
+                      onChange={(e) => setReasoningEffort(e.target.value)}
+                      className="text-xs border border-stone-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-800 text-stone-700 dark:text-gray-300"
+                    >
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                      <option value="max">Max</option>
+                    </select>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         )}
 
@@ -403,6 +457,16 @@ export default function AIChat() {
                     ? 'bg-moss-500 text-white'
                     : 'bg-stone-100 dark:bg-gray-700 text-stone-800 dark:text-gray-200'
                 }`}>
+                  {msg.reasoning && (
+                    <details className="mb-2" open={msg.streaming && !msg.content}>
+                      <summary className="text-xs text-stone-400 dark:text-gray-500 cursor-pointer hover:text-stone-600 dark:hover:text-gray-300">
+                        🧠 Reasoning
+                      </summary>
+                      <div className="mt-1 p-3 bg-stone-50 dark:bg-gray-700/50 rounded border border-stone-200 dark:border-gray-600 text-xs text-stone-500 dark:text-gray-400 whitespace-pre-wrap break-words">
+                        {msg.reasoning}
+                      </div>
+                    </details>
+                  )}
                   <div className="text-sm whitespace-pre-wrap break-words">
                     {msg.content}
                     {msg.streaming && <span className="animate-pulse">▊</span>}

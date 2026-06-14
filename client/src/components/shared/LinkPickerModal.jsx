@@ -30,6 +30,7 @@ const MODULES = [
   { type: 'contact',          label: 'Contacts',             endpoint: '/api/contacts',  searchParam: 'search' },
   { type: 'idea',             label: 'Ideas',                endpoint: '/api/ideas',     searchParam: 'search' },
   { type: 'goal',             label: 'Goals',                endpoint: '/api/goals',     searchParam: null },
+  { type: 'learning_roadmap', label: 'Learning Roadmaps',    endpoint: '/api/roadmaps',  searchParam: null },
   {
     type: 'budget', label: 'Budgets', endpoint: '/api/finances/budgets', searchParam: null,
     idKey: 'budget_id', labelKey: 'category_name', filter: (item) => item.budget_id != null,
