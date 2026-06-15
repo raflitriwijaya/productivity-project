@@ -109,7 +109,62 @@ services:
   #     - "9090:9090"
   #   command: --config.file=/etc/prometheus/prometheus.yml
   #   restart: unless-stopped
+  # ── Monitoring Stack (Fase 2) ─────────────────────────────────────────────
 
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    volumes:
+      - ./deploy/prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    mem_limit: 200m
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.1
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    restart: unless-stopped
+    mem_limit: 30m
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    restart: unless-stopped
+    mem_limit: 100m
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-changeme123}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=https://grafana.mightguy.my.id
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    mem_limit: 150m
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    volumes:
+      - uptime_kuma_data:/app/data
+    restart: unless-stopped
+    mem_limit: 150m
   cloudflared:
       image: cloudflare/cloudflared:latest
       command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
@@ -122,3 +177,6 @@ volumes:
   postgres_data:
   uploads_data:      # Phase 2: named volume so attachments survive rebuilds
   postgres_backups:  # Phase 3: dedicated backup volume — mount externally for off-host copi es
+  prometheus_data:
+  grafana_data:
+  uptime_kuma_data:
