@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input, Textarea, Select } from '../ui/Input';
-import { toAmountInput } from '../../lib/formatIdr';
+import { toAmountInput, parseIdrInput } from '../../lib/formatIdr';
 
 const EMPTY_FORM = { person: '', amount: '', due_date: '', account_id: '', description: '' };
 
@@ -61,7 +61,7 @@ export function LedgerModal({ isOpen, onClose, onSubmit, record, accounts = [], 
   function validate() {
     const e = {};
     if (!form.person.trim()) e.person = `${personLabel} is required.`;
-    const amt = Number(form.amount);
+    const amt = parseIdrInput(form.amount);
     if (form.amount === '' || Number.isNaN(amt) || amt <= 0) e.amount = 'Enter a valid positive amount.';
     return e;
   }
@@ -74,7 +74,7 @@ export function LedgerModal({ isOpen, onClose, onSubmit, record, accounts = [], 
     try {
       await onSubmit({
         person:      form.person.trim(),
-        amount:      Number(form.amount),
+        amount:      parseIdrInput(form.amount),
         due_date:    form.due_date || null,
         account_id:  form.account_id ? Number(form.account_id) : null,
         description: form.description.trim() || null,

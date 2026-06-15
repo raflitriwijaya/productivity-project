@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { toAmountInput } from '../../lib/formatIdr';
+import { toAmountInput, parseIdrInput } from '../../lib/formatIdr';
 
 const EMPTY_FORM = { name: '', symbol: '', quantity: '', avg_price: '', current_price: '' };
 
@@ -60,8 +60,8 @@ export function PortfolioModal({ isOpen, onClose, onSubmit, holding }) {
     if (!form.name.trim()) e.name = 'Name is required.';
     const qty = Number(form.quantity);
     if (form.quantity === '' || Number.isNaN(qty) || qty < 0) e.quantity = 'Enter a valid quantity.';
-    if (Number.isNaN(Number(form.avg_price || '0'))) e.avg_price = 'Enter a valid price.';
-    if (Number.isNaN(Number(form.current_price || '0'))) e.current_price = 'Enter a valid price.';
+    if (Number.isNaN(parseIdrInput(form.avg_price || '0'))) e.avg_price = 'Enter a valid price.';
+    if (Number.isNaN(parseIdrInput(form.current_price || '0'))) e.current_price = 'Enter a valid price.';
     return e;
   }
 
@@ -75,8 +75,8 @@ export function PortfolioModal({ isOpen, onClose, onSubmit, holding }) {
         name:          form.name.trim(),
         symbol:        form.symbol.trim() || null,
         quantity:      Number(form.quantity),
-        avg_price:     Number(form.avg_price || '0') || 0,
-        current_price: Number(form.current_price || '0') || 0,
+        avg_price:     parseIdrInput(form.avg_price || '0') || 0,
+        current_price: parseIdrInput(form.current_price || '0') || 0,
       });
     } catch (err) {
       setSubmitError(err.message ?? 'Something went wrong. Please try again.');

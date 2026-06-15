@@ -13,7 +13,7 @@ import { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input, Textarea, Select } from '../ui/Input';
-import { toAmountInput } from '../../lib/formatIdr';
+import { toAmountInput, parseIdrInput } from '../../lib/formatIdr';
 
 const TYPE_OPTIONS = ['Income', 'Revenue', 'Expense', 'Transfer', 'Balance Adjustment', 'Market Adjustment'];
 const ADJUSTMENTS = ['Balance Adjustment', 'Market Adjustment'];
@@ -124,7 +124,7 @@ export function CreateTransactionModal({ isOpen, onClose, onSubmit, transaction,
 
   function validate() {
     const e = {};
-    const amt = Number(form.amount);
+    const amt = parseIdrInput(form.amount);
     if (form.amount === '' || form.amount === '-' || Number.isNaN(amt) || amt === 0) {
       e.amount = 'Enter a non-zero amount.';
     } else if (!allowNegative && amt < 0) {
@@ -147,7 +147,7 @@ export function CreateTransactionModal({ isOpen, onClose, onSubmit, transaction,
     try {
       await onSubmit({
         type:              form.type,
-        amount:            Number(form.amount),
+        amount:            parseIdrInput(form.amount),
         date:              form.date,
         description:       form.description.trim() || null,
         source_account_id: showSource && form.source_account_id ? Number(form.source_account_id) : null,

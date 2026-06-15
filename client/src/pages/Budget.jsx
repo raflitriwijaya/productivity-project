@@ -19,7 +19,7 @@ import { ErrorState } from '../components/ui/ErrorState';
 
 import { MonthYearSelector } from '../components/finance/MonthYearSelector';
 import { ProgressBar } from '../components/finance/ProgressBar';
-import { formatIdr, toAmountInput } from '../lib/formatIdr';
+import { formatIdr, toAmountInput, parseIdrInput } from '../lib/formatIdr';
 
 /** Inline-editable budget amount — commits on blur or Enter when changed. */
 function BudgetAmountCell({ row, onSave }) {
@@ -27,7 +27,7 @@ function BudgetAmountCell({ row, onSave }) {
   const [saving, setSaving] = useState(false);
 
   async function commit() {
-    const parsed = Number(value);
+    const parsed = parseIdrInput(value);
     if (Number.isNaN(parsed) || parsed < 0 || parsed === (Number(row.amount) || 0)) {
       setValue(toAmountInput(row.amount));
       return;

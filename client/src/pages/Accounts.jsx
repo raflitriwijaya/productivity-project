@@ -16,7 +16,7 @@ import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Skeleton } from '../components/ui/Skeleton';
 import { ErrorState } from '../components/ui/ErrorState';
-import { formatIdr, toAmountInput } from '../lib/formatIdr';
+import { formatIdr, toAmountInput, parseIdrInput } from '../lib/formatIdr';
 
 const ACCOUNT_ICON = {
   CASH: Banknote, ATM: Landmark, DANA: Wallet, SHOPEEPAY: ShoppingBag, GOPAY: Smartphone, INVESTMENT: TrendingUp,
@@ -42,7 +42,7 @@ function AccountEditModal({ isOpen, onClose, onSubmit, account }) {
     if (!name.trim()) { setError('Name is required.'); return; }
     setSubmitting(true);
     try {
-      await onSubmit({ name: name.trim(), initial_balance: Number(initial || '0') || 0 });
+      await onSubmit({ name: name.trim(), initial_balance: parseIdrInput(initial || '0') || 0 });
     } catch (err) {
       setError(err.message ?? 'Could not save.');
     } finally {

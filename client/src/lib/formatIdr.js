@@ -70,9 +70,9 @@ export function parseIdrInput(input) {
  * as "59137.00") into a plain, un-grouped string for use as a raw <input> value —
  * e.g. "59137.00" → "59137", "1500.5" → "1500.5". Nullish / empty / non-numeric → "".
  *
- * Money inputs submit raw numbers parsed with `Number()`, so this must NOT apply
- * locale grouping: grouping with "." (id-ID) is exactly what caused the ×100 bug,
- * because `parseIdrInput` then treats a "." decimal point as a thousands separator.
+ * Money inputs submit through `parseIdrInput` (V9 §15.1), which reads "." as a
+ * thousands separator. This returns a plain un-grouped value purely to keep the raw
+ * <input> simple; the parser handles any grouping the user later types.
  * @param {string|number|null|undefined} value
  * @returns {string}
  */

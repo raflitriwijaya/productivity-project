@@ -23,7 +23,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { PortfolioModal } from '../components/finance/PortfolioModal';
 import { PortfolioDetailModal } from '../components/finance/PortfolioDetailModal';
 import { DonutChart } from '../components/finance/charts/DonutChart';
-import { formatIdr, toAmountInput } from '../lib/formatIdr';
+import { formatIdr, toAmountInput, parseIdrInput } from '../lib/formatIdr';
 
 /** Inline-editable current price cell — commits on blur or Enter when changed. */
 function CurrentPriceCell({ row, onSave }) {
@@ -31,7 +31,7 @@ function CurrentPriceCell({ row, onSave }) {
   const [saving, setSaving] = useState(false);
 
   async function commit() {
-    const parsed = Number(value);
+    const parsed = parseIdrInput(value);
     if (Number.isNaN(parsed) || parsed === (Number(row.current_price) || 0)) {
       setValue(toAmountInput(row.current_price));
       return;
