@@ -7,6 +7,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased] — 2026-06-16
 
+### Added — Todo Due-Time + Telegram Reminders
+- **Time-of-day precision on todos:** new `due_time TIME` column (migration `020_todo_due_time.sql`, additive) plus a `reminded_at TIMESTAMPTZ` anti-spam stamp and a partial index `idx_todos_reminder` over open, dated todos. Existing todos are unaffected (`due_time` defaults to `NULL`).
+- **Proactive Telegram reminders:** an in-process scheduler (`server/lib/todoReminder.js`) checks every 5 minutes for todos due within the next 30 minutes and sends an HTML message (priority emoji, title, `HH:MM` due time, description snippet) via a thin `server/lib/telegram.js` wrapper. `reminded_at` keeps a todo from being re-notified within an hour. Reuses the **same** bot token + chat ID as Uptime Kuma / restic backups — one bot, one chat.
+- **Optional & safe:** with `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` unset the scheduler logs once and no-ops; dev/CI and unconfigured deploys are unaffected. Wired into the server start/shutdown lifecycle in `index.js`.
+- **Model:** `getTodosDueSoon` / `markReminded` added; `createTodo` + `patchTodo` accept `due_time`. The due-soon scan compares against `LOCALTIME` (matching the `TIME` column type — `CURRENT_TIME` returns `timetz` and won't compare) and parameterizes the window via `make_interval(mins => $2)`.
+- **API & UI:** `due_time` added to the create/patch Zod schemas (`/^\d{2}:\d{2}(:\d{2})?$/`) and OpenAPI request bodies. `CreateTodoModal` gains a `type="time"` field beside Due Date (pre-filled on edit); `TodoRow` renders "Due <date> at HH:MM". `docker-compose.yml` passes the two `TELEGRAM_*` vars to the `api` service.
+
 ### Infrastructure — Home Server (Phase 1–5)
 - **Deployed on self-hosted hardware:** Repurposed Asus A455LF laptop (i5-5200U, 8GB RAM), Ubuntu Server 26.04 LTS
 - **19 Docker containers** with full monitoring (Prometheus + Grafana + Uptime Kuma), nightly pg_dump backups, and Restic-encrypted offsite backups to Cloudflare R2

@@ -21,6 +21,7 @@ import pinoHttp from 'pino-http'; // Phase 3: per-request logging + auto request
 import { logger } from './lib/logger.js'; // Phase 3: shared pino instance
 import { register, httpRequestDuration, httpRequestTotal } from './lib/metrics.js';
 import { startPoolMetrics, stopPoolMetrics } from './lib/poolMetrics.js';
+import { startTodoReminder, stopTodoReminder } from './lib/todoReminder.js'; // Todo due-time Telegram reminders
 
 // ── Internal modules ──────────────────────────────────────────────────────────
 import { pool } from './lib/db.js';
@@ -263,6 +264,7 @@ app.use(errorHandler);
 const server = app.listen(parseInt(PORT, 10), () => {
   logger.info({ port: PORT, env: NODE_ENV }, 'Server started'); // Phase 3: structured startup log
   startPoolMetrics();
+  startTodoReminder(); // Telegram due-time reminders (no-op when TELEGRAM_* unset)
 });
 
 // Phase 2: drain in-flight requests then close the pg pool on SIGTERM/SIGINT
@@ -277,6 +279,7 @@ function shutdown(signal) {
   server.close(() => {
     logger.info('HTTP server closed');
     stopPoolMetrics();
+    stopTodoReminder();
     pool.end(() => {
       logger.info('pg pool drained — bye');
       process.exit(0);

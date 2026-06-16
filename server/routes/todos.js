@@ -24,6 +24,7 @@ const createTodoSchema = z.object({
   status:      z.enum(TODO_STATUSES).default('pending'),
   priority:    z.number().int().min(1).max(3).default(2),
   due_date:    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'due_date must be YYYY-MM-DD.').optional().nullable(),
+  due_time:    z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/, 'due_time must be HH:MM or HH:MM:SS.').optional().nullable(),
 });
 
 const patchTodoSchema = createTodoSchema.partial();

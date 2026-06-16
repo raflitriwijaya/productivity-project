@@ -50,6 +50,9 @@ export function TodoRow({ todo, onEdit, onDelete }) {
         {todo.due_date && (
           <p className="text-[11px] text-stone-400 dark:text-gray-500 mt-0.5">
             Due {todo.due_date}
+            {todo.due_time && (
+              <span className="ml-1">at {todo.due_time.slice(0, 5)}</span>
+            )}
           </p>
         )}
       </div>

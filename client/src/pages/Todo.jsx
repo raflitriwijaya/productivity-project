@@ -29,6 +29,7 @@ import { CreateTodoModal } from '../components/todo/CreateTodoModal';
  * @property {'pending'|'in_progress'|'done'|'overdue'} status
  * @property {1|2|3} priority
  * @property {string|null} due_date
+ * @property {string|null} due_time
  * @property {string} created_at
  * @property {string} updated_at
  */

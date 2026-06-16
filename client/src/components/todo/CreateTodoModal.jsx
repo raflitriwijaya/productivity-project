@@ -24,6 +24,7 @@ export function CreateTodoModal({ isOpen, onClose, onSubmit, todo = null }) {
     status:      'pending',
     priority:    '2',
     due_date:    '',
+    due_time:    '',
   };
 
   const [form,       setForm]       = useState(emptyForm);
@@ -42,6 +43,8 @@ export function CreateTodoModal({ isOpen, onClose, onSubmit, todo = null }) {
           status:      todo.status      ?? 'pending',
           priority:    String(todo.priority ?? 2),
           due_date:    todo.due_date    ?? '',
+          // due_time comes back as 'HH:MM:SS'; the <input type="time"> wants 'HH:MM'.
+          due_time:    todo.due_time ? todo.due_time.slice(0, 5) : '',
         });
       } else {
         setForm(emptyForm);
@@ -83,6 +86,7 @@ export function CreateTodoModal({ isOpen, onClose, onSubmit, todo = null }) {
         status:      form.status,
         priority:    parseInt(form.priority, 10),
         due_date:    form.due_date || null,
+        due_time:    form.due_time || null,
       });
     } finally {
       setSubmitting(false);
@@ -160,18 +164,30 @@ export function CreateTodoModal({ isOpen, onClose, onSubmit, todo = null }) {
         </Select>
       </div>
 
-      {/* Due date */}
-      <Input
-        id="todo-due-date"
-        name="due_date"
-        label="Due Date"
-        type="date"
-        value={form.due_date}
-        onChange={handleChange}
-        error={errors.due_date}
-        helperText="Optional"
-        disabled={submitting}
-      />
+      {/* Due date + time side by side */}
+      <div className="grid grid-cols-2 gap-4">
+        <Input
+          id="todo-due-date"
+          name="due_date"
+          label="Due Date"
+          type="date"
+          value={form.due_date}
+          onChange={handleChange}
+          error={errors.due_date}
+          helperText="Optional"
+          disabled={submitting}
+        />
+        <Input
+          id="todo-due-time"
+          name="due_time"
+          label="Due Time"
+          type="time"
+          value={form.due_time}
+          onChange={handleChange}
+          helperText="Optional — sends a Telegram reminder"
+          disabled={submitting}
+        />
+      </div>
     </Modal>
   );
 }

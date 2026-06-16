@@ -61,16 +61,16 @@ export async function getTodoById(id, userId) {
 
 /**
  * @param {number} userId
- * @param {{ title: string, description?: string, status?: string, priority?: number, due_date?: string }} fields
+ * @param {{ title: string, description?: string, status?: string, priority?: number, due_date?: string, due_time?: string }} fields
  * @returns {Promise<object>}
  */
 export async function createTodo(userId, fields) {
-  const { title, description = null, status = 'pending', priority = 2, due_date = null } = fields;
+  const { title, description = null, status = 'pending', priority = 2, due_date = null, due_time = null } = fields;
   const result = await pool.query(
-    `INSERT INTO todos (user_id, title, description, status, priority, due_date)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO todos (user_id, title, description, status, priority, due_date, due_time)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING *`,
-    [userId, title, description, status, priority, due_date]
+    [userId, title, description, status, priority, due_date, due_time]
   );
   return result.rows[0];
 }
@@ -79,11 +79,11 @@ export async function createTodo(userId, fields) {
  * Partial update — only provided keys are written.
  * @param {number} id
  * @param {number} userId
- * @param {Partial<{ title: string, description: string, status: string, priority: number, due_date: string }>} fields
+ * @param {Partial<{ title: string, description: string, status: string, priority: number, due_date: string, due_time: string }>} fields
  * @returns {Promise<object|null>}
  */
 export async function patchTodo(id, userId, fields) {
-  const ALLOWED = ['title', 'description', 'status', 'priority', 'due_date'];
+  const ALLOWED = ['title', 'description', 'status', 'priority', 'due_date', 'due_time'];
   const keys = Object.keys(fields).filter(k => ALLOWED.includes(k));
   if (keys.length === 0) return getTodoById(id, userId);
 
@@ -171,4 +171,53 @@ export async function getTodayStats(userId) {
     completed_today: parseInt(row.completed_today, 10),
     overdue:         parseInt(row.overdue,         10),
   };
+}
+
+/**
+ * Open todos due today within the next `minutesAhead` minutes that have a
+ * time-of-day set and haven't been reminded in the last hour. Powers the
+ * Telegram reminder scheduler (server/lib/todoReminder.js).
+ *
+ * NOTE on the time comparison: `due_time` is `TIME` (without time zone), so we
+ * compare against `LOCALTIME` — also `time without time zone`. The spec used
+ * `CURRENT_TIME`, but that returns `timetz` and Postgres won't compare it to a
+ * plain `TIME` column. `minutesAhead` is parameterized via `make_interval` to
+ * keep the query fully parameterized (Invariant 4 / §3.2).
+ *
+ * @param {number} userId
+ * @param {number} [minutesAhead=30]
+ * @returns {Promise<object[]>}
+ */
+export async function getTodosDueSoon(userId, minutesAhead = 30) {
+  const { rows } = await pool.query(
+    `SELECT id, title, description, due_date, due_time, priority, status
+       FROM todos
+      WHERE user_id = $1
+        AND status IN ('pending', 'in_progress')
+        AND due_date = CURRENT_DATE
+        AND due_time IS NOT NULL
+        AND due_time > LOCALTIME
+        AND due_time <= LOCALTIME + make_interval(mins => $2)
+        -- Anti-spam: skip todos reminded within the last hour.
+        AND (reminded_at IS NULL OR reminded_at < NOW() - INTERVAL '1 hour')
+      ORDER BY due_time ASC`,
+    [userId, minutesAhead]
+  );
+  return rows;
+}
+
+/**
+ * Stamp reminded_at = NOW() on the given todos so they aren't re-notified for an
+ * hour. No-op for an empty id list.
+ *
+ * @param {number} userId
+ * @param {number[]} todoIds
+ * @returns {Promise<void>}
+ */
+export async function markReminded(userId, todoIds) {
+  if (!todoIds || todoIds.length === 0) return;
+  await pool.query(
+    `UPDATE todos SET reminded_at = NOW() WHERE user_id = $1 AND id = ANY($2)`,
+    [userId, todoIds]
+  );
 }
