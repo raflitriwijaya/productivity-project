@@ -74,7 +74,13 @@ router.get('/due', async (req, res, next) => {
 
     const [todos, receivables, payables, checkins, goals] = await Promise.all([
       pool.query(
-        `SELECT id, title, to_char(due_date, 'YYYY-MM-DD') AS due_date
+        // priority + due_time added so the client's browser todo-reminder
+        // (lib/notifications.js → checkTodoReminders) can filter "due within 30
+        // min" and show a priority emoji. due_time normalised to 'HH:MM' to match
+        // the to_char(due_date) style; NULL for todos without a time-of-day.
+        `SELECT id, title, priority,
+                to_char(due_date, 'YYYY-MM-DD') AS due_date,
+                to_char(due_time, 'HH24:MI')    AS due_time
            FROM todos
           WHERE user_id = $1 AND status != 'done'
             AND due_date IS NOT NULL AND due_date <= CURRENT_DATE + INTERVAL '7 days'

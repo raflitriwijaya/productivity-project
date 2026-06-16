@@ -102,18 +102,57 @@ function notifyDueToday() {
   new Notification(`${todays.length} item(s) due today`, { body, icon: '/pwa-192x192.png', tag: 'due-today' });
 }
 
+// ─── OS notification for todos due within the next 30 minutes ─────────────────
+// Browser half of the dual-channel reminder (the server sends the Telegram half).
+// Reads the SHARED due-items store — the poll loop refreshes it immediately
+// before calling this, so we honour the file's "one fetch, one interval" design
+// instead of issuing a second /due round-trip. Fires a per-todo notification for
+// anything 1–30 minutes out; requireInteraction keeps it on screen until
+// dismissed, and the per-id tag means a re-poll replaces (not stacks) it.
+const TODO_PRIORITY_EMOJI = { 1: '🔴', 2: '🟡', 3: '🟢' }; // priority is a SMALLINT 1/2/3
+
+export function checkTodoReminders() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+  const now = new Date();
+  for (const item of dueItems) {
+    if (item.type !== 'todo' || !item.due_time) continue;
+    // Build the due instant from LOCAL date + time parts — avoids the UTC skew of
+    // `new Date('YYYY-MM-DD')` and matches this file's local-calendar approach.
+    const [y, m, d] = String(item.due_date).split('-').map(Number);
+    const [hh, mm] = item.due_time.split(':').map(Number);
+    if ([y, m, d, hh, mm].some(Number.isNaN)) continue;
+    const due = new Date(y, m - 1, d, hh, mm, 0, 0);
+    const diffMin = Math.floor((due.getTime() - now.getTime()) / 60000);
+    if (diffMin <= 0 || diffMin > 30) continue;
+
+    const emoji = TODO_PRIORITY_EMOJI[item.priority] || '⚪';
+    new Notification(`${emoji} Task Due Soon`, {
+      body: `${item.title || 'Untitled'}\n⏰ Due at ${item.due_time.slice(0, 5)} WIB`,
+      icon: '/pwa-192x192.png',
+      tag: `todo-reminder-${item.id}`,
+      requireInteraction: true,
+    });
+  }
+}
+
 // ─── Single app-wide poll loop ────────────────────────────────────────────────
 /**
  * Start the shared poll loop exactly once (idempotent under React StrictMode and
- * across multiple mounted bells). Each tick refreshes the store and fires an OS
- * notification for anything due today (only if permission was already granted).
- * @param {number} [intervalMs=3600000] one hour
+ * across multiple mounted bells). Each tick refreshes the store, fires an OS
+ * notification for anything due today, and checks for todos due within 30 min
+ * (both only if permission was already granted).
+ *
+ * Interval dropped from 1 hour → 5 minutes so time-of-day todo reminders are
+ * timely. The /due query is bounded (LIMIT 10 per type), so the cost is small.
+ * @param {number} [intervalMs=300000] five minutes
  */
-export function ensureDuePolling(intervalMs = 3600000) {
+export function ensureDuePolling(intervalMs = 300000) {
   if (pollTimer) return;
   const tick = async () => {
     await refreshDueItems();
     notifyDueToday();
+    checkTodoReminders();
   };
   tick();
   pollTimer = setInterval(tick, intervalMs);
