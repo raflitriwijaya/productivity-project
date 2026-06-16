@@ -316,6 +316,20 @@ services:
     networks:
       - default
 
+  collabora:
+    image: collabora/code:latest
+    container_name: collabora
+    restart: unless-stopped
+    mem_limit: 1g
+    environment:
+      - aliasgroup1=https://cloud.mightguy.my.id
+      - DONT_GEN_SSL_CERT=YES
+      - server_name=office.mightguy.my.id
+      - dictionaries=en_US id_ID
+      - extra_params=--o:ssl.enable=false --o:ssl.termination=true --o:num_prespawn_children=1 --o:security.seccomp=false
+    networks:
+      - default
+
 volumes:
   postgres_data:
   uploads_data:      # Phase 2: named volume so attachments survive rebuilds
