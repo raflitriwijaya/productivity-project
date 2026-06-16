@@ -97,20 +97,6 @@ services:
     restart: unless-stopped
     entrypoint: ["/deploy/scripts/entrypoint.sh"]
 
-  # ── Prometheus (optional) ────────────────────────────────────────────────────
-  # Scrapes /metrics and evaluates the 6 alert rules. The scrape config + rules are
-  # committed at deploy/prometheus/ (prometheus.yml + alert_rules.yml). Uncomment to
-  # run an in-stack Prometheus; lock /metrics down per RUNBOOK §6.3 before exposing.
-  # prometheus:
-  #   image: prom/prometheus:latest
-  #   volumes:
-  #     - ./deploy/prometheus:/etc/prometheus
-  #   ports:
-  #     - "9090:9090"
-  #   command: --config.file=/etc/prometheus/prometheus.yml
-  #   restart: unless-stopped
-  # ── Monitoring Stack (Fase 2) ─────────────────────────────────────────────
-
   prometheus:
     image: prom/prometheus:v2.52.0
     volumes:
@@ -207,8 +193,122 @@ services:
       - productivity-project_grafana_data:/data/grafana_data:ro
       - productivity-project_uptime_kuma_data:/data/uptime_kuma_data:ro
       - ./deploy/scripts/restic-backup.sh:/restic-backup.sh:ro
+      - /mnt/data/vaultwarden:/data/vaultwarden:ro
+      - /mnt/data/miniflux-db:/data/miniflux-db:ro
+      - /mnt/data/wallabag:/data/wallabag:ro
+      - /mnt/data/nextcloud:/data/nextcloud:ro
+      - /mnt/data/nextcloud-db:/data/nextcloud-db:ro
     profiles:
       - backup
+
+  vaultwarden:
+    image: vaultwarden/server:1.36.0
+    container_name: vaultwarden
+    restart: unless-stopped
+    mem_limit: 150m
+    environment:
+      - DOMAIN=${VAULTWARDEN_DOMAIN}
+      - ADMIN_TOKEN=${VAULTWARDEN_ADMIN_TOKEN}
+      - SIGNUPS_ALLOWED=false
+      - WEBSOCKET_ENABLED=true
+      - LOG_LEVEL=warn
+    volumes:
+      - /mnt/data/vaultwarden:/data
+    networks:
+      - default
+
+  miniflux-db:
+    image: postgres:16-alpine
+    container_name: miniflux-db
+    restart: unless-stopped
+    mem_limit: 150m
+    environment:
+      - POSTGRES_USER=miniflux
+      - POSTGRES_PASSWORD=${MINIFLUX_DB_PASSWORD}
+      - POSTGRES_DB=miniflux
+    volumes:
+      - /mnt/data/miniflux-db:/var/lib/postgresql/data
+    networks:
+      - default
+
+  miniflux:
+    image: miniflux/miniflux:2.2.5
+    container_name: miniflux
+    restart: unless-stopped
+    mem_limit: 100m
+    depends_on:
+      - miniflux-db
+    environment:
+      - DATABASE_URL=postgres://miniflux:${MINIFLUX_DB_PASSWORD}@miniflux-db/miniflux?sslmode=disable
+      - RUN_MIGRATIONS=1
+      - CREATE_ADMIN=1
+      - ADMIN_USERNAME=${MINIFLUX_ADMIN_USERNAME}
+      - ADMIN_PASSWORD=${MINIFLUX_ADMIN_PASSWORD}
+    networks:
+      - default
+
+  wallabag:
+    image: wallabag/wallabag:2.6.9
+    container_name: wallabag
+    restart: unless-stopped
+    mem_limit: 256m
+    environment:
+      - SYMFONY__ENV__SECRET=${WALLABAG_SECRET}
+      - SYMFONY__ENV__FOSUSER_REGISTRATION=false
+      - SYMFONY__ENV__FOSUSER_CONFIRMATION=false
+      - SYMFONY__ENV__DATABASE_DRIVER=pdo_sqlite
+      - SYMFONY__ENV__DATABASE_PATH=/var/www/wallabag/data/db/wallabag.sqlite
+      - SYMFONY__ENV__DOMAIN_NAME=https://read.mightguy.my.id
+      - POPULATE_DATABASE=true
+    volumes:
+      - /mnt/data/wallabag:/var/www/wallabag/data
+    networks:
+      - default
+
+  nextcloud-db:
+    image: mariadb:10.11
+    container_name: nextcloud-db
+    restart: unless-stopped
+    mem_limit: 150m
+    environment:
+      - MYSQL_ROOT_PASSWORD=${NEXTCLOUD_DB_ROOT_PASSWORD}
+      - MYSQL_PASSWORD=${NEXTCLOUD_DB_PASSWORD}
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+    volumes:
+      - /mnt/data/nextcloud-db:/var/lib/mysql
+    networks:
+      - default
+
+  nextcloud-redis:
+    image: redis:7-alpine
+    container_name: nextcloud-redis
+    restart: unless-stopped
+    mem_limit: 50m
+    networks:
+      - default
+
+  nextcloud:
+    image: nextcloud:28-apache
+    container_name: nextcloud
+    restart: unless-stopped
+    mem_limit: 512m
+    depends_on:
+      - nextcloud-db
+      - nextcloud-redis
+    environment:
+      - MYSQL_HOST=nextcloud-db
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_PASSWORD=${NEXTCLOUD_DB_PASSWORD}
+      - NEXTCLOUD_ADMIN_USER=${NEXTCLOUD_ADMIN_USER}
+      - NEXTCLOUD_ADMIN_PASSWORD=${NEXTCLOUD_ADMIN_PASSWORD}
+      - NEXTCLOUD_TRUSTED_DOMAINS=cloud.mightguy.my.id
+      - REDIS_HOST=nextcloud-redis
+    volumes:
+      - /mnt/data/nextcloud:/var/www/html
+    networks:
+      - default
 
 volumes:
   postgres_data:
