@@ -16,6 +16,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    mem_limit: 256m
 
   api:
     build: ./server
@@ -49,6 +50,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    mem_limit: 256m
 
   nginx:
     build:
@@ -72,6 +74,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 5s
+    mem_limit: 64m
 
   # Phase 3: pg_dump sidecar — dumps DB on a cron schedule to a dedicated backup volume
   # Restore: docker run --rm -v postgres_backups:/backups -e PGPASSWORD=<DB_PASSWORD> postgres:16-alpine \
@@ -96,6 +99,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     entrypoint: ["/deploy/scripts/entrypoint.sh"]
+    mem_limit: 64m
 
   prometheus:
     image: prom/prometheus:v2.52.0
@@ -151,6 +155,7 @@ services:
       - uptime_kuma_data:/app/data
     restart: unless-stopped
     mem_limit: 150m
+
   cloudflared:
       image: cloudflare/cloudflared:latest
       command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
@@ -158,6 +163,7 @@ services:
         nginx:
           condition: service_healthy
       restart: unless-stopped
+      mem_limit: 128m
 
   gitea:
     image: gitea/gitea:1.22

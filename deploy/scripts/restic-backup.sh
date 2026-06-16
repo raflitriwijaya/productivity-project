@@ -23,6 +23,11 @@ restic backup \
     /data/gitea_data \
     /data/grafana_data \
     /data/uptime_kuma_data \
+    /data/vaultwarden \
+    /data/miniflux-db \
+    /data/wallabag \
+    /data/nextcloud \
+    /data/nextcloud-db \
     --tag homelab \
     --hostname homelab-server \
     --verbose
@@ -33,7 +38,7 @@ restic forget \
     --keep-weekly 4 \
     --keep-monthly 3 \
     --prune \
-    --tag homelab
+    --tag homelab \
     --host homelab-server
 
 log "Backup completed successfully at $(date '+%Y-%m-%d %H:%M:%S')"
