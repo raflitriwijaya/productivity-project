@@ -67,6 +67,55 @@ Once a fix is merged, the vulnerability will be documented in [CHANGELOG.md](CHA
 
 ---
 
+## Infrastructure Security (Home Server — added V10)
+
+Polymath OS runs on a self-hosted home server (Asus A455LF, Ubuntu Server 26.04 LTS) behind Cloudflare Zero Trust. The controls below supplement the application-level hardening above.
+
+### Network Perimeter
+
+| Control | Detail |
+|---------|--------|
+| **Zero open inbound ports** | UFW default-deny inbound. All external traffic enters via a Cloudflare outbound tunnel (`cloudflared`). `nmap` from the internet shows no open ports. |
+| **Cloudflare Zero Trust** | All public subdomains terminate at Cloudflare Edge (TLS 1.3, DDoS protection) before reaching any service. Cloudflare Access policies guard sensitive dashboards (Grafana, Portainer). |
+| **SSH LAN-only** | `sshd` configured with `ListenAddress <LAN-IP>`, `PasswordAuthentication no`, `PermitRootLogin no`. Key-only auth. Not reachable from the internet. |
+| **UFW rules** | Only LAN SSH and Docker-internal subnets allowed. All other inbound dropped. |
+
+### Container Security
+
+| Control | Detail |
+|---------|--------|
+| **Non-root users** | Application containers (`api`, `nginx`) run as non-root UIDs where possible |
+| **Memory limits** | All containers have `mem_limit` set in Compose files to prevent any single container starving the host |
+| **`.dockerignore`** | `.env*`, `node_modules`, `*.md` excluded from build context; no secrets baked into images |
+| **Pinned images** | Service images pinned to specific versions (e.g., `postgres:16-alpine`, `gitea/gitea:1.22`) — not `:latest` — so rebuilds are reproducible and supply-chain surprises are visible |
+| **Internal-only DB** | PostgreSQL port 5432 is not exposed on the host; only the `api` container can reach `db` via the Docker bridge network |
+| **No privileged containers** | No container runs with `--privileged` or `CAP_SYS_ADMIN` |
+
+### Secret Management
+
+| Control | Detail |
+|---------|--------|
+| **Env files never committed** | `.env` and `.env.docker` are in `.gitignore`; only `.env.docker.example` (keys, no values) is committed |
+| **GRAFANA_PASSWORD** | Must be set before production deploy (see `.env.docker.example`). Default `changeme123` is blocked by a startup check. |
+| **RESTIC_PASSWORD** | AES-256 passphrase for all Restic backup repositories. Stored only in `.env.docker`, never in Compose files. |
+| **SESSION_SECRET** | 32+ random chars; rotation procedure in [RUNBOOK.md §3](docs/RUNBOOK.md) |
+| **Generate-fresh warnings** | `.env.docker.example` carries explicit `openssl rand -hex 32` commands next to every secret field |
+
+### Backup Security
+
+| Control | Detail |
+|---------|--------|
+| **Restic AES-256 encryption** | All backup snapshots are client-side encrypted before leaving the host; Cloudflare R2 sees only ciphertext |
+| **Off-site storage** | Snapshots pushed to Cloudflare R2 (zero-knowledge, geographically separate from host) |
+| **9/9 data stores covered** | Verified 2026-06-16 post V10 audit. Covers: PostgreSQL (main), Gitea, Nextcloud, Vaultwarden, `server/uploads`, `.env.docker`, Prometheus data, Grafana data, Uptime Kuma data |
+| **Backup freshness alert** | Prometheus rule fires if no snapshot in >48 hours (`BackupFreshness` in `alert_rules.yml`) |
+
+### Repository Security
+
+The source code is hosted publicly on GitHub. This is intentional (open-source, 50-year architecture). Sensitive operational data (`.env`, backups, secrets) never enters the repo. Audit reports are committed without redaction — they document the system's security posture for transparency.
+
+---
+
 ## Third-Party Data Egress
 
 > Added Wave 7 (2026-06-12). For six waves Polymath OS was a closed system — data entered, was processed on-host, and never left. Wave 7 introduces two deliberate doors, both opt-in and key-gated.
@@ -107,3 +156,6 @@ Both the chat fetch and the embedding fetch carry `AbortController` timeouts (60
 - **No 2FA** — password authentication only. Add TOTP (e.g., `speakeasy`) if the deployment is public-facing.
 - **Attachment storage** — files live on local disk; see [docs/RUNBOOK.md §4](docs/RUNBOOK.md#4-object-storage-migration-plan-uploads--s3--cloudflare-r2) for the planned migration to object storage.
 - **No CSRF token** — session cookie uses `sameSite: lax` which mitigates most CSRF vectors for top-level navigation but does not protect against same-site subdomains. Add `csurf` (or the `sameSite: strict` upgrade) if the deployment origin changes.
+- **Single host, no HA** — all 19 containers run on one machine. A hardware failure takes down all services until the host is recovered or rebuilt from backup. The backup + source rebuild guarantee (Invariant 6) is the recovery path.
+- **Grafana publicly accessible** — Grafana is served through Cloudflare Access but is internet-reachable. `GRAFANA_PASSWORD` must be strong; consider adding Cloudflare Access policies with email-pinned identity.
+- **npm audit vulns** — as of V10, `npm audit` reports high-severity findings in `form-data` (server) and `vite` (client). Tracked for next maintenance window.

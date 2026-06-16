@@ -21,10 +21,41 @@ import { listIdeas } from '../models/ideas.model.js';
 import { listGoals } from '../models/goals.model.js';
 import { listTimeEntries } from '../models/time.model.js';
 import { listProjects } from '../models/engineer.model.js';
+import { listRoadmaps } from '../models/roadmap.model.js';
 
 const router = Router();
 
 const EXPORT_MAX = 10000;
+
+// Wrappers for tables that have no standalone list-all function (V10 §5.2 / Invariant 1).
+async function listAllTracks(userId) {
+  const { rows } = await pool.query(
+    `SELECT rt.* FROM roadmap_tracks rt
+     JOIN learning_roadmaps lr ON lr.id = rt.roadmap_id
+     WHERE lr.user_id = $1 ORDER BY lr.id, rt.sort_order`,
+    [userId]
+  );
+  return rows;
+}
+
+async function listAllMilestones(userId) {
+  const { rows } = await pool.query(
+    `SELECT rm.* FROM roadmap_milestones rm
+     JOIN roadmap_tracks rt ON rt.id = rm.track_id
+     JOIN learning_roadmaps lr ON lr.id = rt.roadmap_id
+     WHERE lr.user_id = $1 ORDER BY rt.id, rm.sort_order`,
+    [userId]
+  );
+  return rows;
+}
+
+async function listAllHabitLogs(userId) {
+  const { rows } = await pool.query(
+    `SELECT * FROM habit_logs WHERE user_id = $1 ORDER BY log_date DESC`,
+    [userId]
+  );
+  return rows;
+}
 
 // ─── CSV helpers ──────────────────────────────────────────────────────────────
 
@@ -58,6 +89,10 @@ async function fetchAll(userId) {
     goals,
     time_entries,
     engineer_projects,
+    learning_roadmaps,
+    roadmap_tracks,
+    roadmap_milestones,
+    habit_logs,
   ] = await Promise.all([
     listTodos(userId, opts).then(r => (r.rows ?? r)),
     listTransactions(userId, { ...opts, per_page: EXPORT_MAX }).then(r => (r.rows ?? r)),
@@ -69,6 +104,10 @@ async function fetchAll(userId) {
     listGoals(userId, opts).then(r => (r.rows ?? r)),
     listTimeEntries(userId, opts).then(r => (r.rows ?? r)),
     listProjects(userId, opts).then(r => (r.rows ?? r)),
+    listRoadmaps(userId, { per_page: EXPORT_MAX, page: 1 }).then(r => (r.rows ?? r)),
+    listAllTracks(userId),
+    listAllMilestones(userId),
+    listAllHabitLogs(userId),
   ]);
 
   return {
@@ -82,6 +121,10 @@ async function fetchAll(userId) {
     goals,
     time_entries,
     engineer_projects,
+    learning_roadmaps,
+    roadmap_tracks,
+    roadmap_milestones,
+    habit_logs,
   };
 }
 

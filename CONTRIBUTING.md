@@ -6,7 +6,7 @@ Thank you for your interest in improving this project.
 
 ## Prerequisites
 
-- Node.js ≥ 18 (22 recommended)
+- Node.js 22
 - PostgreSQL 16
 - Docker + Docker Compose (optional, for the full stack locally)
 
@@ -44,7 +44,11 @@ All commands run from their respective subdirectory (`server/` or `client/`).
 | Command | What it does |
 |---------|-------------|
 | `npm run lint` | ESLint (0 warnings allowed) |
-| `npm test` | Vitest unit/integration tests |
+| `npm test` | Vitest unit tests |
+| `npm run test:integration` | Vitest integration tests (server only; requires live DB) |
+| `npm run test:property` | Fast-check property tests (server only) |
+| `npm run test:fuzz` | Fuzz tests for parsing/validation edge cases (server only) |
+| `npm run test:e2e` | Playwright end-to-end tests (client only) |
 | `npm run build` | Vite production build (client only) |
 | `npm run openapi` | Regenerate `docs/openapi.json` from Zod schemas (server only) |
 | `npm run migrate` | Run pending DB migrations (server only) |
@@ -86,7 +90,7 @@ Both jobs must pass before a merge. Set them as required status checks in **Sett
 1. **Name your migration:** Run `ls server/db/migrations/ | tail -5` to see the most recent files. The next migration number is one higher than the latest. Follow the established pattern: `DROP TABLE IF EXISTS … CASCADE` for re-runnability, `user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE`, and the shared `set_updated_at()` trigger.
 2. Write idempotent SQL: `CREATE TABLE IF NOT EXISTS` / `ADD COLUMN IF NOT EXISTS` / `DROP … IF EXISTS CASCADE` before each `CREATE`.
 3. Test by running `npm run migrate` against a dev database.
-4. The CI pipeline does **not** run migrations automatically — do not rely on migrations running in CI tests.
+4. The CI server job runs `npm run migrate` against the CI Postgres service automatically — integration tests can assume a fully-migrated schema.
 
 ---
 

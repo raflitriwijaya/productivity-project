@@ -48,3 +48,28 @@ groups:
         for: 5m
         labels: { severity: warning }
         annotations: { summary: "AI upstream timeout rate >10% for {{ $labels.provider }}/{{ $labels.model }}" }
+
+      # V10 §8.1 — host-level alerts (disk, memory, container restarts, backup freshness)
+      - alert: HostDiskFull
+        expr: node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} < 0.10
+        for: 10m
+        labels: { severity: critical }
+        annotations: { summary: "Host disk is >90% full on {{ $labels.instance }}" }
+
+      - alert: HostMemoryPressure
+        expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < 0.10
+        for: 5m
+        labels: { severity: critical }
+        annotations: { summary: "Host memory <10% available on {{ $labels.instance }}" }
+
+      - alert: ContainerRestarting
+        expr: rate(cadvisor_container_restart_count_total[10m]) > 0
+        for: 0m
+        labels: { severity: warning }
+        annotations: { summary: "Container {{ $labels.name }} is restarting" }
+
+      - alert: BackupFreshness
+        expr: time() - (max(restic_snapshot_timestamp) or 0) > 86400 * 2
+        for: 0m
+        labels: { severity: critical }
+        annotations: { summary: "No backup snapshot in >48 hours" }

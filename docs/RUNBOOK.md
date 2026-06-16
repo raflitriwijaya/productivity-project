@@ -228,6 +228,14 @@ These expressions are also shipped as **deployable configs** in [`deploy/prometh
 - **Nginx:** add `allow <prometheus-ip>; deny all;` to the `/metrics` location block
 - **Docker network:** don't expose the API port publicly; scrape from a Prometheus container on the same Docker network
 
+### 6.2 Deployed Alert Rules
+
+All 12 alert rules are deployed in [`deploy/prometheus/alert_rules.yml`](../deploy/prometheus/alert_rules.yml):
+
+**Application-level (8 rules):** HighErrorRate, P99LatencySpike, PoolExhaustion, PoolNearCapacity, HealthCheckFailing, ScrapeDown, AIUpstreamHighLatency, AIUpstreamTimeoutRate.
+
+**Host-level (4 rules — added V10 §8.1):** HostDiskFull (>90% disk for 10m), HostMemoryPressure (<10% RAM for 5m), ContainerRestarting (any container restart rate > 0), BackupFreshness (no Restic snapshot in >48 h).
+
 ### 6.4 Audit Log Events
 
 The following events are logged at `info` level with `userId` and `reqId` as structured fields:
@@ -247,3 +255,181 @@ The following events are logged at `info` level with `userId` and `reqId` as str
 | `DELETE` | Any resource deleted (todos, finances, research, learning, engineer) |
 
 Audit events are structured JSON via pino and include `reqId` for cross-referencing with error logs and Sentry reports. Search by `reqId` across both to reconstruct any incident timeline.
+
+---
+
+## 7. Home Server Operations
+
+Polymath OS runs on an Asus A455LF laptop (i5-5200U, 8GB RAM) with 19 Docker containers. See [docs/POLYMATHOS_SUMMARY.md](POLYMATHOS_SUMMARY.md) for full infrastructure documentation.
+
+### 7.1 Container Management
+
+```bash
+# Check all container status
+docker compose ps
+
+# View logs for a specific service
+docker compose logs -f api
+docker compose logs -f nginx
+docker compose logs --tail 100 db
+
+# Restart a single service without downtime
+docker compose restart api
+
+# Rebuild and restart after code changes
+git pull && docker compose up -d --build api
+
+# View resource usage (sorted by memory)
+docker stats --no-stream | sort -k4 -rh
+
+# Validate compose configuration
+docker compose config --quiet && echo "Config OK"
+```
+
+### 7.2 Health Checks
+
+The core trio has automated healthchecks (`db` → `api` → `nginx`). Manual verification:
+
+```bash
+# Database
+docker compose exec db pg_isready -U productivity -d productivity_db
+
+# API
+curl http://localhost:3000/health
+
+# Nginx (app)
+curl -sf http://localhost/ && echo "OK"
+
+# All public subdomains (via Uptime Kuma dashboard)
+# https://status.mightguy.my.id
+```
+
+### 7.3 Backup Operations
+
+#### Verify nightly pg_dump
+```bash
+docker compose logs --tail 20 db_backup
+ls -lh /mnt/data/postgres_backups/
+```
+
+#### Run offsite (Restic→R2) backup manually
+```bash
+docker compose exec restic-backup /bin/sh /restic-backup.sh
+```
+
+#### Check Restic snapshot inventory
+```bash
+docker compose exec restic-backup restic snapshots
+```
+
+#### Verify backup repository integrity
+```bash
+docker compose exec restic-backup restic check
+```
+
+#### Restore from Restic backup (tested June 16, 2026 — PASSED)
+```bash
+# List available snapshots
+docker compose exec restic-backup restic snapshots
+
+# Restore latest to /tmp for verification
+docker compose exec restic-backup restic restore latest --target /tmp/restore-test
+ls -lh /tmp/restore-test/data/
+```
+
+### 7.4 Monitoring Checks
+
+#### Daily
+```bash
+# Confirm backup log shows success
+docker compose logs --tail 20 db_backup
+
+# Container health at-a-glance
+docker compose ps
+```
+
+#### Weekly
+```bash
+# RAM budget — check no container approaching its limit
+docker stats --no-stream
+
+# Disk usage
+df -h /mnt/data
+df -h /
+
+# Backup repository integrity
+docker compose exec restic-backup restic check
+```
+
+#### Monthly
+```bash
+# Full restore test (non-destructive)
+mkdir -p /tmp/restore-test
+docker compose exec restic-backup restic restore latest --target /tmp/restore-test
+ls -lh /tmp/restore-test/data/
+# Record date and row counts; tear down
+rm -rf /tmp/restore-test
+
+# R2 storage usage — Cloudflare dashboard → R2 → homelab-backup bucket
+```
+
+#### Every 6 Months
+```bash
+# Review container image versions — bump stateful services to latest patch
+# (vaultwarden, nextcloud, gitea; update version pins in docker-compose.yml)
+docker compose pull
+docker compose up -d
+
+# Review Cloudflare Zero Trust access policies — revoke stale tokens
+```
+
+### 7.5 Incident Response
+
+| Symptom | First Action |
+|---------|-------------|
+| App unreachable (public URL) | `docker compose ps` — cloudflared container running? Cloudflare Tunnel dashboard? |
+| 502 Bad Gateway | `docker compose logs api --tail 50` — api crashed? |
+| Database errors in API logs | `docker compose logs db --tail 50` — db running and healthy? |
+| High RAM → OOM risk | `docker stats --no-stream \| sort -k4 -rh` — which container? Restart it. |
+| Disk full (`/`) | `df -h` — Docker images/volumes may need pruning: `docker system prune -f` |
+| Disk full (`/mnt/data`) | Old backup files; run `docker compose exec restic-backup restic forget --keep-last 14 --prune` |
+| No backup success notification (Telegram) | Check `docker compose logs restic-backup`; verify `restic forget` line has correct syntax (`\` continuation) |
+| Grafana unreachable | `docker compose restart grafana`; check `GRAFANA_PASSWORD` in `.env` |
+
+### 7.6 Secrets Rotation
+
+See §3 (Secret Rotation) for application secrets. Infrastructure-specific:
+
+```bash
+# Rotate Grafana admin password
+GRAFANA_PASSWORD=$(openssl rand -hex 16)
+# Update .env, then:
+docker compose up -d grafana
+
+# Rotate Restic repository password
+# ⚠️  WARNING: This invalidates ALL existing snapshots. Create a new R2 bucket first,
+# update RESTIC_PASSWORD and RESTIC_REPOSITORY in .env, then re-initialize:
+# docker compose exec restic-backup restic init
+```
+
+### 7.7 Infrastructure Upgrade Path
+
+Migration to new hardware (Phase 6 — mini-PC):
+
+```bash
+# On old server — stop everything, archive volumes + data
+docker compose down
+tar -czf /tmp/volumes-backup.tar.gz /var/lib/docker/volumes/
+rsync -avz /mnt/data/ new-server:/mnt/data/
+
+# On new server — restore
+git clone https://github.com/raflitriwijaya/productivity-project
+cp /path/to/backup.env .env
+docker compose up -d
+
+# Verify
+docker compose ps
+curl http://localhost:3000/health
+```
+
+Estimated downtime: 15–30 minutes depending on data volume. The full procedure is documented in [docs/POLYMATHOS_SUMMARY.md §Migration](POLYMATHOS_SUMMARY.md).

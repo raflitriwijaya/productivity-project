@@ -1,6 +1,14 @@
-# Productivity Project
+# Polymath OS — Personal Productivity Suite
 
-A personal web-based productivity suite that combines task management, finance tracking, research logging, learning notes, and an engineering toolkit in a single platform.
+> **Production-grade, self-hosted, AI-powered.** Built for a researcher, engineer, startup founder, and polymath. 18 modules. 108 API paths. 33 pages. 10 audit cycles. **Score: 8.8/10.**
+
+[![Audit Score](https://img.shields.io/badge/audit-8.8%2F10-brightgreen)](docs/audit/AUDIT_REPORT_V10.md)
+[![Containers](https://img.shields.io/badge/infra-19%20containers-orange)](docs/POLYMATHOS_SUMMARY.md)
+[![CI](https://img.shields.io/badge/CI-9%2F9%20green-yellow)](.github/workflows/ci.yml)
+[![50-Year](https://img.shields.io/badge/50--year%20lens-9.1%2F10-blue)](docs/audit/50_YEAR_LENS.md)
+[![License](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
+
+A production-grade, self-hosted productivity suite spanning 18 modules: finances, research, engineering, learning, reading, contacts, ideas, goals, time tracking, and an AI assistant — in one app. Built on a "50-year architecture": PostgreSQL, open formats, additive evolution, and a `pg_dump`-plus-source complete rebuild guarantee.
 
 ## Features
 
@@ -45,31 +53,31 @@ A personal web-based productivity suite that combines task management, finance t
 - **Universal Export** — download all your data as ZIP of JSON or CSV
 - **Unified Search** — search across todos, research, learning, transactions, projects, and books
 
+## 🏠 Self-Hosted Infrastructure
+
+This project runs on a **repurposed Asus A455LF laptop** (i5-5200U, 8GB RAM) with **zero cloud dependency:**
+
+- **19 Docker containers** managed via Docker Compose
+- **Zero open ports** — all traffic through Cloudflare Zero Trust Tunnel
+- **Full monitoring:** Prometheus + Grafana + Uptime Kuma with Telegram alerts
+- **Nightly encrypted backups** to Cloudflare R2 via Restic (restore tested ✅)
+- **Monthly electricity cost:** ~Rp 7,000
+
+Read the full infrastructure documentation: [docs/POLYMATHOS_SUMMARY.md](docs/POLYMATHOS_SUMMARY.md)
+
+---
+
 ## Tech Stack
 
-**Frontend**
-- React 19 + Vite
-- Tailwind CSS
-- React Router DOM
-- Axios
-- Lucide React
-- prism-react-renderer (code snippet highlighting)
-- @uiw/react-md-editor (Markdown docs editor)
-- rehype-sanitize (markdown XSS sanitization)
-- @sentry/react (error reporting — optional, gated on `VITE_SENTRY_DSN`)
-- @axe-core/playwright (a11y testing — dev only)
-
-**Backend**
-- Node.js + Express 5
-- PostgreSQL
-- Express Session + bcryptjs (authentication)
-- Zod (input validation)
-- Helmet (security headers) + express-rate-limit (brute-force protection)
-- Pino (structured logging)
-- prom-client (Prometheus metrics — `/metrics` endpoint)
-- archiver (ZIP streaming for Universal Export)
-- pgvector (semantic search / embeddings)
-- @sentry/node (error reporting — optional, gated on `SENTRY_DSN`)
+| Layer | Technology |
+|-------|------------|
+| **Frontend** | React 19 + Vite/Rolldown · Tailwind CSS · React Router DOM · Axios · Lucide React |
+| **Backend** | Node.js 22 + Express 5 · PostgreSQL 16 + pgvector · Zod · Pino · prom-client |
+| **AI** | DeepSeek V4 Pro/Flash (cloud) · Ollama R1 (local) · pgvector semantic search |
+| **Auth** | express-session + connect-pg-simple · bcryptjs · Helmet · rate-limit |
+| **Testing** | Vitest · Playwright · axe-core · property/fuzz/integrity/visual/mutation suites |
+| **PWA** | vite-plugin-pwa · offline-capable · installable |
+| **Infrastructure** | Docker Compose · Cloudflare Tunnel · Prometheus · Grafana · Uptime Kuma · Restic · R2 |
 
 ## Project Structure
 
@@ -109,8 +117,8 @@ productivity-project/
 
 ### Prerequisites
 
-- Node.js >= 18
-- PostgreSQL
+- Node.js 22
+- PostgreSQL 16
 
 ### 1. Clone the repository
 

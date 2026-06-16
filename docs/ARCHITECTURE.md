@@ -70,6 +70,7 @@ All API responses use the standard envelope:
 | `/api/chat` | session required | `server/routes/chat.js` |
 | `/api/export` | session required | `server/routes/export.js` |
 | `/api/settings` | session required | `server/routes/settings.js` |
+| `/api/roadmaps` | session required | `server/routes/roadmaps.js` |
 
 All protected routers also pass through `generalLimiter` (100 req/min/IP).
 
@@ -105,9 +106,9 @@ All tables follow these conventions (§6.5):
 
 | Table | Key columns |
 |-------|-------------|
-| `entity_links` | id, user_id, from_type, from_id, to_type, to_id, note — UNIQUE `(user_id, from_type, from_id, to_type, to_id)`; CHECK whitelists `from_type`/`to_type` against the 22 `LINKABLE_TYPES`; indexed on `(user_id, from_type, from_id)`, `(user_id, to_type, to_id)`, and `(user_id, created_at DESC)` |
+| `entity_links` | id, user_id, from_type, from_id, to_type, to_id, note — UNIQUE `(user_id, from_type, from_id, to_type, to_id)`; CHECK whitelists `from_type`/`to_type` against the 24 `LINKABLE_TYPES`; indexed on `(user_id, from_type, from_id)`, `(user_id, to_type, to_id)`, and `(user_id, created_at DESC)` |
 
-A polymorphic soft-reference: no FK to the target rows (they live in 22 different tables across all 7 waves), so ownership of **both** sides is enforced at the API layer (`server/routes/links.js`) rather than by the database. `user_id` scoping plus the type CHECK and UNIQUE constraint protect the table itself.
+A polymorphic soft-reference: no FK to the target rows (they live across all waves and modules), so ownership of **both** sides is enforced at the API layer (`server/routes/links.js`) rather than by the database. `user_id` scoping plus the type CHECK and UNIQUE constraint protect the table itself.
 
 ### Finance ledger (migration `002_finance_upgrade.sql`)
 
@@ -135,6 +136,72 @@ Balance rule: Income → +dest; Expense → −source; Transfer → −source +d
 | `engineer_issues` | id, project_id FK, user_id, title, severity (P0–P3), status, component, assignee |
 | `engineer_roadmap_months` | **global** — month_number (UNIQUE), title, description |
 | `engineer_roadmap_skills` | id, month_id FK, user_id, category (hardware/software/process), title, completed |
+
+### Reading Tracker (migration `008_reading_tracker.sql`)
+
+| Table | Key columns |
+|-------|-------------|
+| `books` | id, user_id, title, author, isbn, cover_url, status (want_to_read/reading/finished/dropped), rating, review, started_at, finished_at, page_count, pages_read |
+| `book_notes` | id, user_id, book_id FK, content, page_number, note_type (highlight/note/quote) |
+
+### Contacts (migration `009_contacts.sql`)
+
+| Table | Key columns |
+|-------|-------------|
+| `contacts` | id, user_id, name, email, phone, company, role, tags, notes, last_contacted_at |
+
+### Ideas (migration `010_ideas.sql`)
+
+| Table | Key columns |
+|-------|-------------|
+| `ideas` | id, user_id, title, content, status (raw/developing/validated/archived), tags, energy (1–5) |
+
+### Time Tracking (migration `011_time_tracking.sql`)
+
+| Table | Key columns |
+|-------|-------------|
+| `time_categories` | id, user_id, name, color, icon |
+| `time_entries` | id, user_id, category_id FK, description, started_at, ended_at, duration_minutes |
+
+### Goals & OKRs + Habits (migration `012_goals_habits.sql`)
+
+| Table | Key columns |
+|-------|-------------|
+| `goals` | id, user_id, title, description, target_date, status (active/completed/abandoned), progress |
+| `okrs` | id, user_id, goal_id FK nullable, title, quarter, status |
+| `okr_key_results` | id, okr_id FK, title, target_value, current_value, unit |
+| `habits` | id, user_id, title, description, frequency (daily/weekly), target_count, streak_current, streak_best |
+| `habit_logs` | id, user_id, habit_id FK, log_date (DATE), count, note |
+
+### AI Chat (migration `013_ai_chat.sql`)
+
+| Table | Key columns |
+|-------|-------------|
+| `chat_conversations` | id, user_id, title, model, created_at |
+| `chat_messages` | id, conversation_id FK, role (user/assistant), content, reasoning_content, created_at |
+
+### Research Embeddings (migration `014_research_embeddings.sql`)
+
+| Table | Key columns |
+|-------|-------------|
+| `research_embeddings` | id, user_id, entry_id FK, embedding (vector(1536)), created_at |
+
+Requires the `pgvector` extension. The vector dimension matches the DeepSeek/Ollama embedding model output. Indexed with `ivfflat` for approximate nearest-neighbour search.
+
+### Learning Roadmaps (migration `017_learning_roadmaps.sql`)
+
+| Table | Key columns |
+|-------|-------------|
+| `learning_roadmaps` | id, user_id, title, description, status (active/completed/archived), target_date |
+| `roadmap_tracks` | id, roadmap_id FK, title, description, sort_order |
+| `roadmap_milestones` | id, track_id FK, title, description, sort_order, completed, completed_at |
+
+### Web Push & Reminders (migration `018_reminders.sql`)
+
+| Table | Key columns |
+|-------|-------------|
+| `web_push_subscriptions` | id, user_id, endpoint, p256dh, auth, created_at |
+| `reminders` | id, user_id, entity_type, entity_id, remind_at (TIMESTAMPTZ), title, sent |
 
 ### Migration runner
 
@@ -251,3 +318,77 @@ rather than the schema defaults.
 | `SENTRY_DSN` | server | no | Omit to disable server-side error reporting |
 | `VITE_API_URL` | client | no | Defaults to `http://localhost:3000` |
 | `VITE_SENTRY_DSN` | client | no | Omit to disable client-side error reporting |
+| `GRAFANA_PASSWORD` | infra | yes (prod) | Grafana admin password; default `changeme123` is insecure on public subdomain. Generate: `openssl rand -hex 16` |
+| `RESTIC_PASSWORD` | infra | yes (prod) | AES-256 passphrase for Restic backup encryption |
+| `B2_ACCOUNT_ID` / `B2_ACCOUNT_KEY` | infra | yes (prod) | Cloudflare R2 / Backblaze B2 credentials for off-site backup |
+
+---
+
+## Deployment Architecture
+
+### Network Topology
+
+```
+Internet → Cloudflare Edge (DNS + TLS 1.3 + DDoS shield)
+              ↓
+         Cloudflare Zero Trust Tunnel (cloudflared container)
+         Outbound-only — ZERO open inbound ports on host
+              ↓ (internal Docker network: polymathos_net)
+         nginx (React SPA + reverse proxy → :80/:443)
+              ↓
+         api (Express.js → :3000)
+              ↓
+         db (PostgreSQL 16 + pgvector → :5432, internal only)
+```
+
+The host firewall (UFW) blocks all inbound. SSH is LAN-only with key auth. All public subdomains terminate at Cloudflare and enter via the outbound tunnel — no port forwarding, no DMZ, no exposed services.
+
+### Container Inventory (19 containers)
+
+| Layer | Container | Image | Purpose |
+|-------|-----------|-------|---------|
+| **Core App** | `db` | `postgres:16-alpine` | Primary database |
+| | `api` | local build | Express.js backend |
+| | `client` / `nginx` | `nginx:alpine` + built SPA | Static files + reverse proxy |
+| | `cloudflared` | `cloudflare/cloudflared` | Zero Trust ingress tunnel |
+| **Monitoring** | `prometheus` | `prom/prometheus` | Metrics collection |
+| | `grafana` | `grafana/grafana` | Dashboards |
+| | `node-exporter` | `prom/node-exporter` | Host metrics (CPU, RAM, disk) |
+| | `cadvisor` | `gcr.io/cadvisor/cadvisor` | Container metrics |
+| | `uptime-kuma` | `louislam/uptime-kuma` | Uptime / status page |
+| | `alertmanager` | `prom/alertmanager` | Alert routing |
+| **Backup** | `restic-backup` | local build | Scheduled Restic → Cloudflare R2 |
+| **Self-Hosted Cloud** | `gitea` | `gitea/gitea:1.22` | Private Git hosting |
+| | `gitea-db` | `postgres:16-alpine` | Gitea database |
+| | `nextcloud` | `nextcloud:stable` | File sync |
+| | `nextcloud-db` | `mariadb:11` | Nextcloud database |
+| | `nextcloud-redis` | `redis:alpine` | Nextcloud cache |
+| | `vaultwarden` | `vaultwarden/server` | Password manager |
+| **Dev Tools** | `collabora` | `collaboraoffice/collabora-online` | Online document editing |
+| | `portainer` | `portainer/portainer-ce` | Container management UI |
+
+Total: 19 containers. Host: Asus A455LF (Intel i5-5200U, 8 GB RAM, 500 GB SSD), Ubuntu Server 26.04 LTS.
+
+### Resource Allocation
+
+| Container group | RAM cap (compose `mem_limit`) |
+|-----------------|-------------------------------|
+| Core App (db + api + nginx) | ~1.5 GB combined |
+| Monitoring stack | ~400 MB |
+| Self-Hosted Cloud | ~2 GB (Nextcloud is hungriest) |
+| Backup + Dev Tools | ~400 MB |
+| **Headroom for OS + host** | ~3.7 GB |
+
+Memory limits are set in `docker-compose.yml` and `docker-compose.services.yml` to prevent any single container from starving the host.
+
+### Security Boundaries
+
+| Boundary | Mechanism |
+|----------|-----------|
+| Public internet → host | UFW blocks all inbound; only Cloudflare tunnel (outbound) reaches services |
+| SSH access | LAN-only (`AllowUsers` + `ListenAddress`), key auth, `PasswordAuthentication no` |
+| Container isolation | Non-root users, `read_only` fs where possible, no `--privileged` |
+| Secrets | `.env` files never committed; `.env.docker.example` has only keys + comments |
+| DB access | Only `api` container can reach `db` (Docker network isolation); port 5432 not exposed |
+| Grafana | Password-protected via `GRAFANA_PASSWORD`; served through Cloudflare Access |
+| Backups | Restic AES-256 encryption (`RESTIC_PASSWORD`); off-site to Cloudflare R2 |

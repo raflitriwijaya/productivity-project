@@ -1,5 +1,7 @@
 # The 50-Year Lens
 
+> **This is the canonical 50-Year Lens.** An archived AI-generated variant exists at [50_YEAR_LENS-deepseek.md](50_YEAR_LENS-deepseek.md) for reference only.
+
 *A guide for a lifetime of building, thinking, and connecting.*
 
 > **What this is:** the one document in this repository written for you, not for the code.

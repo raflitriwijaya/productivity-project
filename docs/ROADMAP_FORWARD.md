@@ -1,9 +1,9 @@
 # Polymath OS — Forward Roadmap (2026–2076)
 
 > **Status:** Living document. Updated as phases complete and priorities evolve.
-> **Last updated:** 2026-06-13
-> **Current score:** 8.6 technical / blended PMF+0.7 from V6 (see AUDIT_REPORT_V7.md)
-> **Foundation era closed:** Waves 1–7 + post-V5 fix-wave, all 9/9 quality gates green.
+> **Last updated:** 2026-06-16
+> **Current score:** 8.8 blended (15-dim) — see [AUDIT_REPORT_V10.md](../docs/audit/AUDIT_REPORT_V10.md)
+> **Foundation era closed:** Waves 1–7 + post-V5 fix-wave + V10 IDR fix + Phase 1–5 infra. All 9/9 quality gates green (npm audit CI gate needs `npm audit fix` — V10 §7.1).
 
 ---
 
@@ -51,8 +51,10 @@ Close the remaining V6 gaps. None requires new architecture — these are comple
 | 1.5 Engineer/Finance consolidation | ✅ Done (2026-06-13) |
 | 1.6 AI upstream latency metric | ✅ Done (2026-06-13) |
 | 1.7 Feature-flag on user_settings | ⬜ |
-| 1.8 OpenAPI gate | ⬜ |
-| 1.9 Client coverage in CI | ⬜ |
+| 1.8 OpenAPI gate parses spec, not script | ⬜ |
+| 1.9 Client coverage floor in CI | ⬜ |
+| 1.10 **Fix IDR money input bug (V9 Critical)** | ✅ Done (2026-06-16) — `parseIdrInput` wired into all 6 money forms; `"50.000"` → 50000 verified by execution |
+| 1.11 **Infrastructure — Home Server Phase 1–5** | ✅ Done (2026-06-16) — 19 containers, Cloudflare Zero Trust, Prometheus + Grafana + Uptime Kuma, Restic→R2 backups, restore tested |
 
 ---
 
@@ -149,4 +151,21 @@ These are the architectural decisions that earn the §14 score. Treat them as lo
 
 ---
 
-*Forward roadmap created 2026-06-13, extracted from AUDIT_REPORT_V6.md §8 "The 50-Year Roadmap". Promote V6 §12.1 from finding to closed.*
+| IDR money input bug (V9 Critical) | V9 §15.1 | ✅ Fixed 2026-06-16 |
+| Infrastructure home server Phase 1–5 | V10 §5 | ✅ Done 2026-06-16 |
+| Backup script 4-of-9 coverage | V10 §5.3 | ✅ Fixed 2026-06-16 |
+| Container mem_limit on core services | V10 §2.1 | ✅ Fixed 2026-06-16 |
+| Grafana weak default password | V10 §1.2 | ✅ Fixed (GRAFANA_PASSWORD in .env.docker.example) |
+| Host-level Prometheus alerts | V10 §8.1 | ✅ Fixed 2026-06-16 |
+| Export omits roadmaps + habits | V10 §5.2 | ✅ Fixed 2026-06-16 |
+| Roadmap pages not a11y-audited | V10 §10.1 | ✅ Fixed 2026-06-16 |
+| Dual 50-Year Lens documents | V10 §11.2 | ✅ Fixed (archived deepseek variant) |
+| Dead code in api.js | V10 §11.4 | ✅ Fixed 2026-06-16 |
+| `npm audit` regression (CI red) | V10 §7.1 | ⬜ Run `npm audit fix` in server + client |
+| OpenAPI gate parses spec not script | V10 §5.1 | ⬜ Phase 1.8 |
+| Client coverage in CI | V10 §6.2 | ⬜ Phase 1.9 |
+| Agentic AI (tool-calling) | V10 §— | ⬜ Phase 2 |
+
+---
+
+*Forward roadmap created 2026-06-13, extracted from AUDIT_REPORT_V6.md §8 "The 50-Year Roadmap". Updated 2026-06-16 with V10 completion status.*

@@ -1,3 +1,8 @@
+> **⚠️ ARCHIVED — This is an AI-generated variant. The canonical 50-Year Lens is [50_YEAR_LENS.md](50_YEAR_LENS.md).**
+> This file is retained for reference only. All authoritative content is in the canonical version.
+
+---
+
 # The 50-Year Lens
 
 *A guide for a lifetime of building, thinking, and connecting — written for the person who built this system, by the system that studied it.*

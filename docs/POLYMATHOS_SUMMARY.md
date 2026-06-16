@@ -83,7 +83,7 @@ A full-stack personal productivity web application, built from scratch and self-
 | Service | Image | Function | Notes |
 |---|---|---|---|
 | `db` | `pgvector/pgvector:pg16` | PostgreSQL 16 + pgvector extension | Dedicated — not shared with Phase 5 |
-| `api` | custom `./server` | Express.js REST API, exposes `/metrics` | Node.js 18+ |
+| `api` | custom `./server` | Express.js REST API, exposes `/metrics` | Node.js 22 |
 | `nginx` | custom `./client` | React 19 SPA + reverse proxy | Vite build |
 | `db_backup` | `postgres:16-alpine` | pg_dump cron job at 02:00 → backup volume | Compressed SQL dumps |
 | `cloudflared` | `cloudflare/cloudflared:latest` | Outbound tunnel to Cloudflare Zero Trust | Stateless |
@@ -121,7 +121,7 @@ Full observability with real-time alerting via Telegram, providing instant notif
 |---|---|---|---|---|
 | `prometheus` | `prom/prometheus:v2.52.0` | Time-series metrics collector | 200MB | ~54MB |
 | `node-exporter` | `prom/node-exporter:v1.8.1` | Host system metrics (CPU, RAM, disk, network) | 30MB | ~10MB |
-| `cadvisor` | `gcr.io/cadvisor:v0.49.1` | Per-container metrics | 100MB | ~39MB |
+| `cadvisor` | `gcr.io/cadvisor/cadvisor:v0.49.1` | Per-container metrics | 100MB | ~39MB |
 | `grafana` | `grafana/grafana:11.1.0` | Visualization dashboards | 150MB | ~59MB |
 | `uptime-kuma` | `louislam/uptime-kuma:1` | HTTP uptime monitoring + alerting | 150MB | ~111MB |
 
@@ -148,7 +148,7 @@ A personal GitHub alternative for private repositories and version control indep
 
 | Service | Image | RAM Limit | RAM Usage |
 |---|---|---|---|
-| `gitea` | `gitea/gitea:latest` | 256MB | ~105MB |
+| `gitea` | `gitea/gitea:1.22` | 256MB | ~105MB |
 
 **Purpose:** Version control for all personal and project code without dependency on GitHub, GitLab, or any third-party Git hosting. All repositories remain on the personal server, in open Git format, exportable at any time.
 
@@ -412,7 +412,7 @@ Immich's machine learning pipeline (face recognition, object detection, CLIP sem
 | `/mnt/data/nextcloud` | Files + Nextcloud app | HDD | ✅ |
 | `/mnt/data/nextcloud-db` | MariaDB database | HDD | ✅ |
 
-**Backup coverage: 100%** — every piece of user-generated data is included in the nightly restic backup to Cloudflare R2.
+**Backup coverage: 9/9 data stores** — all user-generated data is included in the nightly restic backup to Cloudflare R2. Coverage verified by restore test on June 16, 2026 — PASSED. *(Note: V10 audit found the original script only covered 4/9 stores; expanded to 9/9 in the post-V10 infrastructure sprint.)*
 
 ---
 
@@ -616,4 +616,4 @@ The tools are open. The knowledge is available. The only requirement is the will
 ---
 
 *This document was generated from implementation sessions spanning Phase 1–5, completed June 16, 2026.*  
-*Last updated: June 16, 2026 | Update this document with every significant stack change.*
+*Last updated: June 16, 2026 (V10 audit corrections: Node.js 18+→22, gitea:latest→1.22, gcr.io/cadvisor image path, backup coverage claim corrected to 9/9) | Update this document with every significant stack change.*

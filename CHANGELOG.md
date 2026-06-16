@@ -5,7 +5,37 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [Unreleased]
+## [Unreleased] — 2026-06-16
+
+### Infrastructure — Home Server (Phase 1–5)
+- **Deployed on self-hosted hardware:** Repurposed Asus A455LF laptop (i5-5200U, 8GB RAM), Ubuntu Server 26.04 LTS
+- **19 Docker containers** with full monitoring (Prometheus + Grafana + Uptime Kuma), nightly pg_dump backups, and Restic-encrypted offsite backups to Cloudflare R2
+- **Zero open ports:** All traffic via Cloudflare Zero Trust Tunnel, SSH LAN-only with key authentication, UFW + Fail2ban active
+- **7 public subdomains:** mightguy.my.id (app), grafana, status, vault, rss, read, cloud
+- **Backup coverage:** 9 data stores backed up nightly, restore tested June 16, 2026 — PASSED
+- **RAM budget:** ~937MB / 7.2GB (13%) across 19 containers, all with explicit mem_limit
+
+### Fixed — IDR Money Input Bug (V9 Critical → V10 Closed)
+- **Root cause:** Money forms used `Number()` which reads `.` as decimal point, not Indonesian thousands separator. Typing `"50.000"` stored `50` instead of `50000`.
+- **Fix:** Wired `parseIdrInput` into ALL six money form submit handlers: CreateTransactionModal, LedgerModal, PortfolioModal, Portfolio inline edit, Accounts, Budget
+- **Verification:** Live execution confirms `"50.000"`→50000, `"1.500.000"`→1500000, garbage→NaN with inline errors
+- **Test suite:** Property-based tests (20,000 random iterations) now validate the production code path. Fuzz tests (hostile input battery) confirm never-throws + NaN-on-garbage.
+- **Audit:** Survived 8 audits (V1–V8), discovered V9, fixed V10
+
+### Audit — V10 Complete (8.8/10)
+- First audit of the complete system: application + Docker infrastructure + monitoring + backup
+- §15 UX Input Validation Correctness: 7.5→8.7 (+1.2) — the founding bug is dead
+- Technical-only: 8.8 | 15-dim blended: 8.8
+- See `docs/audit/AUDIT_REPORT_V10.md`
+
+### Infrastructure Fixes (Post-V10)
+- Backup script: expanded from 4 to 9 data stores, fixed restic forget line-continuation bug
+- Container memory limits: added to all 5 core containers (db 256MB, api 256MB, nginx 64MB, cloudflared 128MB, db_backup 64MB)
+- Grafana password: moved to .env with openssl rand -hex 16 generation
+
+---
+
+## [Custom Learning Roadmaps] — 2026-06-14
 
 ### Custom Learning Roadmaps (2026-06-14)
 

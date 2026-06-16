@@ -1,8 +1,8 @@
 # CLAUDE.md — Polymath OS
 
 > **Purpose:** Context guide for every Claude Code session. Read this before writing any code.
-> **Last updated:** 2026-06-14
-> **Current audit score:** 8.7/10 ([docs/audit/AUDIT_REPORT_V8.md](docs/audit/AUDIT_REPORT_V8.md))
+> **Last updated:** 2026-06-16
+> **Current audit score:** 8.8/10 ([docs/audit/AUDIT_REPORT_V10.md](docs/audit/AUDIT_REPORT_V10.md))
 > **Internal name:** the docs also call this "Rafli's Productivity Suite" — same system.
 
 ---
@@ -64,7 +64,7 @@ Polymath OS is a single-user personal productivity system for a researcher / eng
 - Axios: `import api from '../lib/api'` → `api.get/post/patch/delete`. The response interceptor **unwraps `response.data`**, so callers get `{ success, data, meta }` directly. A 401 hard-redirects to `/login`; 429 is surfaced, not redirected.
 - Do NOT set a default `Content-Type` on `api` — it auto-detects `multipart/form-data` for FormData uploads. SSE streaming uses a raw `fetch` (not `api`), see [AIChat.jsx](client/src/pages/AIChat.jsx).
 - Toast: `import { useToast } from '../hooks/useToast'` → `const { addToast } = useToast()` → `addToast({ type: 'success'|'error', title })`.
-- Format IDR: `import { formatIdr, parseIdrInput, formatIdrInput } from '../lib/formatIdr'`.
+- Format IDR: `import { formatIdr, parseIdrInput, formatIdrInput } from '../lib/formatIdr'`. Always use `parseIdrInput` in form submit handlers — never `Number()` on IDR fields.
 - Dark mode: always include `dark:` variants for every Tailwind class.
 - Stoic Garden palette: **moss** (green/success), **terracotta** (hardware/craft), **ember** (amber/CTA), **stone** (neutral).
 - Routes in [client/src/App.jsx](client/src/App.jsx): literal paths before parameterized; heavy pages (Research, Engineer*) are `lazy()`-loaded.
@@ -169,3 +169,5 @@ docker compose logs -f api     # follow API logs
 - ❌ Do NOT rewrite core middleware / error handler / auth — always extend additively.
 - ❌ Do NOT change the error envelope shape — `{ success, data/error }` is sacred.
 - ❌ Do NOT leave `git status` dirty — commit all changes after every session (Invariant 6).
+- ❌ Do NOT submit money/IDR fields via `Number()` — always use `parseIdrInput()` from `../lib/formatIdr`. `Number("50.000")` returns `50` in JavaScript (dot = decimal), not `50000`. This was the founding bug that survived 8 audits.
+- ❌ Do NOT use `formatIdrInput` in form input `value` props — it causes the ×100 formatting bug. Use raw numbers in inputs, `formatIdr` for display-only.

@@ -33,6 +33,40 @@ Closes the four highest-ROI gaps from Grand Final Audit V5 (`docs/audit/AUDIT_RE
 
 ---
 
+## V10 — IDR Money Input Fix & Infrastructure (2026-06-16)
+
+### IDR Money Input Fix
+- **Bug:** Money forms used `Number()` which reads `.` as decimal. `"50.000"` stored `50` instead of `50000`. Survived audits V1–V8; discovered V9; fixed V10.
+- **Fix:** Wired `parseIdrInput` into all 6 money form submit handlers: `CreateTransactionModal.jsx:150`, `LedgerModal.jsx:77`, `PortfolioModal.jsx:78-79`, `Accounts.jsx:45`, `Budget.jsx:30`, `Portfolio.jsx:34`.
+- **Verification:** Live execution confirms `"50.000"`→50000, `"1.500.000"`→1500000 across all fields.
+- **Test suite:** Property-based tests (20K iterations) now validate the production code path (not a benched function).
+- **Residual:** `Accounts.jsx:45` silently maps garbage NaN → 0 via `|| 0` (Medium, no inline error).
+
+### Home Server Infrastructure (Phase 1–5)
+- **Hardware:** Asus A455LF (i5-5200U, 8GB RAM), Ubuntu Server 26.04 LTS
+- **19 Docker containers** — core app (db, api, nginx, db_backup, cloudflared) + monitoring (prometheus, grafana, node-exporter, cadvisor, uptime-kuma) + services (vaultwarden, nextcloud, gitea, miniflux, wallabag, etc.)
+- **Zero open ports:** Cloudflare Zero Trust Tunnel (outbound only), SSH LAN+key, UFW + Fail2ban
+- **7 public subdomains:** mightguy.my.id, grafana, status, vault, rss, read, cloud
+- **Monitoring:** Prometheus scrapes api, node-exporter, cadvisor; 12 alert rules (app-level + V10 host-level); Grafana Node-Exporter-Full dashboard; Uptime-Kuma 60s checks + Telegram alerts
+- **Backups:** nightly pg_dump (02:00) + Restic→Cloudflare R2 (9 stores, restore tested June 16, 2026 — PASSED)
+- **RAM:** ~937MB / 7.2GB (13%); all containers have `mem_limit`
+- See `docs/POLYMATHOS_SUMMARY.md` for the full infrastructure runbook.
+
+### Post-V10 Code Fixes (2026-06-16)
+- `export.js` — roadmaps + habit_logs added (Invariant 1: all 14 user-data modules now exported)
+- `a11y.spec.js` — `/roadmaps` added to PAGES_TO_CHECK (V10 §10.1, twice-recurred)
+- `api.js` — dead commented `axios.create` block deleted (V10 §11.4)
+- `alert_rules.yml` — host-level alerts added (disk-full, memory-pressure, container-restart, backup-freshness)
+- `.env.docker.example` — `GRAFANA_PASSWORD` added (V10 §1.2)
+- `50_YEAR_LENS-deepseek.md` — archived; canonical version is `50_YEAR_LENS.md`
+- `CLAUDE.md` — `parseIdrInput` mandated in DO NOT DO to prevent regression
+
+### Audit V10 Score
+- Technical-only (dims 1–12): **8.8** | 15-dim blended: **8.8** (+0.1 from V9)
+- §15 UX Input Validation: **8.7** (+1.2) — the founding bug is closed
+
+---
+
 ## Custom Learning Roadmaps (2026-06-14)
 
 Replaces the single hardcoded 12-month Engineer Roadmap with unlimited user-defined learning paths for any discipline. **Additive** — the old `/engineer/roadmap` (`engineer_roadmap_months` / `engineer_roadmap_skills`) is untouched and keeps working.

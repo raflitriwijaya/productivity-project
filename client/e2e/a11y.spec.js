@@ -25,6 +25,8 @@ const PAGES_TO_CHECK = [
   // Consolidation dashboards (V7 §6.2 / §10.1 — a11y coverage extended to 17 pages).
   { path: '/engineer/sprint',   name: 'Engineer Sprint Board' },
   { path: '/finance/overview',  name: 'Finance Overview' },
+  // V10 §10.1 — roadmap pages twice-recurred; add to prevent future regression.
+  { path: '/roadmaps',          name: 'Learning Roadmaps' },
 ];
 
 test.describe('Accessibility Audit', () => {
