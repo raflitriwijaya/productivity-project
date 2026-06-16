@@ -173,6 +173,43 @@ services:
           condition: service_healthy
       restart: unless-stopped
 
+  gitea:
+    image: gitea/gitea:1.22
+    container_name: gitea
+    restart: unless-stopped
+    mem_limit: 256m
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - GITEA__database__DB_TYPE=sqlite3
+      - GITEA__database__PATH=/data/gitea/gitea.db
+      - GITEA__server__DOMAIN=git.mightguy.my.id
+      - GITEA__server__ROOT_URL=https://git.mightguy.my.id
+      - GITEA__server__HTTP_PORT=3000
+      - GITEA__server__DISABLE_SSH=true
+    ports:
+      - "127.0.0.1:3001:3000"
+    volumes:
+      - gitea_data:/data
+
+  restic-backup:
+    build:
+      context: ./deploy
+      dockerfile: Dockerfile.restic
+    image: homelab-restic:latest
+    container_name: restic-backup
+    restart: unless-stopped
+    mem_limit: 256m
+    env_file: .env
+    volumes:
+      - productivity-project_postgres_backups:/data/postgres_backups:ro
+      - productivity-project_gitea_data:/data/gitea_data:ro
+      - productivity-project_grafana_data:/data/grafana_data:ro
+      - productivity-project_uptime_kuma_data:/data/uptime_kuma_data:ro
+      - ./deploy/scripts/restic-backup.sh:/restic-backup.sh:ro
+    profiles:
+      - backup
+
 volumes:
   postgres_data:
   uploads_data:      # Phase 2: named volume so attachments survive rebuilds
@@ -180,3 +217,12 @@ volumes:
   prometheus_data:
   grafana_data:
   uptime_kuma_data:
+  gitea_data:
+  productivity-project_postgres_backups:
+    external: true
+  productivity-project_gitea_data:
+    external: true
+  productivity-project_grafana_data:
+    external: true
+  productivity-project_uptime_kuma_data:
+    external: true

@@ -1,0 +1,8 @@
+FROM alpine:3.20
+RUN apk add --no-cache restic curl
+COPY scripts/restic-backup.sh /restic-backup.sh
+RUN chmod +x /restic-backup.sh
+# Cron job jam 03:00 setiap hari
+RUN echo "0 3 * * * /bin/sh /restic-backup.sh >> /var/log/restic.log 2>&1" | crontab -
+CMD ["crond", "-f", "-d", "8"]
+
