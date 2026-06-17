@@ -49,9 +49,9 @@ export function TodoRow({ todo, onEdit, onDelete }) {
         )}
         {todo.due_date && (
           <p className="text-[11px] text-stone-400 dark:text-gray-500 mt-0.5">
-            Due {todo.due_date}
+            Due {new Date(todo.due_date).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
             {todo.due_time && (
-              <span className="ml-1">at {todo.due_time.slice(0, 5)}</span>
+              <span className="ml-1">{todo.due_time.slice(0, 5)} WIB</span>
             )}
           </p>
         )}
