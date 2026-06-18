@@ -7,6 +7,8 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Plus, FileText, Trash2, Eye, Pencil } from 'lucide-react';
+import { DocAttachmentUploader } from '../components/engineer/DocAttachmentUploader';
+import { DocAttachmentList } from '../components/engineer/DocAttachmentList';
 
 import api from '../lib/api';
 import { useApi } from '../hooks/useApi';
@@ -49,6 +51,7 @@ export default function EngineerDocs() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [attachRefreshKey, setAttachRefreshKey] = useState(0);
 
   // ── Data fetching ───────────────────────────────────────────────────────────
   const { data: projects } = useApi(() => api.get('/api/engineer'), []);
@@ -286,6 +289,25 @@ export default function EngineerDocs() {
                     </Button>
                   </div>
                 </div>
+
+                {/* Attachments — only shown for saved documents */}
+                {draft.id && (
+                  <div className="border-t border-stone-200 dark:border-gray-700 pt-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium text-stone-500 dark:text-gray-400 uppercase tracking-wide">
+                        Attachments
+                      </p>
+                      <DocAttachmentUploader
+                        documentId={draft.id}
+                        onUploaded={() => setAttachRefreshKey(k => k + 1)}
+                      />
+                    </div>
+                    <DocAttachmentList
+                      documentId={draft.id}
+                      refreshKey={attachRefreshKey}
+                    />
+                  </div>
+                )}
               </CardBody>
             ) : (
               <CardBody className="p-0">

@@ -573,6 +573,45 @@ export async function deleteDocument(id, userId) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
+// Document attachments
+// ──────────────────────────────────────────────────────────────────────────────
+
+export async function listDocAttachments(documentId) {
+  const { rows } = await pool.query(
+    'SELECT * FROM engineer_doc_attachments WHERE document_id = $1 ORDER BY created_at DESC',
+    [documentId]
+  );
+  return rows;
+}
+
+export async function createDocAttachment(documentId, fileInfo) {
+  const { filename, original_name, file_path, mime_type, size } = fileInfo;
+  const { rows } = await pool.query(
+    `INSERT INTO engineer_doc_attachments (document_id, filename, original_name, file_path, mime_type, size)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING *`,
+    [documentId, filename, original_name, file_path, mime_type ?? null, size ?? null]
+  );
+  return rows[0];
+}
+
+export async function getDocAttachmentById(id) {
+  const { rows } = await pool.query(
+    'SELECT * FROM engineer_doc_attachments WHERE id = $1',
+    [id]
+  );
+  return rows[0] ?? null;
+}
+
+export async function deleteDocAttachment(id) {
+  const result = await pool.query(
+    'DELETE FROM engineer_doc_attachments WHERE id = $1',
+    [id]
+  );
+  return result.rowCount > 0;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
 // Check-ins (per project)
 // ──────────────────────────────────────────────────────────────────────────────
 

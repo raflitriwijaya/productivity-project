@@ -8,6 +8,10 @@
 
 import { Router } from 'express';
 import { z } from 'zod';
+import path from 'node:path';
+import fs from 'node:fs';
+import { randomUUID } from 'node:crypto';
+import multer from 'multer';
 import { PROJECT_TYPES, PROJECT_STATUSES, ISSUE_SEVERITIES, ISSUE_STATUSES } from '../lib/enums.js';
 import { validate } from '../middleware/validate.js';
 import { AppError } from '../lib/AppError.js';
@@ -15,6 +19,7 @@ import { logger } from '../lib/logger.js';
 import pool from '../lib/db.js';
 import { getLinksForEntity } from '../models/links.model.js';
 import { getBudgetById } from '../models/finance.model.js';
+import { uploadsDir, researchFileFilter } from './research.js';
 import {
   // projects
   listProjects, getProjectById, createProject, patchProject, deleteProject,
@@ -24,6 +29,8 @@ import {
   // documents
   listProjectDocuments, listGlobalDocuments, getDocumentById,
   createDocument, patchDocument, deleteDocument,
+  // document attachments
+  listDocAttachments, createDocAttachment, getDocAttachmentById, deleteDocAttachment,
   // check-ins
   listCheckins, createCheckin,
   // issues
@@ -31,6 +38,24 @@ import {
   // roadmap
   getRoadmap, getRoadmapSkillById, setRoadmapSkillCompleted,
 } from '../models/engineer.model.js';
+
+// ─── Multer config for document attachments ───────────────────────────────────
+// Shares uploadsDir and file-type allowlist with the research attachment system.
+
+const docUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+      cb(null, uploadsDir);
+    },
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase();
+      cb(null, `${randomUUID()}${ext}`);
+    },
+  }),
+  limits: { fileSize: 100 * 1024 * 1024 },
+  fileFilter: researchFileFilter,
+});
 
 const router = Router();
 
@@ -301,6 +326,113 @@ router.get('/documents', async (req, res, next) => {
     const docs = await listGlobalDocuments(req.user.id);
     res.json({ success: true, data: docs });
   } catch (err) { next(err); }
+});
+
+// ─── Document attachments ─────────────────────────────────────────────────────
+// Literal /documents/attachments/:id routes registered before /documents/:id so
+// the "attachments" segment is never captured as an :id value.
+
+async function requireOwnedDocument(req, res, next) {
+  try {
+    const id = parseId(req.params.id);
+    const doc = await getDocumentById(id, req.user.id);
+    if (!doc) return next(new AppError('Document not found.', 404, 'NOT_FOUND'));
+    req.ownedDocument = doc;
+    next();
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /api/engineer/documents/attachments/:id/download
+router.get('/documents/attachments/:id/download', async (req, res, next) => {
+  try {
+    const attId = parseId(req.params.id);
+    const attachment = await getDocAttachmentById(attId);
+    if (!attachment) return next(new AppError('Not found.', 404, 'NOT_FOUND'));
+
+    const doc = await getDocumentById(attachment.document_id, req.user.id);
+    if (!doc) return next(new AppError('Not found.', 404, 'NOT_FOUND'));
+
+    const filePath = path.join(uploadsDir, attachment.filename);
+    if (!fs.existsSync(filePath)) return next(new AppError('Not found.', 404, 'NOT_FOUND'));
+
+    res.setHeader('Content-Disposition',
+      `attachment; filename*=UTF-8''${encodeURIComponent(attachment.original_name)}`);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Type', attachment.mime_type || 'application/octet-stream');
+    res.sendFile(filePath);
+  } catch (err) { next(err); }
+});
+
+// DELETE /api/engineer/documents/attachments/:id
+router.delete('/documents/attachments/:id', async (req, res, next) => {
+  try {
+    const attId = parseId(req.params.id);
+    const attachment = await getDocAttachmentById(attId);
+    if (!attachment) return next(new AppError('Attachment not found.', 404, 'NOT_FOUND'));
+
+    const doc = await getDocumentById(attachment.document_id, req.user.id);
+    if (!doc) return next(new AppError('Attachment not found.', 404, 'NOT_FOUND'));
+
+    const filePath = path.join(uploadsDir, attachment.filename);
+    try {
+      await fs.promises.rm(filePath, { force: true });
+    } catch (rmErr) {
+      (req.log ?? logger).error({ err: rmErr, path: filePath }, 'Failed to remove doc attachment file');
+    }
+    await deleteDocAttachment(attId);
+
+    res.json({ success: true, data: { id: attId } });
+  } catch (err) { next(err); }
+});
+
+// GET /api/engineer/documents/:id/attachments
+router.get('/documents/:id/attachments', async (req, res, next) => {
+  try {
+    const id = parseId(req.params.id);
+    const doc = await getDocumentById(id, req.user.id);
+    if (!doc) return next(new AppError('Document not found.', 404, 'NOT_FOUND'));
+
+    const attachments = await listDocAttachments(id);
+    res.json({ success: true, data: attachments });
+  } catch (err) { next(err); }
+});
+
+// POST /api/engineer/documents/:id/attachments
+// requireOwnedDocument runs before multer so unauthorized callers never touch disk.
+router.post('/documents/:id/attachments', requireOwnedDocument, (req, res, next) => {
+  docUpload.single('file')(req, res, (err) => {
+    if (err) {
+      if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+        return next(new AppError('File exceeds the 10 MB limit.', 400, 'VALIDATION_ERROR', 'file'));
+      }
+      return next(err);
+    }
+    next();
+  });
+}, async (req, res, next) => {
+  try {
+    if (!req.file) return next(new AppError('No file uploaded.', 400, 'VALIDATION_ERROR', 'file'));
+
+    const attachment = await createDocAttachment(req.ownedDocument.id, {
+      filename:      req.file.filename,
+      original_name: req.file.originalname,
+      file_path:     req.file.filename,
+      mime_type:     req.file.mimetype,
+      size:          req.file.size,
+    });
+    res.status(201).json({ success: true, data: attachment });
+  } catch (err) {
+    if (req.file) {
+      try {
+        await fs.promises.rm(req.file.path, { force: true });
+      } catch (rmErr) {
+        (req.log ?? logger).error({ err: rmErr, path: req.file.path }, 'Failed to clean up orphaned doc upload');
+      }
+    }
+    next(err);
+  }
 });
 
 router.patch('/documents/:id', validate(patchDocumentSchema), async (req, res, next) => {

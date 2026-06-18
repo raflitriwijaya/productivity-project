@@ -1157,6 +1157,38 @@ addPath('delete', '/api/engineer/documents/{id}', {
   responses: { ...ok200, ...auth401, ...r404 },
 });
 
+addPath('get', '/api/engineer/documents/{id}/attachments', {
+  tags: ['Engineering'],
+  summary: 'List attachments for a document',
+  security: cookie,
+  parameters: idParam,
+  responses: { ...ok200, ...auth401, ...r404 },
+});
+
+addPath('post', '/api/engineer/documents/{id}/attachments', {
+  tags: ['Engineering'],
+  summary: 'Upload a file attachment to a document (multipart/form-data, max 10 MB)',
+  security: cookie,
+  parameters: idParam,
+  responses: { '201': { description: 'Created' }, ...r400, ...auth401, ...r404 },
+});
+
+addPath('get', '/api/engineer/documents/attachments/{id}/download', {
+  tags: ['Engineering'],
+  summary: 'Download a document attachment (authenticated, ownership-checked)',
+  security: cookie,
+  parameters: idParam,
+  responses: { ...ok200, ...auth401, ...r404 },
+});
+
+addPath('delete', '/api/engineer/documents/attachments/{id}', {
+  tags: ['Engineering'],
+  summary: 'Delete a document attachment (removes file from disk)',
+  security: cookie,
+  parameters: idParam,
+  responses: { ...ok200, ...auth401, ...r404 },
+});
+
 addPath('get', '/api/engineer/issues', {
   tags: ['Engineering'],
   summary: 'List open issues across all projects (severity-ordered, for the Today briefing)',

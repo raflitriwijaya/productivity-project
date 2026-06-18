@@ -1,8 +1,3 @@
-// client/src/components/research/AttachmentList.jsx
-// Lists an entry's attachments with a download action + delete action.
-// Phase 1: downloads go through the authenticated API route instead of a public
-// static URL, so ownership is enforced server-side.
-
 import { Download, Trash2, Paperclip } from 'lucide-react';
 
 import api from '../../lib/api';
@@ -12,7 +7,6 @@ import { useToast } from '../../hooks/useToast';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-/** Human-readable byte size. */
 function formatSize(bytes) {
   if (bytes == null) return '';
   if (bytes < 1024) return `${bytes} B`;
@@ -21,19 +15,18 @@ function formatSize(bytes) {
 }
 
 /**
- * @param {{ entryId: number, refreshKey?: number, onChanged?: () => void }} props
- *   `refreshKey` lets a parent force a re-fetch after an upload.
+ * @param {{ documentId: number, refreshKey?: number, onChanged?: () => void }} props
  */
-export function AttachmentList({ entryId, refreshKey = 0, onChanged }) {
+export function DocAttachmentList({ documentId, refreshKey = 0, onChanged }) {
   const { addToast } = useToast();
   const { data: attachments, loading, error, refetch } = useApi(
-    () => api.get(`/api/research/${entryId}/attachments`),
-    [entryId, refreshKey]
+    () => api.get(`/api/engineer/documents/${documentId}/attachments`),
+    [documentId, refreshKey]
   );
 
   const handleDelete = async (att) => {
     try {
-      await api.delete(`/api/research/attachments/${att.id}`);
+      await api.delete(`/api/engineer/documents/attachments/${att.id}`);
       addToast({ type: 'success', title: 'Attachment deleted' });
       refetch();
       onChanged?.();
@@ -45,7 +38,7 @@ export function AttachmentList({ entryId, refreshKey = 0, onChanged }) {
   const handleDownload = async (att) => {
     try {
       const response = await fetch(
-        `${BASE_URL}/api/research/attachments/${att.id}/download`,
+        `${BASE_URL}/api/engineer/documents/attachments/${att.id}/download`,
         { credentials: 'include' },
       );
       if (!response.ok) throw new Error(`Download failed (${response.status})`);

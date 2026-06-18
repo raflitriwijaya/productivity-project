@@ -1,13 +1,3 @@
-// client/src/components/research/AttachmentUploader.jsx
-// Single-file uploader: a Button triggers a hidden <input type="file">; the
-// chosen file is POSTed as multipart/form-data to /api/research/:id/attachments.
-// Axios sets the multipart boundary automatically when given a FormData body,
-// overriding the client's default JSON Content-Type.
-//
-// The allowlist mirrors the server fileFilter (jpg/png/pdf/txt/md/cpp/py/zip,
-// 10 MB) so obviously-wrong files are caught before the request; the server is
-// still the source of truth and returns 400 on rejection.
-
 import { useRef, useState } from 'react';
 import { Upload } from 'lucide-react';
 
@@ -16,12 +6,12 @@ import { Button } from '../ui/Button';
 import { useToast } from '../../hooks/useToast';
 
 const ACCEPT = '.jpg,.jpeg,.png,.pdf,.txt,.md,.cpp,.py,.zip';
-const MAX_SIZE = 100 * 1024 * 1024; // 100 MB
+const MAX_SIZE = 100 * 1024 * 1024; //100 MB
 
 /**
- * @param {{ entryId: number, onUploaded?: () => void }} props
+ * @param {{ documentId: number, onUploaded?: () => void }} props
  */
-export function AttachmentUploader({ entryId, onUploaded }) {
+export function DocAttachmentUploader({ documentId, onUploaded }) {
   const { addToast } = useToast();
   const inputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
@@ -30,7 +20,7 @@ export function AttachmentUploader({ entryId, onUploaded }) {
 
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
-    e.target.value = ''; // reset so the same file can be re-picked later
+    e.target.value = '';
     if (!file) return;
 
     if (file.size > MAX_SIZE) {
@@ -43,7 +33,7 @@ export function AttachmentUploader({ entryId, onUploaded }) {
 
     setUploading(true);
     try {
-      await api.post(`/api/research/${entryId}/attachments`, formData);
+      await api.post(`/api/engineer/documents/${documentId}/attachments`, formData);
       addToast({ type: 'success', title: 'File uploaded', message: file.name });
       onUploaded?.();
     } catch (err) {
